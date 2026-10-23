@@ -141,6 +141,16 @@ tr.active td.num{color:var(--accent)}
 .card .ed{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:12px;padding:3px 8px;border-radius:4px;opacity:0}
 .card:hover .ed,.card:focus-within .ed{opacity:1}
 .card.on{outline:2px solid var(--accent)}
+.cards.list{grid-template-columns:1fr;gap:8px}
+.cards.list .card{flex-direction:row;align-items:center}
+.cards.list .card .th{width:160px;flex:none;aspect-ratio:16/9}
+.cards.list .card .bd{flex:1;min-width:0;padding:8px 14px}
+.cards.list .card .cap{-webkit-line-clamp:1}
+@media (max-width:520px){.cards.list .card .th{width:110px}}
+.vtoggle{display:flex;gap:2px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px}
+.vtoggle button{width:30px;height:28px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.vtoggle button.on{background:var(--panel);color:var(--fg)}
+.vtoggle svg{width:15px;height:15px;fill:currentColor}
 .thprev{aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .thprev img{width:100%;height:100%;object-fit:cover;display:block}
 .inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -302,7 +312,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </div>
 
 <div class="home" id="home">
-  <div class="top"><h2>Vídeos</h2><span class="sub" id="vCount"></span><span class="spacer"></span><button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
+  <div class="top"><h2>Vídeos</h2><span class="sub" id="vCount"></span><span class="spacer"></span>
+    <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
+    <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
 </div>
 
@@ -595,6 +607,13 @@ function renderVideos(){
       <div class="mt"><span>${fmtDate(v.createdAt)}</span>${v.lances?`<span>${v.lances.instances.length} lances</span>`:''}</div></div>
   </div>`).join('');
 }
+(function(){
+  let mode='grid';try{mode=localStorage.getItem('dimas-vmode')||'grid'}catch(_){}
+  const tg=document.querySelector('.vtoggle');
+  function apply(m){mode=m;vCards.classList.toggle('list',m==='list');tg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));try{localStorage.setItem('dimas-vmode',m)}catch(_){}}
+  tg.onclick=e=>{const b=e.target.closest('button');if(b)apply(b.dataset.mode)};
+  apply(mode);
+})();
 vCards.addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openVideo(videos.find(v=>v.id===ed.dataset.edit));return}
   const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id));
