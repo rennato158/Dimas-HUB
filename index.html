@@ -320,7 +320,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f" id="pwField">
         <label>Senha inicial</label>
         <div class="pwbox"><input type="text" id="fPw" minlength="6" maxlength="40" autocomplete="off"><button type="button" class="btn" id="fPwGen">Gerar</button></div>
-        <p class="pwnote">A pessoa entra com e-mail e essa senha, e é obrigada a trocar no primeiro acesso. Ou pode entrar direto com a conta Google desse e-mail.</p>
+        <p class="pwnote">Ao salvar, a pessoa recebe um e-mail para definir a própria senha. Esta senha provisória serve de reserva e exige troca no primeiro acesso. Deixe em branco para acesso só pela conta Google.</p>
       </div>
       <div class="f"><label>Nível</label>
         <div class="rolepick">
@@ -394,11 +394,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     document.getElementById('userPic').src=u.photoURL||'';document.getElementById('userName').textContent=me.name||u.displayName||u.email;
     window.DimasHub.setMe(Object.assign({id:email,photo:me.photo||u.photoURL||''},me));
   }
-  window.DimasHub.createLogin=async(email,password)=>{
-    // Cria o usuário numa instância separada para não derrubar a sessão do administrador.
-    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebase.app().options,'sec');
-    try{await sec.auth().createUserWithEmailAndPassword(email,password)}finally{await sec.auth().signOut().catch(()=>{})}
-  };
 })();
 </script>
 <script>
@@ -499,8 +494,8 @@ form.onsubmit=async e=>{
     if(editing){await db.collection('members').doc(editing.id).update(data);modal.hidden=true}
     else{
       let loginMsg='';
-      if(pw){try{await window.DimasHub.createLogin(email,pw);data.mustChangePassword=true;loginMsg='<span>Login criado. Senha inicial:</span><code>'+esc(pw)+'</code><span>A pessoa troca a senha no primeiro acesso. Anote agora: ela não aparece de novo.</span>'}
-        catch(ex){if(ex.code==='auth/email-already-in-use')loginMsg='<span>Esse e-mail já tem login (Google ou senha). O cadastro foi salvo; a pessoa entra com o acesso que já tem ou usa "Esqueci a senha".</span>';else throw ex}}
+      if(pw){try{await createLogin(email,pw);data.mustChangePassword=true;loginMsg='<span>Login criado. <strong>'+esc(email)+'</strong> recebeu um e-mail com o link para definir a senha e confirmar o acesso.</span><span>Se o e-mail não chegar, a senha provisória é:</span><code>'+esc(pw)+'</code><span>(ela só aparece agora; com ela o HUB pede uma senha nova no primeiro acesso)</span>'}
+        catch(ex){if(ex.code==='auth/email-already-in-use'){try{await sendSetupEmail(email)}catch(_){}loginMsg='<span>Esse e-mail já tinha login. O cadastro foi salvo e enviamos um e-mail para redefinir a senha; a pessoa também pode entrar com a conta Google.</span>'}else throw ex}}
       await db.collection('members').doc(email).set(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
       if(loginMsg){const d=document.getElementById('fDone');d.innerHTML=loginMsg+'<button type="button" class="btn primary" id="fDoneOk">Fechar</button>';d.hidden=false;document.getElementById('fDoneOk').onclick=()=>{modal.hidden=true};
         [...form.querySelectorAll('.f,.actions')].forEach(x=>x.hidden=true)}
@@ -513,6 +508,19 @@ document.getElementById('fDel').onclick=async function(){
   if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}
   await db.collection('members').doc(editing.id).delete();modal.hidden=true;
 };
+async function createLogin(email,password){
+  // Instância separada: criar o usuário não derruba a sessão do administrador.
+  const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebase.app().options,'sec');
+  const sa=sec.auth();sa.useDeviceLanguage();
+  try{
+    await sa.createUserWithEmailAndPassword(email,password);
+    await sa.sendPasswordResetEmail(email,{url:location.origin+location.pathname});
+  }finally{await sa.signOut().catch(()=>{})}
+}
+async function sendSetupEmail(email){
+  const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebase.app().options,'sec');
+  const sa=sec.auth();sa.useDeviceLanguage();await sa.sendPasswordResetEmail(email,{url:location.origin+location.pathname});
+}
 function genPw(){const a='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(8));r.forEach(v=>o+=a[v%a.length]);return o}
 document.getElementById('fPwGen').onclick=()=>{document.getElementById('fPw').value=genPw()};
 /* ---- foto com recorte ---- */
