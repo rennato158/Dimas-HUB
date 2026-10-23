@@ -155,8 +155,8 @@ tr.active td.num{color:var(--accent)}
 .vtoggle button.on{background:var(--panel);color:var(--fg)}
 .vtoggle svg{width:15px;height:15px;fill:currentColor}
 .sync{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.sync .row2{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}
-.sync .lb{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.03em;min-width:64px}
+.sync .row2{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.sync .lb{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.03em;min-width:150px}
 .sync input{font-family:var(--mono);font-size:13px}
 .sync .hd2{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .sync .hd2 span:first-child{min-width:64px}
@@ -407,12 +407,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label>Sincronização do tempo (XML × vídeo)</label>
         <div class="sync">
-          <div class="hd2"><span></span><span>Início na XML</span><span>Início no vídeo</span><span></span></div>
-          <div class="row2"><span class="lb">Início 1º T</span><input type="text" id="sH1x" placeholder="mm:ss"><input type="text" id="sH1v" placeholder="mm:ss"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <div class="row2"><span class="lb">Fim 1º T</span><input type="text" id="sE1x" placeholder="mm:ss"><input type="text" id="sE1v" placeholder="mm:ss"><button type="button" class="btn grab" data-t="sE1v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <div class="row2"><span class="lb">Início 2º T</span><input type="text" id="sH2x" placeholder="mm:ss"><input type="text" id="sH2v" placeholder="mm:ss"><button type="button" class="btn grab" data-t="sH2v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <div class="row2"><span class="lb">Fim 2º T</span><input type="text" id="sE2x" placeholder="mm:ss"><input type="text" id="sE2v" placeholder="mm:ss"><button type="button" class="btn grab" data-t="sE2v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <p class="pwnote">Preencha o mesmo momento na XML e no vídeo; os lances são deslocados pela diferença (1º tempo pelo par do 1º, 2º tempo pelo par do 2º). Tudo em branco = nenhum ajuste.</p>
+          <div class="row2"><span class="lb">Apito inicial 1º tempo</span><input type="text" id="sH1v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
+          <div class="row2"><span class="lb">Apito inicial 2º tempo</span><input type="text" id="sH2v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH2v" title="Usar o tempo atual do player">⏱ player</button></div>
+          <p class="pwnote">Momento do vídeo em que cada tempo começa. Em branco = nenhum ajuste.</p>
         </div>
       </div>
       <span class="ferr" id="vErr" hidden></span>
@@ -896,19 +893,19 @@ function xmlNotes(){
   document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances':'nenhuma';document.getElementById('vXmlDel').hidden=!vLances;
   document.getElementById('vXmlINote').textContent=vLancesI?vLancesI.instances.length+' lances':'nenhuma';document.getElementById('vXmlIDel').hidden=!vLancesI;
 }
-const SYNC_IDS=['sH1x','sH1v','sE1x','sE1v','sH2x','sH2v','sE2x','sE2v'];
-function fillSync(sync){SYNC_IDS.forEach(id=>{const v=sync?sync[id.slice(1)]:null;document.getElementById(id).value=v==null?'':fmtDur(v)})}
+function fillSync(sync){document.getElementById('sH1v').value=sync?.v1!=null?fmtDur(sync.v1):'';document.getElementById('sH2v').value=sync?.v2!=null?fmtDur(sync.v2):''}
 function readSync(){
-  const o={};let any=false;SYNC_IDS.forEach(id=>{const t=document.getElementById(id).value.trim();o[id.slice(1)]=t?parseDur(t):null;if(t)any=true});
-  return any?o:null;
+  const a=document.getElementById('sH1v').value.trim(),b=document.getElementById('sH2v').value.trim();
+  if(!a&&!b)return null;return {v1:a?parseDur(a):null,v2:b?parseDur(b):null};
 }
+// Na XML, o apito de cada tempo vem dos marcadores "SINC. TEMPO" (1º = primeiro marcador ou 0:00; 2º = segundo marcador).
+function xmlKicks(set){const m=set.instances.filter(l=>/sinc|sync|apito|kick/i.test(l.code)).map(l=>l.start).sort((a,b)=>a-b);return {x1:m[0]??0,x2:m[1]??null}}
 function applySync(set,sync){
-  if(!set||!sync)return set;
-  const pair=(x,v)=>(x!=null&&v!=null)?v-x:null;
-  const o1=pair(sync.H1x,sync.H1v)??pair(sync.E1x,sync.E1v);
-  const o2=pair(sync.H2x,sync.H2v)??pair(sync.E2x,sync.E2v);
-  if(o1==null&&o2==null)return set;
-  const cut=sync.H2x!=null?sync.H2x:(sync.E1x!=null?sync.E1x:Infinity);
+  if(!set||!sync||(sync.v1==null&&sync.v2==null))return set;
+  const {x1,x2}=xmlKicks(set);
+  const o1=sync.v1!=null?sync.v1-x1:null;
+  const o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
+  const cut=x2!=null?x2:Infinity;
   return {rows:set.rows,instances:set.instances.map(l=>{const o=(l.start>=cut?(o2??o1):(o1??o2))||0;return Object.assign({},l,{start:Math.max(0,l.start+o),end:Math.max(0,l.end+o)})})};
 }
 document.querySelectorAll('.sync .grab').forEach(b=>b.onclick=()=>{
