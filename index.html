@@ -103,6 +103,18 @@ tr.active td.num{color:var(--accent)}
 .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:11px 16px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:15px}
 .gbtn svg{width:18px;height:18px}
 .gate .err{color:#e5533d;font-size:13px}
+.gate .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.gate .or::before,.gate .or::after{content:"";flex:1;height:1px;background:var(--line)}
+.gate form{display:flex;flex-direction:column;gap:8px;text-align:left}
+.gate form input{padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit;font-size:14px;width:100%}
+.gate form .btn{justify-content:center;padding:10px}
+.gate .link{color:var(--accent);font-size:13px;background:none}
+.gate .ok{color:#3ec27a;font-size:13px}
+.pwbox{display:flex;gap:6px;align-items:center}
+.pwbox input{flex:1;min-width:0;font-family:var(--mono)}
+.pwnote{font-size:12px;color:var(--muted);margin:0}
+.done{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.done code{font-family:var(--mono);font-size:14px;background:var(--panel);padding:4px 8px;border-radius:4px;user-select:all}
 .user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 .user img{width:28px;height:28px;border-radius:50%}
 .user button{color:var(--accent);font-weight:500}
@@ -188,6 +200,21 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="brand">DIMAS <b>HUB</b></div>
     <p id="gateMsg">Acesso restrito à equipe. Entre com sua conta Google.</p>
     <button class="gbtn" id="googleBtn" type="button"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.7-2.1 15.6-5.7l-7.5-5.8c-2.1 1.4-4.8 2.3-8.1 2.3-6.3 0-11.6-3.9-13.5-9.4l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Entrar com Google</button>
+    <div class="or" id="gateOr">ou</div>
+    <form id="pwForm" autocomplete="on">
+      <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username" required>
+      <input type="password" id="loginPw" placeholder="Senha" autocomplete="current-password" required>
+      <button class="btn primary" type="submit" id="loginBtn">Entrar com e-mail e senha</button>
+      <button class="link" type="button" id="forgotBtn">Esqueci a senha</button>
+    </form>
+    <form id="newPwForm" hidden>
+      <p style="text-align:center">Primeiro acesso: defina a sua senha.</p>
+      <input type="password" id="newPw1" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password" minlength="6" required>
+      <input type="password" id="newPw2" placeholder="Repita a nova senha" autocomplete="new-password" minlength="6" required>
+      <button class="btn primary" type="submit" id="newPwBtn">Salvar senha e entrar</button>
+      <button class="link" type="button" id="newPwCancel">Sair</button>
+    </form>
+    <span class="ok" id="gateOk" hidden></span>
     <span class="err" id="gateErr" hidden></span>
   </div>
 </div>
@@ -289,7 +316,12 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         </div>
       </div>
       <div class="f"><label for="fName">Nome</label><input type="text" id="fName" required maxlength="80"></div>
-      <div class="f"><label for="fEmail">E-mail (conta Google que vai entrar)</label><input type="email" id="fEmail" required></div>
+      <div class="f"><label for="fEmail">E-mail de acesso</label><input type="email" id="fEmail" required></div>
+      <div class="f" id="pwField">
+        <label>Senha inicial</label>
+        <div class="pwbox"><input type="text" id="fPw" minlength="6" maxlength="40" autocomplete="off"><button type="button" class="btn" id="fPwGen">Gerar</button></div>
+        <p class="pwnote">A pessoa entra com e-mail e essa senha, e é obrigada a trocar no primeiro acesso. Ou pode entrar direto com a conta Google desse e-mail.</p>
+      </div>
       <div class="f"><label>Nível</label>
         <div class="rolepick">
           <label><input type="radio" name="role" value="Atleta" checked><span>Atleta<small>Vê os lances</small></span></label>
@@ -297,11 +329,12 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         </div>
       </div>
       <div class="f2">
-        <div class="f"><label for="fFunc">Função</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
+        <div class="f"><label for="fFunc">Função (Administrador gerencia o elenco)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
       </div>
       <div class="f"><label>Grupos</label><div class="gpick" id="fGroups"><span class="sub" style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span></div></div>
       <div class="f"><label><input type="checkbox" id="fActive" checked> Ativo (pode entrar no HUB)</label></div>
+      <div class="done" id="fDone" hidden></div>
       <span class="ferr" id="fErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="fDel" hidden>Remover</button><button type="button" class="btn" id="fCancel">Cancelar</button><button type="submit" class="btn primary" id="fSave">Salvar</button></div>
     </form>
@@ -318,16 +351,34 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   firebase.initializeApp({apiKey:"AIzaSyD6f3Gd0bYt-v0jtXd4HMYV8YOzdn1TWQA",authDomain:"dimas-hub.firebaseapp.com",projectId:"dimas-hub",appId:"1:636892555630:web:785f3185ab0791cb11797f"});
   const auth=firebase.auth(), db=firebase.firestore(), gate=document.getElementById('gate'), msg=document.getElementById('gateMsg'), err=document.getElementById('gateErr');
   const btn=document.getElementById('googleBtn'), box=document.getElementById('userBox');
+  const pwForm=document.getElementById('pwForm'), newPwForm=document.getElementById('newPwForm'), gateOr=document.getElementById('gateOr'), okMsg=document.getElementById('gateOk');
   auth.useDeviceLanguage();
+  function loginUI(on){btn.hidden=!on;pwForm.hidden=!on;gateOr.hidden=!on;newPwForm.hidden=true}
+  function showErr(e){const map={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'E-mail ou senha incorretos.','auth/user-not-found':'E-mail ou senha incorretos.','auth/invalid-email':'E-mail inválido.','auth/too-many-requests':'Muitas tentativas. Aguarde um pouco e tente de novo.','auth/weak-password':'Senha fraca: use pelo menos 6 caracteres.','auth/requires-recent-login':'Por segurança, saia e entre de novo antes de trocar a senha.'};
+    err.textContent=map[e.code]||('Não foi possível entrar: '+(e.message||e.code));err.hidden=false}
+  pwForm.onsubmit=async e=>{e.preventDefault();err.hidden=true;okMsg.hidden=true;const b=document.getElementById('loginBtn');b.disabled=true;
+    try{await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value.trim(),document.getElementById('loginPw').value)}catch(ex){showErr(ex)}b.disabled=false};
+  document.getElementById('forgotBtn').onclick=async()=>{err.hidden=true;okMsg.hidden=true;const em=document.getElementById('loginEmail').value.trim();
+    if(!em){err.textContent='Digite o e-mail para receber o link de redefinição.';err.hidden=false;return}
+    try{await auth.sendPasswordResetEmail(em);okMsg.textContent='Enviamos um link de redefinição para '+em+'.';okMsg.hidden=false}catch(ex){showErr(ex)}};
+  document.getElementById('newPwCancel').onclick=()=>auth.signOut();
+  newPwForm.onsubmit=async e=>{e.preventDefault();err.hidden=true;const a=document.getElementById('newPw1').value,b2=document.getElementById('newPw2').value;
+    if(a!==b2){err.textContent='As senhas não conferem.';err.hidden=false;return}
+    const bt=document.getElementById('newPwBtn');bt.disabled=true;
+    try{const u=auth.currentUser;await u.updatePassword(a);await db.collection('members').doc(u.email.toLowerCase()).update({mustChangePassword:false});
+      document.getElementById('newPw1').value='';document.getElementById('newPw2').value='';await enter(u)}catch(ex){showErr(ex)}bt.disabled=false};
   btn.onclick=async()=>{err.hidden=true;try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(e){
     if(e.code==='auth/popup-blocked'){auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());return}
     err.textContent='Não foi possível entrar: '+(e.message||e.code);err.hidden=false}};
   document.getElementById('logoutBtn').onclick=()=>auth.signOut();
-  function deny(u,why){gate.hidden=false;box.hidden=true;btn.hidden=true;window.DimasHub.setMe(null);
+  function deny(u,why){gate.hidden=false;box.hidden=true;loginUI(false);window.DimasHub.setMe(null);
     msg.innerHTML=why+' <br><br><a href="#" id="swap">Entrar com outra conta</a>';document.getElementById('swap').onclick=e=>{e.preventDefault();auth.signOut()}}
   auth.onAuthStateChanged(async u=>{
-    if(!u){gate.hidden=false;box.hidden=true;btn.hidden=false;msg.textContent='Acesso restrito à equipe. Entre com sua conta Google.';window.DimasHub.setMe(null);return}
-    const email=(u.email||'').toLowerCase();msg.textContent='Verificando cadastro…';btn.hidden=true;
+    if(!u){gate.hidden=false;box.hidden=true;loginUI(true);err.hidden=true;msg.textContent='Acesso restrito à equipe.';window.DimasHub.setMe(null);return}
+    await enter(u);
+  });
+  async function enter(u){
+    const email=(u.email||'').toLowerCase();msg.textContent='Verificando cadastro…';loginUI(false);err.hidden=true;okMsg.hidden=true;
     let snap;
     try{snap=await db.collection('members').doc(email).get()}catch(e){deny(u,'Não foi possível verificar o cadastro de <strong>'+u.email+'</strong> ('+(e.code||e.message)+').');return}
     if(!snap.exists&&email===BOOTSTRAP){
@@ -337,10 +388,17 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     if(!snap.exists){deny(u,'A conta <strong>'+u.email+'</strong> não está cadastrada no Dimas HUB. Peça à comissão para incluir seu e-mail.');return}
     const me=snap.data();
     if(me.active===false){deny(u,'O cadastro de <strong>'+u.email+'</strong> está inativo. Fale com a comissão.');return}
+    const byPassword=(u.providerData||[]).some(p=>p.providerId==='password');
+    if(me.mustChangePassword&&byPassword){gate.hidden=false;box.hidden=true;msg.textContent='Olá, '+(me.name||'')+'!';loginUI(false);newPwForm.hidden=false;document.getElementById('newPw1').focus();return}
     gate.hidden=true;box.hidden=false;
     document.getElementById('userPic').src=u.photoURL||'';document.getElementById('userName').textContent=me.name||u.displayName||u.email;
-    window.DimasHub.setMe(Object.assign({id:email,photo:u.photoURL||''},me));
-  });
+    window.DimasHub.setMe(Object.assign({id:email,photo:me.photo||u.photoURL||''},me));
+  }
+  window.DimasHub.createLogin=async(email,password)=>{
+    // Cria o usuário numa instância separada para não derrubar a sessão do administrador.
+    const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebase.app().options,'sec');
+    try{await sec.auth().createUserWithEmailAndPassword(email,password)}finally{await sec.auth().signOut().catch(()=>{})}
+  };
 })();
 </script>
 <script>
@@ -354,7 +412,7 @@ const modal=document.getElementById('mModal'), form=document.getElementById('mFo
 let me=null, members=[], groups=[], filter='', editing=null, unsubM=null, unsubG=null;
 
 function setMe(m){
-  me=m;const admin=!!m&&m.role==='Comissão';
+  me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(admin){
@@ -408,6 +466,8 @@ gList.onclick=async e=>{
 
 function openForm(m){
   editing=m||null;fErr.hidden=true;photo=m?.photo||null;srcImg=null;renderAv();cropBox.hidden=true;
+  [...form.querySelectorAll('.f,.actions')].forEach(x=>x.hidden=false);
+  document.getElementById('fDone').hidden=true;document.getElementById('pwField').hidden=!!m;document.getElementById('fPw').value=m?'':genPw();
   document.getElementById('mTitle').textContent=m?'Editar cadastro':'Cadastrar';
   document.getElementById('fName').value=m?.name||'';
   const em=document.getElementById('fEmail');em.value=m?.id||'';em.disabled=!!m;
@@ -430,13 +490,22 @@ form.onsubmit=async e=>{
   const num=document.getElementById('fNum').value;
   const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value,
     number:num===''?null:+num,groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
-  if(editing&&editing.id===me.id&&(data.role!=='Comissão'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Comissão.';fErr.hidden=false;return}
+  if(editing&&editing.id===me.id&&(data.func!=='Administrador'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Administrador.';fErr.hidden=false;return}
+  const pw=document.getElementById('fPw').value;
+  if(!editing&&pw&&pw.length<6){fErr.textContent='A senha inicial precisa ter pelo menos 6 caracteres.';fErr.hidden=false;return}
   if(!editing&&members.some(m=>m.id===email)){fErr.textContent='Esse e-mail já está cadastrado.';fErr.hidden=false;return}
   const btn=document.getElementById('fSave');btn.disabled=true;
   try{
-    if(editing)await db.collection('members').doc(editing.id).update(data);
-    else await db.collection('members').doc(email).set(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
-    modal.hidden=true;
+    if(editing){await db.collection('members').doc(editing.id).update(data);modal.hidden=true}
+    else{
+      let loginMsg='';
+      if(pw){try{await window.DimasHub.createLogin(email,pw);data.mustChangePassword=true;loginMsg='<span>Login criado. Senha inicial:</span><code>'+esc(pw)+'</code><span>A pessoa troca a senha no primeiro acesso. Anote agora: ela não aparece de novo.</span>'}
+        catch(ex){if(ex.code==='auth/email-already-in-use')loginMsg='<span>Esse e-mail já tem login (Google ou senha). O cadastro foi salvo; a pessoa entra com o acesso que já tem ou usa "Esqueci a senha".</span>';else throw ex}}
+      await db.collection('members').doc(email).set(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+      if(loginMsg){const d=document.getElementById('fDone');d.innerHTML=loginMsg+'<button type="button" class="btn primary" id="fDoneOk">Fechar</button>';d.hidden=false;document.getElementById('fDoneOk').onclick=()=>{modal.hidden=true};
+        [...form.querySelectorAll('.f,.actions')].forEach(x=>x.hidden=true)}
+      else modal.hidden=true;
+    }
   }catch(err){fErr.textContent='Não salvou: '+(err.code||err.message);fErr.hidden=false}
   btn.disabled=false;
 };
@@ -444,6 +513,8 @@ document.getElementById('fDel').onclick=async function(){
   if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}
   await db.collection('members').doc(editing.id).delete();modal.hidden=true;
 };
+function genPw(){const a='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(8));r.forEach(v=>o+=a[v%a.length]);return o}
+document.getElementById('fPwGen').onclick=()=>{document.getElementById('fPw').value=genPw()};
 /* ---- foto com recorte ---- */
 let photo=null, srcImg=null;
 const cropBox=document.getElementById('cropBox'), cv=document.getElementById('cropCv'), ctx=cv.getContext('2d'), stage=document.getElementById('cropStage'), zoom=document.getElementById('cropZoom');

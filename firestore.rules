@@ -5,16 +5,18 @@ service cloud.firestore {
     function signed() { return request.auth != null && request.auth.token.email != null; }
     function member() { return get(/databases/$(database)/documents/members/$(email())).data; }
     function isMember() { return signed() && exists(/databases/$(database)/documents/members/$(email())); }
-    function isComissao() { return isMember() && member().role == 'Comissão'; }
+    function isAdmin() { return isMember() && member().func == 'Administrador'; }
     function isBootstrap() { return signed() && email() == 'rennato158@gmail.com'; }
+    function ownFlagOnly() { return signed() && resource.id == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword']); }
     match /members/{id} {
       allow read: if isMember() || (isBootstrap() && id == email());
-      allow create: if isComissao() || (isBootstrap() && id == email());
-      allow update, delete: if isComissao();
+      allow create: if isAdmin() || (isBootstrap() && id == email());
+      allow update: if isAdmin() || ownFlagOnly();
+      allow delete: if isAdmin();
     }
     match /groups/{id} {
       allow read: if isMember();
-      allow write: if isComissao();
+      allow write: if isAdmin();
     }
   }
 }
