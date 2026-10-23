@@ -154,6 +154,13 @@ tr.active td.num{color:var(--accent)}
 .vtoggle button{width:30px;height:28px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
 .vtoggle button.on{background:var(--panel);color:var(--fg)}
 .vtoggle svg{width:15px;height:15px;fill:currentColor}
+.sync{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.sync .row2{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;align-items:center}
+.sync .lb{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.03em;min-width:64px}
+.sync input{font-family:var(--mono);font-size:13px}
+.sync .hd2{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sync .hd2 span:first-child{min-width:64px}
+.sync .grab{font-size:11px;padding:5px 7px;white-space:nowrap}
 .thprev{aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .thprev img{width:100%;height:100%;object-fit:cover;display:block}
 .inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -398,6 +405,14 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
+      <div class="f"><label>Sincronização do tempo (XML × vídeo)</label>
+        <div class="sync">
+          <div class="hd2"><span></span><span>Início na XML</span><span>Início no vídeo</span><span></span></div>
+          <div class="row2"><span class="lb">1º tempo</span><input type="text" id="sH1x" placeholder="mm:ss"><input type="text" id="sH1v" placeholder="em branco = sem ajuste"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
+          <div class="row2"><span class="lb">2º tempo</span><input type="text" id="sH2x" placeholder="mm:ss"><input type="text" id="sH2v" placeholder="em branco = sem ajuste"><button type="button" class="btn grab" data-t="sH2v" title="Usar o tempo atual do player">⏱ player</button></div>
+          <p class="pwnote">Informe em que momento cada tempo começa na XML (preenchido pelos marcadores "SINC. TEMPO", se existirem) e no vídeo. Os lances são deslocados pela diferença. Deixe "no vídeo" em branco para manter como está.</p>
+        </div>
+      </div>
       <span class="ferr" id="vErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="vDel" hidden>Remover</button><button type="button" class="btn" id="vCancel">Cancelar</button><button type="submit" class="btn primary" id="vSave">Salvar</button></div>
     </form>
@@ -610,7 +625,7 @@ function openAthlete(a,videoId){
   if(pick){currentVideo=pick.v.id;renderVideos();
     P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
     document.getElementById('xmlSeg').hidden=true;
-    P.loadLances({instances:pick.ls,rows:athleteSet(pick.v).rows});P.loadYT(pick.v.ytId);
+    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync));P.loadYT(pick.v.ytId);
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
@@ -839,13 +854,13 @@ function setXmlSeg(v){
   seg.hidden=!(has.lances&&has.lancesInd);
   seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.x===xmlKind);const d=v[b.dataset.x];b.textContent=(b.dataset.x==='lances'?'Coletiva':'Individual')+(d?' ('+d.instances.length+')':'')});
 }
-document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);window.DimasPlayer.loadLances(v[xmlKind]);
+document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);window.DimasPlayer.loadLances(applySync(v[xmlKind],v.sync));
   window.DimasPlayer.setTitle(v.title,[v.caption,v[xmlKind].instances.length+' lances ('+(xmlKind==='lances'?'coletiva':'individual')+')',v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '))};
 function playVideo(v){
   if(!v)return;currentVideo=v.id;renderVideos();
   const P=window.DimasPlayer;setXmlSeg(v);const set=v[xmlKind]||null;
   P.setTitle(v.title,[v.caption,set?set.instances.length+' lances'+(v.lances&&v.lancesInd?' ('+(xmlKind==='lances'?'coletiva':'individual')+')':''):null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
-  if(set)P.loadLances(set);else P.loadLances({instances:[],rows:[]});
+  if(set)P.loadLances(applySync(set,v.sync));else P.loadLances({instances:[],rows:[]});
   document.getElementById('videoUrl').value=v.url;try{localStorage.setItem('dimas-video-url',v.url)}catch(_){}
   P.loadYT(v.ytId);show('lances');
 }
@@ -857,7 +872,7 @@ function openVideo(v){
   document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
-  xmlNotes();
+  xmlNotes();fillSync(v?.sync||null,false);
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
@@ -879,10 +894,36 @@ function xmlNotes(){
   document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances':'nenhuma';document.getElementById('vXmlDel').hidden=!vLances;
   document.getElementById('vXmlINote').textContent=vLancesI?vLancesI.instances.length+' lances':'nenhuma';document.getElementById('vXmlIDel').hidden=!vLancesI;
 }
+function syncMarks(set){if(!set)return [];return set.instances.filter(l=>/sinc|sync|in[ií]cio.*tempo|kick/i.test(l.code)).map(l=>l.start).sort((a,b)=>a-b)}
+function fillSync(sync,onlyEmpty){
+  const g=id=>document.getElementById(id);
+  const marks=syncMarks(vLances).length?syncMarks(vLances):syncMarks(vLancesI);
+  const set=(id,val)=>{if(onlyEmpty&&g(id).value)return;g(id).value=val==null?'':fmtDur(val)};
+  set('sH1x',sync?sync.h1x:(marks[0]??null));set('sH2x',sync?sync.h2x:(marks[1]??null));
+  if(!onlyEmpty){set('sH1v',sync?sync.h1v:null);set('sH2v',sync?sync.h2v:null)}
+}
+function readSync(){
+  const g=id=>document.getElementById(id).value.trim();const n=t=>t?parseDur(t):null;
+  const h1x=n(g('sH1x')),h1v=n(g('sH1v')),h2x=n(g('sH2x')),h2v=n(g('sH2v'));
+  if(h1v==null&&h2v==null)return null;
+  return {h1x:h1x??0,h1v,h2x,h2v};
+}
+function applySync(set,sync){
+  if(!set||!sync)return set;
+  const o1=sync.h1v!=null?sync.h1v-(sync.h1x||0):0;
+  const o2=(sync.h2v!=null&&sync.h2x!=null)?sync.h2v-sync.h2x:o1;
+  const cut=sync.h2x!=null?sync.h2x:Infinity;
+  return {rows:set.rows,instances:set.instances.map(l=>{const o=l.start>=cut?o2:o1;return Object.assign({},l,{start:Math.max(0,l.start+o),end:Math.max(0,l.end+o)})})};
+}
+document.querySelectorAll('.sync .grab').forEach(b=>b.onclick=()=>{
+  const P=window.DimasPlayer;const id=P.ytId(document.getElementById('vUrl').value.trim());
+  if(!P.hasVideo()||!currentVideo||videos.find(x=>x.id===currentVideo)?.ytId!==id){vErr.textContent='Para capturar o tempo, abra este vídeo na aba Lances, pause no momento certo e volte aqui pelo "editar".';vErr.hidden=false;return}
+  vErr.hidden=true;document.getElementById(b.dataset.t).value=fmtDur(P.time());
+});
 function xmlPick(inputId,setter){document.getElementById(inputId).onchange=e=>{
   const f=e.target.files[0];if(!f)return;f.text().then(t=>{const d=window.DimasPlayer.parseXml(t);
     if(!d){vErr.textContent='Esse XML não tem lances no formato esperado.';vErr.hidden=false;return}
-    setter(d);vErr.hidden=true;xmlNotes()});e.target.value=''}}
+    setter(d);vErr.hidden=true;xmlNotes();fillSync(null,true)});e.target.value=''}}
 xmlPick('vXml',d=>{vLances=d});xmlPick('vXmlI',d=>{vLancesI=d});
 document.getElementById('vXmlDel').onclick=()=>{vLances=null;xmlNotes()};
 document.getElementById('vXmlIDel').onclick=()=>{vLancesI=null;xmlNotes()};
@@ -895,7 +936,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null};
+  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing)await db.collection('videos').doc(vEditing.id).update(data);
@@ -1142,7 +1183,7 @@ document.getElementById('xmlFile').onchange=e=>{
 };
 
 load(data);
-window.DimasPlayer={loadYT,loadLances:load,ytId,parseXml,ytDuration,
+window.DimasPlayer={loadYT,loadLances:load,ytId,parseXml,ytDuration,time:()=>P.time(),hasVideo:()=>P.has(),
   setTitle(t,m){document.getElementById('matchTitle').textContent=t;document.getElementById('matchMeta').textContent=m}};
 })();
 </script>
