@@ -154,6 +154,25 @@ tr.active td.num{color:var(--accent)}
 .thprev{aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .thprev img{width:100%;height:100%;object-fit:cover;display:block}
 .inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+/* individuais */
+.indiv{display:flex;flex-direction:column;gap:14px}
+.acard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
+.acard:hover{border-color:var(--muted)}
+.acard .av{width:48px;height:48px;font-size:18px}
+.acard .who{flex:1;min-width:0}
+.acard .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acard .em{font-size:12px;color:var(--muted)}
+.acard .cnt{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em;text-align:right;line-height:1}
+.acard .cnt small{display:block;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.acard.none{opacity:.55}
+.ibar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.ibar .av{width:40px;height:40px;font-size:16px}
+.ibar .nm{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.02em}
+.ibar .back{color:var(--accent);font-weight:500}
+.ibar .games{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.ibar .games button{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);font-size:12.5px}
+.ibar .games button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ibar .games small{opacity:.7;font-family:var(--mono);margin-left:4px}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
@@ -256,7 +275,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
-  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
+  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
   <div class="spacer"></div>
   <div class="user" id="userBox" hidden><img id="userPic" alt=""><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
   <div class="src" hidden>
@@ -269,6 +288,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </header>
 
+<div class="ibar" id="ibar" hidden>
+  <button type="button" class="back" id="ibarBack">← Individuais</button>
+  <div class="av" id="ibarAv"></div><span class="nm" id="ibarName"></span>
+  <div class="games" id="ibarGames"></div>
+</div>
 <div class="app">
   <section class="player">
     <div class="stage">
@@ -316,6 +340,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
     <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
+</div>
+
+<div class="indiv" id="indiv" hidden>
+  <div class="top" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em">Individuais</h2><span class="sub" id="aCount" style="color:var(--muted);font-size:12px"></span></div>
+  <div class="cards" id="aCards"><div class="emptyl">Carregando…</div></div>
 </div>
 
 <div class="elenco" id="elenco" hidden>
@@ -389,6 +418,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         </div>
       </div>
       <div class="f2">
+        <div class="f"><label for="fTag">Nome na XML</label><input type="text" id="fTag" maxlength="60" placeholder="Como aparece no tagueamento"></div>
         <div class="f"><label for="fFunc">Função (Administrador gerencia o elenco)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
       </div>
@@ -474,16 +504,64 @@ function setMe(m){
   if(m){unsubV=db.collection('videos').orderBy('createdAt','desc').onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
-  if(admin){
-    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
+  if(m){
+    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups();renderAthletes()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
     unsubG=db.collection('groups').orderBy('name').onSnapshot(s=>{groups=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderGroups();renderMembers()});
-  }else if(!elencoEl.hidden)show('home');
+  }else{members=[];groups=[]}
+  if(!admin&&!elencoEl.hidden)show('home');
 }
-function show(v){
-  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';
-  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+function show(v,keepAthlete){
+  if(!keepAthlete&&v!=='lances'){athlete=null}
+  if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv&&cv.lances)window.DimasPlayer.loadLances(cv.lances)}}
+  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';
+  document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
+  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
+/* ---- individuais ---- */
+let athlete=null;
+function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9#]+/g,' ').trim()}
+function athleteKeys(a){
+  const k=new Set();const n=norm(a.name),t=norm(a.tag);
+  if(t)k.add(t);if(n){k.add(n);const parts=n.split(' ').filter(w=>w.length>2);if(parts.length>1){k.add(parts[0]+' '+parts[parts.length-1])}}
+  return [...k];
+}
+function lanceMatches(l,a,keys){
+  const texts=[...(l.labels||[]),l.code,l.note||''].map(norm);
+  if(keys.some(k=>texts.some(t=>t===k||t.endsWith(': '+k)||(' '+t+' ').includes(' '+k+' '))))return true;
+  if(a.number!=null){const num=String(a.number);
+    return (l.labels||[]).some(x=>{const nx=norm(x);return /jogador|atleta|player|numero|camisa|#/.test(nx)&&(nx.endsWith(' '+num)||nx.endsWith('#'+num)||nx===num)})}
+  return false;
+}
+function athleteLances(a,v){if(!v.lances)return [];const keys=athleteKeys(a);return v.lances.instances.filter(l=>lanceMatches(l,a,keys))}
+function renderAthletes(){
+  const aCards=document.getElementById('aCards');const list=members.filter(m=>m.role==='Atleta'&&m.active!==false);
+  document.getElementById('aCount').textContent=list.length?list.length+' atleta'+(list.length>1?'s':''):'';
+  if(!list.length){aCards.innerHTML='<div class="emptyl">Nenhum atleta cadastrado ainda.</div>';return}
+  aCards.innerHTML=list.map(a=>{const n=videos.reduce((t,v)=>t+athleteLances(a,v).length,0);
+    return `<div class="acard ${n?'':'none'}" data-id="${esc(a.id)}" tabindex="0"><div class="av">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>
+      <div class="who"><div class="nm">${esc(a.name)}</div><div class="em">${a.number!=null?'#'+a.number+' · ':''}${esc(a.tag||'')}</div></div>
+      <div class="cnt">${n}<small>lances</small></div></div>`}).join('');
+}
+document.getElementById('aCards').addEventListener('click',e=>{const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))});
+document.getElementById('aCards').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))}});
+document.getElementById('ibarBack').onclick=()=>{athlete=null;show('indiv')};
+function openAthlete(a,videoId){
+  if(!a)return;athlete=a;
+  const games=videos.map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
+  document.getElementById('ibarAv').innerHTML=a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name);
+  document.getElementById('ibarName').textContent=a.name+(a.number!=null?' · #'+a.number:'');
+  const gl=document.getElementById('ibarGames');
+  const pick=games.find(g=>g.v.id===videoId)||games[0];
+  gl.innerHTML=games.length?games.map(g=>`<button type="button" class="${pick&&g.v.id===g.v.id&&pick.v.id===g.v.id?'on':''}" data-v="${esc(g.v.id)}">${esc(g.v.title)}<small>${g.ls.length}</small></button>`).join(''):'<span class="em" style="color:var(--muted);font-size:12.5px">Nenhum lance deste atleta nos vídeos. Confira o campo "Nome na XML" no cadastro.</span>';
+  gl.onclick=e=>{const b=e.target.closest('button');if(b)openAthlete(a,b.dataset.v)};
+  const P=window.DimasPlayer;
+  if(pick){currentVideo=pick.v.id;renderVideos();
+    P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
+    P.loadLances({instances:pick.ls,rows:pick.v.lances.rows});P.loadYT(pick.v.ytId);
+  }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
+  show('lances',true);
+}
 document.getElementById('mSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;document.querySelectorAll('#mSeg button').forEach(x=>x.classList.toggle('on',x===b));renderMembers()};
 
 function initials(n){return (n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}
@@ -531,7 +609,7 @@ function openForm(m){
   document.getElementById('mTitle').textContent=m?'Editar cadastro':'Cadastrar';
   document.getElementById('fName').value=m?.name||'';
   const em=document.getElementById('fEmail');em.value=m?.id||'';em.disabled=!!m&&m.id===me?.id;em.title=em.disabled?'Para trocar o seu próprio e-mail, peça a outro administrador.':'';
-  form.role.value=m?.role||'Atleta';
+  form.role.value=m?.role||'Atleta';document.getElementById('fTag').value=m?.tag||'';
   document.getElementById('fFunc').value=(m?.func==='Administrador')?'Administrador':'Usuário';
   document.getElementById('fNum').value=m?.number??'';
   document.getElementById('fActive').checked=m?m.active!==false:true;
@@ -548,7 +626,7 @@ form.onsubmit=async e=>{
   e.preventDefault();fErr.hidden=true;
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
-  const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value,
+  const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value,tag:document.getElementById('fTag').value.trim(),
     number:num===''?null:+num,groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
   if(editing&&editing.id===me.id&&(data.func!=='Administrador'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Administrador.';fErr.hidden=false;return}
   const pw=document.getElementById('fPw').value;
@@ -600,6 +678,7 @@ function fmtDate(ts){try{const d=ts&&ts.toDate?ts.toDate():null;return d?d.toLoc
 function renderVideos(){
   const admin=me&&me.func==='Administrador';
   document.getElementById('vCount').textContent=videos.length?videos.length+' vídeo'+(videos.length>1?'s':''):'';
+  if(members.length)renderAthletes();
   if(!videos.length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo publicado ainda.')+'</div>';return}
   vCards.innerHTML=videos.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
     <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}</div>
@@ -827,7 +906,7 @@ function render(){
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]}">${l.code}</span>${l.note?`<span class="note">${l.note}</span>`:''}</td>
+      <td class="name"><span class="tag" style="background:${colors[l.code]}">${l.code}</span>${l.labels?`<span class="note">${l.labels.join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
       <td><button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
     tr.onclick=()=>play(l);
     rowsEl.appendChild(tr);
@@ -896,7 +975,8 @@ video.addEventListener('error',()=>{
 function parseXml(txt){
   const x=new DOMParser().parseFromString(txt,'text/xml');
   const g=(el,t)=>el.querySelector(t)?.textContent??'';
-  const instances=[...x.querySelectorAll('ALL_INSTANCES > instance')].map(i=>{const o={id:+g(i,'ID'),start:+g(i,'start'),end:+g(i,'end'),code:g(i,'code')};const n=g(i,'free_text');if(n)o.note=n;return o});
+  const instances=[...x.querySelectorAll('ALL_INSTANCES > instance')].map(i=>{const o={id:+g(i,'ID'),start:+g(i,'start'),end:+g(i,'end'),code:g(i,'code')};const n=g(i,'free_text');if(n)o.note=n;
+    const labels=[...i.querySelectorAll('label')].map(l=>{const t=g(l,'text').trim(),gr=g(l,'group').trim();return gr?gr+': '+t:t}).filter(Boolean);if(labels.length)o.labels=labels;return o});
   const rows=[...x.querySelectorAll('ROWS > row')].map(r=>({code:g(r,'code'),rgb:['R','G','B'].map(c=>Math.round(+g(r,c)/257)),order:+g(r,'sort_order')}));
   return instances.length?{instances,rows}:null;
 }
