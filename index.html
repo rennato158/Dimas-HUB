@@ -325,6 +325,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
   <section class="list">
     <div class="tools">
+      <div class="seg" id="xmlSeg" style="margin-left:0" hidden><button type="button" data-x="lances">Coletiva</button><button type="button" data-x="lancesInd">Individual</button></div>
       <input type="search" id="search" placeholder="Buscar categoria ou observação…" aria-label="Buscar">
       <div class="dd" id="dd">
         <button class="ddbtn" type="button" id="ddBtn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="ddLbl">Todas as categorias</span><span class="n" id="ddN"></span></button>
@@ -384,7 +385,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f2">
         <div class="f"><label for="vDur">Duração</label><input type="text" id="vDur" placeholder="auto" pattern="^(\d{1,2}:)?\d{1,2}:\d{2}$" title="h:mm:ss ou mm:ss"></div>
-        <div class="f"><label>Lances (XML)</label><div class="inline"><label class="btn" for="vXml">Anexar XML<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><span class="pwnote" id="vXmlNote">nenhum</span></div></div>
+      </div>
+      <div class="f2">
+        <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
+        <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
       <span class="ferr" id="vErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="vDel" hidden>Remover</button><button type="button" class="btn" id="vCancel">Cancelar</button><button type="submit" class="btn primary" id="vSave">Salvar</button></div>
@@ -543,7 +547,8 @@ function setMe(m){
 }
 function show(v,keepAthlete){
   if(!keepAthlete&&v!=='lances'){athlete=null}
-  if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv&&cv.lances)window.DimasPlayer.loadLances(cv.lances)}}
+  if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv)playVideo(cv)}}
+  document.getElementById('xmlSeg').hidden=!!athlete||document.getElementById('xmlSeg').hidden;
   appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
@@ -564,7 +569,8 @@ function lanceMatches(l,a,keys){
     return (l.labels||[]).some(x=>{const nx=norm(x);return /jogador|atleta|player|numero|camisa|#/.test(nx)&&(nx.endsWith(' '+num)||nx.endsWith('#'+num)||nx===num)})}
   return false;
 }
-function athleteLances(a,v){if(!v.lances)return [];const keys=athleteKeys(a);return v.lances.instances.filter(l=>lanceMatches(l,a,keys))}
+function athleteSet(v){return v.lancesInd||v.lances||null}
+function athleteLances(a,v){const set=athleteSet(v);if(!set)return [];const keys=athleteKeys(a);return set.instances.filter(l=>lanceMatches(l,a,keys))}
 function renderAthletes(){
   const aCards=document.getElementById('aCards');const list=members.filter(m=>m.role==='Atleta'&&m.active!==false);
   document.getElementById('aCount').textContent=list.length?list.length+' atleta'+(list.length>1?'s':''):'';
@@ -589,7 +595,8 @@ function openAthlete(a,videoId){
   const P=window.DimasPlayer;
   if(pick){currentVideo=pick.v.id;renderVideos();
     P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
-    P.loadLances({instances:pick.ls,rows:pick.v.lances.rows});P.loadYT(pick.v.ytId);
+    document.getElementById('xmlSeg').hidden=true;
+    P.loadLances({instances:pick.ls,rows:athleteSet(pick.v).rows});P.loadYT(pick.v.ytId);
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
@@ -776,7 +783,7 @@ function renderVideos(){
   vCards.innerHTML=videos.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
     <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}</div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.caption?`<div class="cap">${esc(v.caption)}</div>`:''}
-      <div class="mt"><span>${fmtDate(v.createdAt)}</span>${v.lances?`<span>${v.lances.instances.length} lances</span>`:''}</div></div>
+      <div class="mt"><span>${fmtDate(v.createdAt)}</span>${v.lances?`<span>${v.lances.instances.length} coletiva</span>`:''}${v.lancesInd?`<span>${v.lancesInd.instances.length} individual</span>`:''}</div></div>
   </div>`).join('');
 }
 (function(){
@@ -791,22 +798,31 @@ vCards.addEventListener('click',e=>{
   const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id));
 });
 vCards.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id))}});
+let xmlKind='lances';
+function setXmlSeg(v){
+  const seg=document.getElementById('xmlSeg');const has={lances:!!v.lances,lancesInd:!!v.lancesInd};
+  if(!has[xmlKind])xmlKind=has.lances?'lances':(has.lancesInd?'lancesInd':'lances');
+  seg.hidden=!(has.lances&&has.lancesInd);
+  seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.x===xmlKind);const d=v[b.dataset.x];b.textContent=(b.dataset.x==='lances'?'Coletiva':'Individual')+(d?' ('+d.instances.length+')':'')});
+}
+document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);window.DimasPlayer.loadLances(v[xmlKind]);
+  window.DimasPlayer.setTitle(v.title,[v.caption,v[xmlKind].instances.length+' lances ('+(xmlKind==='lances'?'coletiva':'individual')+')',v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '))};
 function playVideo(v){
   if(!v)return;currentVideo=v.id;renderVideos();
-  const P=window.DimasPlayer;
-  P.setTitle(v.title,[v.caption,v.lances?v.lances.instances.length+' lances':null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
-  if(v.lances)P.loadLances(v.lances);
+  const P=window.DimasPlayer;setXmlSeg(v);const set=v[xmlKind]||null;
+  P.setTitle(v.title,[v.caption,set?set.instances.length+' lances'+(v.lances&&v.lancesInd?' ('+(xmlKind==='lances'?'coletiva':'individual')+')':''):null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
+  if(set)P.loadLances(set);else P.loadLances({instances:[],rows:[]});
   document.getElementById('videoUrl').value=v.url;try{localStorage.setItem('dimas-video-url',v.url)}catch(_){}
   P.loadYT(v.ytId);show('lances');
 }
 const vModal=document.getElementById('vModal'), vForm=document.getElementById('vForm'), vErr=document.getElementById('vErr');
-let vEditing=null, vThumb=null, vLances=null, vDurAuto=0;
+let vEditing=null, vThumb=null, vLances=null, vLancesI=null, vDurAuto=0;
 function openVideo(v){
-  vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vDurAuto=0;vErr.hidden=true;
+  vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vLancesI=v?.lancesInd||null;vDurAuto=0;vErr.hidden=true;
   document.getElementById('vTitle').textContent=v?'Editar vídeo':'Adicionar vídeo';
   document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
-  document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances anexados':'nenhum';
+  xmlNotes();
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
@@ -824,11 +840,17 @@ document.getElementById('vImg').onchange=e=>{
     c.getContext('2d').drawImage(im,(W-w)/2,(H-h)/2,w,h);vThumb=c.toDataURL('image/jpeg',0.82);updThumb()};im.src=r.result};r.readAsDataURL(f);e.target.value='';
 };
 document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
-document.getElementById('vXml').onchange=e=>{
+function xmlNotes(){
+  document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances':'nenhuma';document.getElementById('vXmlDel').hidden=!vLances;
+  document.getElementById('vXmlINote').textContent=vLancesI?vLancesI.instances.length+' lances':'nenhuma';document.getElementById('vXmlIDel').hidden=!vLancesI;
+}
+function xmlPick(inputId,setter){document.getElementById(inputId).onchange=e=>{
   const f=e.target.files[0];if(!f)return;f.text().then(t=>{const d=window.DimasPlayer.parseXml(t);
     if(!d){vErr.textContent='Esse XML não tem lances no formato esperado.';vErr.hidden=false;return}
-    vLances=d;vErr.hidden=true;document.getElementById('vXmlNote').textContent=d.instances.length+' lances anexados ('+f.name+')';});e.target.value='';
-};
+    setter(d);vErr.hidden=true;xmlNotes()});e.target.value=''}}
+xmlPick('vXml',d=>{vLances=d});xmlPick('vXmlI',d=>{vLancesI=d});
+document.getElementById('vXmlDel').onclick=()=>{vLances=null;xmlNotes()};
+document.getElementById('vXmlIDel').onclick=()=>{vLancesI=null;xmlNotes()};
 document.getElementById('addVideo').onclick=()=>openVideo(null);
 document.getElementById('vCancel').onclick=()=>{vModal.hidden=true};
 vModal.addEventListener('click',e=>{if(e.target===vModal)vModal.hidden=true});
@@ -838,7 +860,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const data={url,ytId,title:document.getElementById('vName').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null};
+  const data={url,ytId,title:document.getElementById('vName').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing)await db.collection('videos').doc(vEditing.id).update(data);
