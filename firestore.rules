@@ -18,5 +18,9 @@ service cloud.firestore {
       allow read: if isMember();
       allow write: if isAdmin();
     }
+    match /videos/{id} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
   }
 }

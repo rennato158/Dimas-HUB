@@ -122,6 +122,28 @@ tr.active td.num{color:var(--accent)}
 .nav{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px}
 .nav button{padding:6px 14px;border-radius:6px;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.03em;color:var(--muted)}
 .nav button.on{background:var(--panel);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+/* início */
+.home{display:flex;flex-direction:column;gap:14px}
+.home .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.home h2{margin:0;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em}
+.home .sub{color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;min-width:0;position:relative}
+.card:hover{border-color:var(--muted)}
+.card .th{position:relative;aspect-ratio:16/9;background:#000;max-width:100%}
+.card .th img{width:100%;height:100%;object-fit:cover;display:block}
+.card .th .badge{position:absolute;top:8px;left:8px;font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:.06em;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.7);color:#fff}
+.card .th .dur{position:absolute;right:8px;bottom:8px;font-family:var(--mono);font-size:11.5px;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.75);color:#fff}
+.card .bd{padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.card .ti{font-weight:600;font-size:14px;line-height:1.3}
+.card .cap{font-size:12.5px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .mt{display:flex;gap:10px;font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:4px;flex-wrap:wrap}
+.card .ed{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:12px;padding:3px 8px;border-radius:4px;opacity:0}
+.card:hover .ed,.card:focus-within .ed{opacity:1}
+.card.on{outline:2px solid var(--accent)}
+.thprev{aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.thprev img{width:100%;height:100%;object-fit:cover;display:block}
+.inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
@@ -224,7 +246,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
-  <nav class="nav" id="nav"><button type="button" class="on" data-view="lances">Lances</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
+  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
   <div class="spacer"></div>
   <div class="user" id="userBox" hidden><img id="userPic" alt=""><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
   <div class="src">
@@ -279,6 +301,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </section>
 </div>
 
+<div class="home" id="home">
+  <div class="top"><h2>Vídeos</h2><span class="sub" id="vCount"></span><span class="spacer"></span><button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
+  <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
+</div>
+
 <div class="elenco" id="elenco" hidden>
   <section class="panel">
     <div class="hd">
@@ -293,6 +320,27 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <form class="gform" id="gForm"><input type="text" id="gName" placeholder="Novo grupo (ex.: Goleiros, Sub-20)" maxlength="40"><button class="btn" type="submit">Criar</button></form>
     <div id="gList"><div class="emptyl">Nenhum grupo ainda.</div></div>
   </section>
+</div>
+
+<div class="modal" id="vModal" hidden>
+  <div class="box">
+    <form id="vForm" autocomplete="off">
+      <h3 id="vTitle">Adicionar vídeo</h3>
+      <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
+      <div class="f"><label for="vName">Título</label><input type="text" id="vName" required maxlength="80" placeholder="Ex.: Ceará 2 x 2 Juventude"></div>
+      <div class="f"><label for="vCap">Legenda</label><input type="text" id="vCap" maxlength="140" placeholder="Ex.: Série B · Rodada 34 · 17/10/2026"></div>
+      <div class="f"><label>Capa</label>
+        <div class="thprev" id="vThumb"><img id="vThumbImg" alt=""></div>
+        <div class="inline"><label class="btn" for="vImg">Escolher imagem<input type="file" id="vImg" accept="image/*" style="display:none"></label><button type="button" class="btn" id="vImgDel" hidden>Usar frame do vídeo</button><span class="pwnote" id="vThumbNote">Sem imagem, usa um frame do vídeo.</span></div>
+      </div>
+      <div class="f2">
+        <div class="f"><label for="vDur">Duração</label><input type="text" id="vDur" placeholder="auto" pattern="^(\d{1,2}:)?\d{1,2}:\d{2}$" title="h:mm:ss ou mm:ss"></div>
+        <div class="f"><label>Lances (XML)</label><div class="inline"><label class="btn" for="vXml">Anexar XML<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><span class="pwnote" id="vXmlNote">nenhum</span></div></div>
+      </div>
+      <span class="ferr" id="vErr" hidden></span>
+      <div class="actions"><button type="button" class="del" id="vDel" hidden>Remover</button><button type="button" class="btn" id="vCancel">Cancelar</button><button type="submit" class="btn primary" id="vSave">Salvar</button></div>
+    </form>
+  </div>
 </div>
 
 <div class="modal" id="mModal" hidden>
@@ -404,19 +452,23 @@ const nav=document.getElementById('nav'), navElenco=document.getElementById('nav
 const appEl=document.querySelector('.app'), elencoEl=document.getElementById('elenco');
 const mList=document.getElementById('mList'), gList=document.getElementById('gList'), mCount=document.getElementById('mCount'), gCount=document.getElementById('gCount');
 const modal=document.getElementById('mModal'), form=document.getElementById('mForm'), fErr=document.getElementById('fErr');
-let me=null, members=[], groups=[], filter='', editing=null, unsubM=null, unsubG=null;
+let me=null, members=[], groups=[], videos=[], filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, currentVideo=null;
+const vCards=document.getElementById('vCards');
 
 function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
-  navElenco.hidden=!admin;
+  navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
+  if(unsubV){unsubV();unsubV=null}
+  if(m){unsubV=db.collection('videos').orderBy('createdAt','desc').onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+  else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(admin){
     unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
     unsubG=db.collection('groups').orderBy('name').onSnapshot(s=>{groups=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderGroups();renderMembers()});
-  }else show('lances');
+  }else if(!elencoEl.hidden)show('home');
 }
 function show(v){
-  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';
+  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
@@ -528,6 +580,86 @@ async function createLogin(email,password){
   const sa=sec.auth();sa.useDeviceLanguage();
   try{await sa.createUserWithEmailAndPassword(email,password)}finally{await sa.signOut().catch(()=>{})}
 }
+/* ---- vídeos (Início) ---- */
+function fmtDur(s){if(!s)return '';s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(r).padStart(2,'0')}
+function parseDur(t){const p=t.trim().split(':').map(Number);if(p.some(isNaN)||!p.length)return 0;return p.reduce((a,b)=>a*60+b,0)}
+function ytThumb(id){return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'}
+function fmtDate(ts){try{const d=ts&&ts.toDate?ts.toDate():null;return d?d.toLocaleDateString('pt-BR'):''}catch(_){return ''}}
+function renderVideos(){
+  const admin=me&&me.func==='Administrador';
+  document.getElementById('vCount').textContent=videos.length?videos.length+' vídeo'+(videos.length>1?'s':''):'';
+  if(!videos.length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo publicado ainda.')+'</div>';return}
+  vCards.innerHTML=videos.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
+    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}</div>
+    <div class="bd"><div class="ti">${esc(v.title)}</div>${v.caption?`<div class="cap">${esc(v.caption)}</div>`:''}
+      <div class="mt"><span>${fmtDate(v.createdAt)}</span>${v.lances?`<span>${v.lances.instances.length} lances</span>`:''}</div></div>
+  </div>`).join('');
+}
+vCards.addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openVideo(videos.find(v=>v.id===ed.dataset.edit));return}
+  const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id));
+});
+vCards.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id))}});
+function playVideo(v){
+  if(!v)return;currentVideo=v.id;renderVideos();
+  const P=window.DimasPlayer;
+  P.setTitle(v.title,[v.caption,v.lances?v.lances.instances.length+' lances':null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
+  if(v.lances)P.loadLances(v.lances);
+  document.getElementById('videoUrl').value=v.url;try{localStorage.setItem('dimas-video-url',v.url)}catch(_){}
+  P.loadYT(v.ytId);show('lances');
+}
+const vModal=document.getElementById('vModal'), vForm=document.getElementById('vForm'), vErr=document.getElementById('vErr');
+let vEditing=null, vThumb=null, vLances=null, vDurAuto=0;
+function openVideo(v){
+  vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vDurAuto=0;vErr.hidden=true;
+  document.getElementById('vTitle').textContent=v?'Editar vídeo':'Adicionar vídeo';
+  document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vCap').value=v?.caption||'';
+  document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
+  document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances anexados':'nenhum';
+  document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
+  updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
+}
+function updThumb(){
+  const id=window.DimasPlayer.ytId(document.getElementById('vUrl').value.trim());
+  const img=document.getElementById('vThumbImg');img.src=vThumb||(id?ytThumb(id):'');img.style.visibility=img.src?'':'hidden';
+  document.getElementById('vImgDel').hidden=!vThumb;document.getElementById('vThumbNote').textContent=vThumb?'Imagem personalizada.':'Sem imagem, usa um frame do vídeo.';
+}
+document.getElementById('vUrl').addEventListener('input',()=>{updThumb();
+  const id=window.DimasPlayer.ytId(document.getElementById('vUrl').value.trim());const d=document.getElementById('vDur');
+  if(id&&!d.value){d.placeholder='lendo…';window.DimasPlayer.ytDuration(id).then(s=>{if(s&&!d.value){vDurAuto=s;d.value=fmtDur(s)}d.placeholder='auto'})}});
+document.getElementById('vImg').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const W=480,H=270,c=document.createElement('canvas');c.width=W;c.height=H;const k=Math.max(W/im.width,H/im.height),w=im.width*k,h=im.height*k;
+    c.getContext('2d').drawImage(im,(W-w)/2,(H-h)/2,w,h);vThumb=c.toDataURL('image/jpeg',0.82);updThumb()};im.src=r.result};r.readAsDataURL(f);e.target.value='';
+};
+document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
+document.getElementById('vXml').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;f.text().then(t=>{const d=window.DimasPlayer.parseXml(t);
+    if(!d){vErr.textContent='Esse XML não tem lances no formato esperado.';vErr.hidden=false;return}
+    vLances=d;vErr.hidden=true;document.getElementById('vXmlNote').textContent=d.instances.length+' lances anexados ('+f.name+')';});e.target.value='';
+};
+document.getElementById('addVideo').onclick=()=>openVideo(null);
+document.getElementById('vCancel').onclick=()=>{vModal.hidden=true};
+vModal.addEventListener('click',e=>{if(e.target===vModal)vModal.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!vModal.hidden)vModal.hidden=true});
+vForm.onsubmit=async e=>{
+  e.preventDefault();vErr.hidden=true;
+  const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
+  if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
+  const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
+  const data={url,ytId,title:document.getElementById('vName').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null};
+  const b=document.getElementById('vSave');b.disabled=true;
+  try{
+    if(vEditing)await db.collection('videos').doc(vEditing.id).update(data);
+    else await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id}));
+    vModal.hidden=true;
+  }catch(err){vErr.textContent='Não salvou: '+(err.code||err.message);vErr.hidden=false}
+  b.disabled=false;
+};
+document.getElementById('vDel').onclick=async function(){
+  if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}
+  await db.collection('videos').doc(vEditing.id).delete();vModal.hidden=true;
+};
 function genPw(){const a='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(8));r.forEach(v=>o+=a[v%a.length]);return o}
 document.getElementById('fPwGen').onclick=()=>{document.getElementById('fPw').value=genPw()};
 /* ---- foto com recorte ---- */
@@ -579,6 +711,7 @@ document.getElementById('cropOk').onclick=()=>{
   const out=document.createElement('canvas');out.width=out.height=192;out.getContext('2d').drawImage(cv,0,0,192,192);
   photo=out.toDataURL('image/jpeg',0.85);cropBox.hidden=true;renderAv();
 };
+show('home');
 return {setMe};
 })();
 </script>
@@ -603,16 +736,30 @@ const P={
   toggle(){if(mode==='yt'){yt.getPlayerState()===1?yt.pauseVideo():yt.playVideo()}else{video.paused?video.play():video.pause()}}
 };
 function ytId(u){const m=u.match(/(?:youtu\.be\/|v=|\/shorts\/|\/live\/|embed\/)([\w-]{11})/);return m?m[1]:null}
+let ytApi=null;
+function ensureYT(){
+  if(window.YT&&YT.Player)return Promise.resolve();
+  if(ytApi)return ytApi;
+  ytApi=new Promise(res=>{window.onYouTubeIframeAPIReady=res;const sc=document.createElement('script');sc.id='ytapi';sc.src='https://www.youtube.com/iframe_api';document.head.appendChild(sc)});
+  return ytApi;
+}
 function loadYT(id){
   mode='yt';video.pause();video.hidden=true;ytEl.hidden=false;empty.hidden=true;
-  const make=()=>{
-    if(yt){yt.loadVideoById(id);yt.pauseVideo();return}
-    yt=new YT.Player('yt',{videoId:id,playerVars:{rel:0,modestbranding:1,playsinline:1,origin:location.origin},
-      events:{onReady:()=>{ytReady=true}}});
-  };
-  if(window.YT&&YT.Player)make();else{window.onYouTubeIframeAPIReady=make;if(!document.getElementById('ytapi')){const sc=document.createElement('script');sc.id='ytapi';sc.src='https://www.youtube.com/iframe_api';document.head.appendChild(sc)}}
+  ensureYT().then(()=>{
+    if(yt){yt.cueVideoById(id);return}
+    yt=new YT.Player('yt',{videoId:id,playerVars:{rel:0,modestbranding:1,playsinline:1,origin:location.origin},events:{onReady:()=>{ytReady=true}}});
+  });
   nowChip.textContent='YouTube';nowChip.style.background='#9aa0b4';nowTime.textContent=id;
   clearInterval(pollTimer);pollTimer=setInterval(tick,250);
+}
+// Lê a duração de um vídeo do YouTube com um player oculto.
+function ytDuration(id){
+  return ensureYT().then(()=>new Promise(res=>{
+    let el=document.getElementById('ytprobe');if(!el){el=document.createElement('div');el.id='ytprobe';el.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px';document.body.appendChild(el)}
+    let done=false;const finish=v=>{if(done)return;done=true;try{pl.destroy()}catch(_){}el.innerHTML='';res(v)};
+    const pl=new YT.Player(el,{videoId:id,playerVars:{origin:location.origin},events:{onReady:()=>{let n=0;const t=setInterval(()=>{const d=pl.getDuration?pl.getDuration():0;if(d>0||++n>25){clearInterval(t);finish(d||0)}},200)},onError:()=>finish(0)}});
+    setTimeout(()=>finish(0),8000);
+  }));
 }
 function useHTML5(){mode='html5';if(yt){try{yt.pauseVideo()}catch(_){}}ytEl.hidden=true;video.hidden=false;clearInterval(pollTimer)}
 
@@ -727,21 +874,27 @@ video.addEventListener('error',()=>{
   empty.querySelector('p').textContent='Confira se o link abre o arquivo de vídeo direto no navegador e se o servidor permite acesso de outros sites (CORS).';
 });
 try{const saved=localStorage.getItem('dimas-video-url');if(saved){urlInput.value=saved;const id=ytId(saved);if(id)loadYT(id)}}catch(_){}
+function parseXml(txt){
+  const x=new DOMParser().parseFromString(txt,'text/xml');
+  const g=(el,t)=>el.querySelector(t)?.textContent??'';
+  const instances=[...x.querySelectorAll('ALL_INSTANCES > instance')].map(i=>{const o={id:+g(i,'ID'),start:+g(i,'start'),end:+g(i,'end'),code:g(i,'code')};const n=g(i,'free_text');if(n)o.note=n;return o});
+  const rows=[...x.querySelectorAll('ROWS > row')].map(r=>({code:g(r,'code'),rgb:['R','G','B'].map(c=>Math.round(+g(r,c)/257)),order:+g(r,'sort_order')}));
+  return instances.length?{instances,rows}:null;
+}
 document.getElementById('xmlFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   f.text().then(txt=>{
-    const x=new DOMParser().parseFromString(txt,'text/xml');
-    const g=(el,t)=>el.querySelector(t)?.textContent??'';
-    const instances=[...x.querySelectorAll('ALL_INSTANCES > instance')].map(i=>({id:+g(i,'ID'),start:+g(i,'start'),end:+g(i,'end'),code:g(i,'code'),note:g(i,'free_text')||undefined}));
-    const rows=[...x.querySelectorAll('ROWS > row')].map(r=>({code:g(r,'code'),rgb:['R','G','B'].map(c=>Math.round(+g(r,c)/257)),order:+g(r,'sort_order')}));
-    if(!instances.length){countLbl.textContent='Esse XML não tem lances no formato esperado (ALL_INSTANCES/instance).';return}
+    const d=parseXml(txt);
+    if(!d){countLbl.textContent='Esse XML não tem lances no formato esperado (ALL_INSTANCES/instance).';return}
     document.getElementById('matchTitle').textContent=f.name.replace(/\.xml$/i,'');
-    document.getElementById('matchMeta').textContent=`${instances.length} lances · ${rows.length} categorias`;
-    load({instances,rows});
+    document.getElementById('matchMeta').textContent=`${d.instances.length} lances · ${d.rows.length} categorias`;
+    load(d);
   });
 };
 
 load(data);
+window.DimasPlayer={loadYT,loadLances:load,ytId,parseXml,ytDuration,
+  setTitle(t,m){document.getElementById('matchTitle').textContent=t;document.getElementById('matchMeta').textContent=m}};
 })();
 </script>
 
