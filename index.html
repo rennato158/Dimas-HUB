@@ -297,7 +297,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         </div>
       </div>
       <div class="f2">
-        <div class="f"><label for="fFunc">Posição / função</label><input type="text" id="fFunc" placeholder="Ex.: Zagueiro, Preparador" maxlength="40"></div>
+        <div class="f"><label for="fFunc">Função</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
       </div>
       <div class="f"><label>Grupos</label><div class="gpick" id="fGroups"><span class="sub" style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span></div></div>
@@ -412,7 +412,7 @@ function openForm(m){
   document.getElementById('fName').value=m?.name||'';
   const em=document.getElementById('fEmail');em.value=m?.id||'';em.disabled=!!m;
   form.role.value=m?.role||'Atleta';
-  document.getElementById('fFunc').value=m?.func||'';
+  document.getElementById('fFunc').value=(m?.func==='Administrador')?'Administrador':'Usuário';
   document.getElementById('fNum').value=m?.number??'';
   document.getElementById('fActive').checked=m?m.active!==false:true;
   const gp=document.getElementById('fGroups');
@@ -428,7 +428,7 @@ form.onsubmit=async e=>{
   e.preventDefault();fErr.hidden=true;
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
-  const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value.trim(),
+  const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value,
     number:num===''?null:+num,groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
   if(editing&&editing.id===me.id&&(data.role!=='Comissão'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Comissão.';fErr.hidden=false;return}
   if(!editing&&members.some(m=>m.id===email)){fErr.textContent='Esse e-mail já está cadastrado.';fErr.hidden=false;return}
