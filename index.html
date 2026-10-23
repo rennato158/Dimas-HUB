@@ -307,7 +307,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <div class="ibar" id="ibar" hidden>
   <button type="button" class="back" id="ibarBack">← Individuais</button>
-  <div class="av" id="ibarAv"></div><span class="nm" id="ibarName"></span>
+  <div class="av" id="ibarAv"></div><select id="ibarPlayer" aria-label="Jogador" class="nm" style="width:auto;font-family:var(--display);font-weight:700;font-size:18px;padding:4px 8px"></select>
   <div class="games" id="ibarGames"><select id="iComp" aria-label="Competição" style="width:auto"></select><select id="iGame" aria-label="Jogo" style="width:auto"></select><span id="iNone" class="em" style="color:var(--muted);font-size:12.5px" hidden>Nenhum lance deste atleta nos vídeos. Confira o campo "Nome na XML" no cadastro.</span></div>
 </div>
 <div class="app">
@@ -364,7 +364,12 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </div>
 
 <div class="indiv" id="indiv" hidden>
-  <div class="top" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em">Individuais</h2><span class="sub" id="aCount" style="color:var(--muted);font-size:12px"></span></div>
+  <div class="top" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em">Individuais</h2><span class="sub" id="aCount" style="color:var(--muted);font-size:12px"></span>
+    <span class="spacer"></span>
+    <input type="search" id="aSearch" placeholder="Buscar jogador…" aria-label="Buscar jogador" style="width:200px;max-width:100%">
+    <select id="aPos" aria-label="Posição" style="width:auto"><option value="">Todas as posições</option><option>Goleiro</option><option>Zagueiro</option><option>Lateral</option><option>Volante</option><option>Meia</option><option>Atacante</option></select>
+    <select id="aGroup" aria-label="Grupo" style="width:auto"><option value="">Todos os grupos</option></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)"><input type="checkbox" id="aOnly"> só com lances</label></div>
   <div class="cards" id="aCards"><div class="emptyl">Carregando…</div></div>
 </div>
 
@@ -594,11 +599,18 @@ function lanceMatches(l,a,keys){
 }
 function athleteSet(v){return v.lancesInd||v.lances||null}
 function athleteLances(a,v){const set=athleteSet(v);if(!set)return [];const keys=athleteKeys(a);return set.instances.filter(l=>lanceMatches(l,a,keys))}
+['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
+function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
 function renderAthletes(){
-  const aCards=document.getElementById('aCards');const list=members.filter(m=>m.role==='Atleta'&&m.active!==false);
-  document.getElementById('aCount').textContent=list.length?list.length+' atleta'+(list.length>1?'s':''):'';
-  if(!list.length){aCards.innerHTML='<div class="emptyl">Nenhum atleta cadastrado ainda.</div>';return}
-  aCards.innerHTML=list.map(a=>{const n=videos.reduce((t,v)=>t+athleteLances(a,v).length,0);
+  const aCards=document.getElementById('aCards');const all=athletesAll();
+  fillSelect(document.getElementById('aGroup'),groups.map(g=>({v:g.id,t:g.name})),'Todos os grupos',true);
+  const q=norm(document.getElementById('aSearch').value),pos=document.getElementById('aPos').value,gr=document.getElementById('aGroup').value,only=document.getElementById('aOnly').checked;
+  const counts=new Map(all.map(a=>[a.id,videos.reduce((t,v)=>t+athleteLances(a,v).length,0)]));
+  const list=all.filter(a=>(!q||norm(a.name+' '+(a.fullName||'')+' '+(a.tag||'')+' '+(a.number??'')).includes(q))&&(!pos||a.pos===pos)&&(!gr||(a.groups||[]).includes(gr))&&(!only||counts.get(a.id)>0));
+  document.getElementById('aCount').textContent=list.length===all.length?all.length+' atleta'+(all.length!==1?'s':''):list.length+' de '+all.length;
+  if(!all.length){aCards.innerHTML='<div class="emptyl">Nenhum atleta cadastrado ainda.</div>';return}
+  if(!list.length){aCards.innerHTML='<div class="emptyl">Nenhum jogador nesse filtro.</div>';return}
+  aCards.innerHTML=list.map(a=>{const n=counts.get(a.id);
     return `<div class="acard ${n?'':'none'}" data-id="${esc(a.id)}" tabindex="0"><div class="av">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>
       <div class="who"><div class="nm">${esc(a.name)}</div><div class="em">${a.number!=null?'#'+a.number+' · ':''}${esc(a.tag||'')}</div></div>
       <div class="cnt">${n}<small>lances</small></div></div>`}).join('');
@@ -610,7 +622,9 @@ function openAthlete(a,videoId){
   if(!a)return;athlete=a;
   const games=videos.map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
   document.getElementById('ibarAv').innerHTML=a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name);
-  document.getElementById('ibarName').textContent=a.name+(a.number!=null?' · #'+a.number:'');
+  const ps=document.getElementById('ibarPlayer');
+  ps.innerHTML=athletesAll().map(x=>`<option value="${esc(x.id)}">${esc(x.name)}${x.number!=null?' · #'+x.number:''}</option>`).join('');ps.value=a.id;
+  ps.onchange=()=>openAthlete(members.find(m=>m.id===ps.value));
   const iComp=document.getElementById('iComp'), iGame=document.getElementById('iGame');
   document.getElementById('iNone').hidden=!!games.length;iComp.hidden=iGame.hidden=!games.length;
   const cs=[...new Set(games.map(g=>(g.v.comp||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
