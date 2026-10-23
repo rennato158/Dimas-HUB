@@ -65,12 +65,18 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12p
 .list{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-width:0}
 .tools{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .tools input[type=search]{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit}
-.cats{display:flex;flex-wrap:wrap;gap:5px}
-.cat{font-family:var(--display);font-weight:600;font-size:12.5px;letter-spacing:.03em;padding:3px 8px;border-radius:4px;border:1px solid var(--line);background:var(--panel2);display:inline-flex;gap:6px;align-items:center}
-.cat i{width:9px;height:9px;border-radius:2px;display:inline-block}
-.cat small{color:var(--muted);font-family:var(--mono);font-size:10.5px}
-.cat.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.cat.on small{color:inherit;opacity:.7}
+.dd{position:relative}
+.ddbtn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);font-size:13px;text-align:left}
+.ddbtn .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ddbtn .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ddbtn::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);margin:-3px 3px 0 0}
+.dd.open .ddbtn::after{transform:rotate(-135deg);margin-top:3px}
+.ddmenu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-height:320px;overflow:auto;padding:4px}
+.ddmenu label{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:5px;cursor:pointer;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.03em}
+.ddmenu label:hover{background:var(--panel2)}
+.ddmenu i{width:10px;height:10px;border-radius:2px;flex:none}
+.ddmenu small{margin-left:auto;color:var(--muted);font-family:var(--mono);font-size:10.5px}
+.ddmenu .all{border-bottom:1px solid var(--line);margin-bottom:4px;font-family:var(--body);font-weight:500;color:var(--muted)}
 .count{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
 .count button{color:var(--accent);font-weight:500}
 
@@ -159,7 +165,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <section class="list">
     <div class="tools">
       <input type="search" id="search" placeholder="Buscar categoria ou observação…" aria-label="Buscar">
-      <div class="cats" id="cats"></div>
+      <div class="dd" id="dd">
+        <button class="ddbtn" type="button" id="ddBtn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="ddLbl">Todas as categorias</span><span class="n" id="ddN"></span></button>
+        <div class="ddmenu" id="cats" hidden></div>
+      </div>
       <div class="count"><span id="countLbl"></span><button id="clearBtn" hidden>limpar filtros</button></div>
     </div>
     <div class="scroll">
@@ -247,13 +256,25 @@ function renderCats(){
   const counts={};lances.forEach(l=>counts[l.code]=(counts[l.code]||0)+1);
   const codes=Object.keys(counts).sort((a,b)=>(order[a]??999)-(order[b]??999));
   catsEl.innerHTML='';
+  const all=document.createElement('label');all.className='all';
+  all.innerHTML=`<input type="checkbox" ${selectedCats.size?'':'checked'}> Todas as categorias<small>${lances.length}</small>`;
+  all.querySelector('input').onchange=()=>{selectedCats.clear();renderCats();render()};
+  catsEl.appendChild(all);
   codes.forEach(c=>{
-    const b=document.createElement('button');b.className='cat'+(selectedCats.has(c)?' on':'');b.type='button';
-    b.innerHTML=`<i style="background:${colors[c]}"></i>${c}<small>${counts[c]}</small>`;
-    b.onclick=()=>{selectedCats.has(c)?selectedCats.delete(c):selectedCats.add(c);renderCats();render()};
-    catsEl.appendChild(b);
+    const l=document.createElement('label');
+    l.innerHTML=`<input type="checkbox" ${selectedCats.has(c)?'checked':''}><i style="background:${colors[c]}"></i>${c}<small>${counts[c]}</small>`;
+    l.querySelector('input').onchange=e=>{e.target.checked?selectedCats.add(c):selectedCats.delete(c);renderCats();render()};
+    catsEl.appendChild(l);
   });
+  const lbl=document.getElementById('ddLbl'), n=document.getElementById('ddN');
+  if(!selectedCats.size){lbl.textContent='Todas as categorias';n.textContent=''}
+  else{const sel=codes.filter(c=>selectedCats.has(c));lbl.textContent=sel.join(', ');n.textContent=sel.length>1?sel.length+' sel.':''}
 }
+const dd=document.getElementById('dd'), ddBtn=document.getElementById('ddBtn');
+function toggleDD(open){const o=open??catsEl.hidden;catsEl.hidden=!o;dd.classList.toggle('open',o);ddBtn.setAttribute('aria-expanded',o)}
+ddBtn.onclick=()=>toggleDD();
+document.addEventListener('click',e=>{if(!dd.contains(e.target))toggleDD(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleDD(false)});
 
 function render(){
   const q=search.value.trim().toLowerCase();
