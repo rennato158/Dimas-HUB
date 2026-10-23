@@ -739,7 +739,7 @@ document.getElementById('iFile').onchange=e=>{
         height:o.height!==''&&o.height!=null&&!isNaN(parseFloat(o.height))?Math.round(parseFloat(o.height)<3?parseFloat(o.height)*100:parseFloat(o.height)):null,foot:normFoot(o.foot||''),tag:String(o.tag||'').trim(),
         email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('com')?'Comissão':'Atleta',func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
         groupNames:String(o.groups||'').split(/[;,|]/).map(x=>x.trim()).filter(Boolean)};
-      const ex=members.find(m=>(d.email&&m.id===d.email)||norm(m.name)===norm(d.name));d.existing=ex?ex.id:null;d.ok=!!d.name&&(!d.email||/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email));return d});
+      const ex=members.find(m=>(d.email&&m.id===d.email)||(norm(m.name)===norm(d.name)&&(d.number==null||m.number==null||m.number===d.number)));d.existing=ex?ex.id:null;d.ok=!!d.name&&(!d.email||/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email));return d});
     if(!iRows.length)throw new Error('A planilha não tem linhas com dados.');
     iPrev.innerHTML='<table><thead><tr><th></th><th>Nome</th><th>Nome completo</th><th>Nº</th><th>Posição</th><th>Nasc.</th><th>Nac.</th><th>Alt.</th><th>Pé</th><th>XML</th><th>E-mail</th><th>Nível</th><th>Grupos</th></tr></thead><tbody>'+
       iRows.map(d=>`<tr class="${d.ok?'':'bad'}"><td>${d.ok?(d.existing?'atualiza':'novo'):'erro'}</td><td>${esc(d.name)}</td><td>${esc(d.fullName)}</td><td>${d.number??''}</td><td>${esc(d.pos)}</td><td>${d.birth||''}</td><td>${esc(d.nat)}</td><td>${d.height??''}</td><td>${esc(d.foot)}</td><td>${esc(d.tag)}</td><td>${esc(d.email)}</td><td>${d.role}</td><td>${esc(d.groupNames.join('; '))}</td></tr>`).join('')+'</tbody></table>';
