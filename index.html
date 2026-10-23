@@ -378,6 +378,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="hd">
       <h2>Elenco</h2><span class="sub" id="mCount"></span>
       <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button></div>
+      <button class="btn" type="button" id="wipeBtn" style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
       <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
       <button class="btn" type="button" id="importBtn">Importar planilha</button>
       <button class="btn primary" type="button" id="addMember">+ Cadastrar</button>
@@ -753,6 +754,16 @@ function toDate(v){if(v==null||v==='')return null;if(v instanceof Date)return is
   m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:null}
 function normPos(v){const n=norm(v);if(!n)return '';const map=[['gol','Goleiro'],['gk','Goleiro'],['zag','Zagueiro'],['def','Zagueiro'],['lat','Lateral'],['vol','Volante'],['mei','Meia'],['mid','Meia'],['ata','Atacante'],['for','Atacante'],['cen','Atacante']];const f=map.find(([k])=>n.startsWith(k));return f?f[1]:String(v).trim()}
 function normFoot(v){const n=norm(v);if(!n)return '';if(n.startsWith('d')||n.startsWith('r'))return 'Direito';if(n.startsWith('e')||n.startsWith('l')||n.startsWith('c'))return 'Esquerdo';if(n.startsWith('a')||n.startsWith('b'))return 'Ambos';return ''}
+document.getElementById('wipeBtn').onclick=async function(){
+  const list=members.filter(m=>m.role==='Atleta'&&m.id!==me.id);
+  if(!list.length){this.textContent='Nenhum atleta';setTimeout(()=>{this.textContent='Apagar atletas'},2000);return}
+  if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar: apagar '+list.length+' atleta'+(list.length>1?'s':'')+'?';
+    clearTimeout(this._t);this._t=setTimeout(()=>{this.dataset.confirm='';this.textContent='Apagar atletas'},5000);return}
+  this.disabled=true;this.textContent='Apagando…';
+  try{for(let i=0;i<list.length;i+=400){const b=db.batch();list.slice(i,i+400).forEach(m=>b.delete(db.collection('members').doc(m.id)));await b.commit()}
+    this.textContent='Atletas apagados'}catch(e){this.textContent='Falhou: '+(e.code||e.message)}
+  setTimeout(()=>{this.textContent='Apagar atletas';this.disabled=false;this.dataset.confirm=''},3000);
+};
 document.getElementById('exportBtn').onclick=()=>{
   const gname=id=>{const g=groups.find(x=>x.id===id);return g?g.name:''};
   const list=members.filter(m=>!filter||m.role===filter);
