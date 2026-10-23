@@ -160,6 +160,19 @@ input[type=text],input[type=email],input[type=number],select{padding:8px 10px;bo
 .gpick{display:flex;flex-wrap:wrap;gap:6px}
 .gpick label{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);border-radius:5px;background:var(--panel2);font-size:12.5px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--fg)}
 .gpick label:has(input:checked){border-color:var(--accent)}
+.photo{display:flex;gap:14px;align-items:center}
+.photo .av{width:64px;height:64px;font-size:24px}
+.photo .pbtns{display:flex;flex-direction:column;gap:6px}
+.photo .pbtns .btn{justify-content:center}
+.photo .pbtns input{display:none}
+.crop{display:flex;flex-direction:column;gap:10px;align-items:center}
+.crop .stage2{position:relative;width:240px;height:240px;max-width:100%;border-radius:50%;overflow:hidden;background:#000;cursor:grab;touch-action:none;box-shadow:0 0 0 1px var(--line)}
+.crop .stage2.drag{cursor:grabbing}
+.crop canvas{display:block;width:100%;height:100%}
+.crop .zoom{display:flex;align-items:center;gap:8px;width:240px;max-width:100%;font-size:12px;color:var(--muted)}
+.crop .zoom input{flex:1;accent-color:var(--accent)}
+.crop .hint{font-size:12px;color:var(--muted);margin:0}
+.crop .row{display:flex;gap:8px}
 .actions{display:flex;gap:8px;align-items:center;margin-top:4px}
 .actions .del{margin-right:auto;color:#e5533d;font-size:13px}
 .ferr{color:#e5533d;font-size:13px}
@@ -259,6 +272,22 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="box">
     <form id="mForm" autocomplete="off">
       <h3 id="mTitle">Cadastrar</h3>
+      <div class="f"><label>Foto</label>
+        <div class="photo" id="photoBox">
+          <div class="av" id="fAv"></div>
+          <div class="pbtns">
+            <label class="btn" for="fPhoto">Escolher foto<input type="file" id="fPhoto" accept="image/*"></label>
+            <button type="button" class="btn" id="fPhotoEdit" hidden>Ajustar recorte</button>
+            <button type="button" class="btn" id="fPhotoDel" hidden>Remover foto</button>
+          </div>
+        </div>
+        <div class="crop" id="cropBox" hidden>
+          <div class="stage2" id="cropStage"><canvas id="cropCv" width="480" height="480"></canvas></div>
+          <div class="zoom">zoom <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"></div>
+          <p class="hint">Arraste a foto para enquadrar.</p>
+          <div class="row"><button type="button" class="btn" id="cropCancel">Cancelar</button><button type="button" class="btn primary" id="cropOk">Usar recorte</button></div>
+        </div>
+      </div>
       <div class="f"><label for="fName">Nome</label><input type="text" id="fName" required maxlength="80"></div>
       <div class="f"><label for="fEmail">E-mail (conta Google que vai entrar)</label><input type="email" id="fEmail" required></div>
       <div class="f"><label>Nível</label>
@@ -350,7 +379,7 @@ function renderMembers(){
   mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão`;
   if(!list.length){mList.innerHTML='<div class="emptyl">Ninguém cadastrado'+(filter?' nesse nível':'')+' ainda. Clique em <strong>Cadastrar</strong>.</div>';return}
   mList.innerHTML=list.map(m=>`<div class="mrow" data-id="${esc(m.id)}">
-    <div class="av">${m.id===me?.id&&me.photo?`<img src="${esc(me.photo)}" alt="">`:initials(m.name)}</div>
+    <div class="av">${m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(m.name)}</div>
     <div class="who"><div class="nm">${esc(m.name)}${m.func?` <span class="em">· ${esc(m.func)}</span>`:''}</div><div class="em">${esc(m.id)}</div>
       ${(m.groups||[]).length?`<div class="gchips">${(m.groups||[]).map(gname).filter(Boolean).map(n=>`<span class="gchip">${esc(n)}</span>`).join('')}</div>`:''}</div>
     <span class="num">${m.number??''}</span>
@@ -378,7 +407,7 @@ gList.onclick=async e=>{
 };
 
 function openForm(m){
-  editing=m||null;fErr.hidden=true;
+  editing=m||null;fErr.hidden=true;photo=m?.photo||null;srcImg=null;renderAv();cropBox.hidden=true;
   document.getElementById('mTitle').textContent=m?'Editar cadastro':'Cadastrar';
   document.getElementById('fName').value=m?.name||'';
   const em=document.getElementById('fEmail');em.value=m?.id||'';em.disabled=!!m;
@@ -400,7 +429,7 @@ form.onsubmit=async e=>{
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
   const data={name:document.getElementById('fName').value.trim(),email,role:form.role.value,func:document.getElementById('fFunc').value.trim(),
-    number:num===''?null:+num,groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked};
+    number:num===''?null:+num,groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
   if(editing&&editing.id===me.id&&(data.role!=='Comissão'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Comissão.';fErr.hidden=false;return}
   if(!editing&&members.some(m=>m.id===email)){fErr.textContent='Esse e-mail já está cadastrado.';fErr.hidden=false;return}
   const btn=document.getElementById('fSave');btn.disabled=true;
@@ -414,6 +443,50 @@ form.onsubmit=async e=>{
 document.getElementById('fDel').onclick=async function(){
   if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}
   await db.collection('members').doc(editing.id).delete();modal.hidden=true;
+};
+/* ---- foto com recorte ---- */
+let photo=null, srcImg=null;
+const cropBox=document.getElementById('cropBox'), cv=document.getElementById('cropCv'), ctx=cv.getContext('2d'), stage=document.getElementById('cropStage'), zoom=document.getElementById('cropZoom');
+let cs={scale:1,x:0,y:0,base:1}; // base = escala para cobrir o quadro
+function renderAv(){
+  const av=document.getElementById('fAv');const name=document.getElementById('fName').value;
+  av.innerHTML=photo?`<img src="${photo}" alt="">`:initials(name);
+  document.getElementById('fPhotoEdit').hidden=!srcImg;document.getElementById('fPhotoDel').hidden=!photo;
+}
+document.getElementById('fName').addEventListener('input',()=>{if(!photo)renderAv()});
+document.getElementById('fPhoto').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{srcImg=im;openCrop(true)};im.src=r.result};r.readAsDataURL(f);e.target.value='';
+};
+document.getElementById('fPhotoEdit').onclick=()=>openCrop(false);
+document.getElementById('fPhotoDel').onclick=()=>{photo=null;srcImg=null;renderAv()};
+function openCrop(reset){
+  if(!srcImg)return;
+  const S=cv.width;cs.base=Math.max(S/srcImg.width,S/srcImg.height);
+  if(reset){cs.scale=1;cs.x=0;cs.y=0;zoom.value=1}
+  cropBox.hidden=false;draw();
+}
+function clamp(){
+  const S=cv.width,k=cs.base*cs.scale,w=srcImg.width*k,h=srcImg.height*k;
+  const mx=Math.max(0,(w-S)/2),my=Math.max(0,(h-S)/2);
+  cs.x=Math.min(mx,Math.max(-mx,cs.x));cs.y=Math.min(my,Math.max(-my,cs.y));
+}
+function draw(){
+  if(!srcImg)return;const S=cv.width,k=cs.base*cs.scale,w=srcImg.width*k,h=srcImg.height*k;clamp();
+  ctx.fillStyle='#000';ctx.fillRect(0,0,S,S);
+  ctx.drawImage(srcImg,(S-w)/2+cs.x,(S-h)/2+cs.y,w,h);
+}
+zoom.oninput=()=>{cs.scale=+zoom.value;draw()};
+let drag=null;
+stage.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,ox:cs.x,oy:cs.y};stage.setPointerCapture(e.pointerId);stage.classList.add('drag')});
+stage.addEventListener('pointermove',e=>{if(!drag)return;const r=cv.width/stage.clientWidth;cs.x=drag.ox+(e.clientX-drag.x)*r;cs.y=drag.oy+(e.clientY-drag.y)*r;draw()});
+const endDrag=()=>{drag=null;stage.classList.remove('drag')};
+stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
+stage.addEventListener('wheel',e=>{e.preventDefault();cs.scale=Math.min(4,Math.max(1,cs.scale*(e.deltaY<0?1.06:0.94)));zoom.value=cs.scale;draw()},{passive:false});
+document.getElementById('cropCancel').onclick=()=>{cropBox.hidden=true};
+document.getElementById('cropOk').onclick=()=>{
+  const out=document.createElement('canvas');out.width=out.height=192;out.getContext('2d').drawImage(cv,0,0,192,192);
+  photo=out.toDataURL('image/jpeg',0.85);cropBox.hidden=true;renderAv();
 };
 return {setMe};
 })();
