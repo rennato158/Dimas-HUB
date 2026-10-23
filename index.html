@@ -249,7 +249,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
   <div class="spacer"></div>
   <div class="user" id="userBox" hidden><img id="userPic" alt=""><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
-  <div class="src">
+  <div class="src" hidden>
     <form class="urlbox" id="urlForm">
       <input type="url" id="videoUrl" placeholder="Link do YouTube ou .mp4" aria-label="Link do vídeo">
       <button class="btn" type="submit">Usar link</button>
@@ -266,7 +266,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div id="yt" hidden></div>
       <div class="empty" id="empty">
         <div class="big">Nenhum vídeo carregado</div>
-        <p>Cole o link do YouTube da partida acima e clique em <strong>Usar link</strong>, ou abra o arquivo de vídeo da sua pasta. Os lances ao lado já estão prontos.</p>
+        <p>Escolha um vídeo na aba <strong>Início</strong> para reproduzir os lances aqui.</p>
       </div>
     </div>
     <div class="now">
@@ -826,7 +826,7 @@ function play(l){
   const active=rowsEl.querySelector('tr.active');if(active)active.scrollIntoView({block:'nearest'});
   nowChip.textContent=l.code;nowChip.style.background=colors[l.code];
   nowTime.textContent=`#${l.n} · ${fmt(l.start)} → ${fmt(l.end)}`;
-  if(!P.has()){empty.hidden=false;empty.querySelector('.big').textContent='Abra o vídeo para reproduzir o lance '+l.n;empty.querySelector('p').textContent='Cole o link do YouTube no campo acima ou escolha o arquivo da partida em Abrir vídeo.';return}
+  if(!P.has()){empty.hidden=false;empty.querySelector('.big').textContent='Escolha um vídeo para reproduzir o lance '+l.n;empty.querySelector('p').textContent='Volte à aba Início e clique no vídeo da partida.';return}
   P.seek(l.start);
 }
 function tick(){
@@ -873,7 +873,7 @@ video.addEventListener('error',()=>{
   empty.hidden=false;empty.querySelector('.big').textContent='Não consegui carregar esse link';
   empty.querySelector('p').textContent='Confira se o link abre o arquivo de vídeo direto no navegador e se o servidor permite acesso de outros sites (CORS).';
 });
-try{const saved=localStorage.getItem('dimas-video-url');if(saved){urlInput.value=saved;const id=ytId(saved);if(id)loadYT(id)}}catch(_){}
+
 function parseXml(txt){
   const x=new DOMParser().parseFromString(txt,'text/xml');
   const g=(el,t)=>el.querySelector(t)?.textContent??'';
