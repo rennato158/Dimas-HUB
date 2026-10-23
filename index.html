@@ -501,7 +501,7 @@ form.onsubmit=async e=>{
         catch(ex){if(ex.code==='auth/email-already-in-use')loginMsg+='<span>Esse e-mail já tinha login (Google ou senha); a pessoa entra com o acesso que já tem.</span>';else throw ex}}
       else loginMsg+='<span>Sem senha inicial: a pessoa entra com a conta Google desse e-mail.</span>';
       const batch=db.batch();
-      batch.set(db.collection('members').doc(email),Object.assign({},editing,data,{id:firebase.firestore.FieldValue.delete(),createdAt:editing.createdAt||firebase.firestore.FieldValue.serverTimestamp()}));
+      const nd=Object.assign({},editing,data,{createdAt:editing.createdAt||firebase.firestore.FieldValue.serverTimestamp()});delete nd.id;batch.set(db.collection('members').doc(email),nd);
       batch.delete(db.collection('members').doc(editing.id));await batch.commit();
       const d=document.getElementById('fDone');d.innerHTML=loginMsg+'<button type="button" class="btn primary" id="fDoneOk">Fechar</button>';d.hidden=false;document.getElementById('fDoneOk').onclick=()=>{modal.hidden=true};
       [...form.querySelectorAll('.f,.actions')].forEach(x=>x.hidden=true);
