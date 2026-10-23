@@ -360,6 +360,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="hd">
       <h2>Elenco</h2><span class="sub" id="mCount"></span>
       <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button></div>
+      <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
       <button class="btn" type="button" id="importBtn">Importar planilha</button>
       <button class="btn primary" type="button" id="addMember">+ Cadastrar</button>
     </div>
@@ -712,6 +713,15 @@ function toDate(v){if(v==null||v==='')return null;if(v instanceof Date)return is
   m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:null}
 function normPos(v){const n=norm(v);if(!n)return '';const map=[['gol','Goleiro'],['gk','Goleiro'],['zag','Zagueiro'],['def','Zagueiro'],['lat','Lateral'],['vol','Volante'],['mei','Meia'],['mid','Meia'],['ata','Atacante'],['for','Atacante'],['cen','Atacante']];const f=map.find(([k])=>n.startsWith(k));return f?f[1]:String(v).trim()}
 function normFoot(v){const n=norm(v);if(!n)return '';if(n.startsWith('d')||n.startsWith('r'))return 'Direito';if(n.startsWith('e')||n.startsWith('l')||n.startsWith('c'))return 'Esquerdo';if(n.startsWith('a')||n.startsWith('b'))return 'Ambos';return ''}
+document.getElementById('exportBtn').onclick=()=>{
+  const gname=id=>{const g=groups.find(x=>x.id===id);return g?g.name:''};
+  const list=members.filter(m=>!filter||m.role===filter);
+  const rows=list.map(m=>({'Nome':m.name||'','Nome completo':m.fullName||'','Número':m.number??'','Posição':m.pos||'','Nascimento':m.birth?m.birth.split('-').reverse().join('/'):'','Idade':ageOf(m.birth)??'',
+    'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Função':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
+  const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=Object.keys(rows[0]||{Nome:1}).map(k=>({wch:Math.max(10,k.length+2)}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Elenco');
+  XLSX.writeFile(wb,'elenco-dimas-hub-'+new Date().toISOString().slice(0,10)+'.xlsx');
+};
 document.getElementById('importBtn').onclick=()=>{iRows=[];iPrev.hidden=true;iErr.hidden=true;iGo.disabled=true;document.getElementById('iNote').textContent='';iModal.hidden=false};
 document.getElementById('iCancel').onclick=()=>{iModal.hidden=true};
 iModal.addEventListener('click',e=>{if(e.target===iModal)iModal.hidden=true});
