@@ -400,7 +400,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="box" style="max-width:760px">
     <form id="iForm">
       <h3>Importar planilha</h3>
-      <p class="pwnote">Aceita .xlsx, .xls ou .csv. A primeira linha são os títulos das colunas: <strong>Nome</strong> (obrigatório), Número, Posição, Nascimento, Nacionalidade, Altura, Pé, Nome na XML, E-mail, Nível (Atleta/Comissão), Função, Grupos (separados por ;). Quem já existe (mesmo e-mail ou mesmo nome) é atualizado, não duplicado.</p>
+      <p class="pwnote">Aceita .xlsx, .xls ou .csv. A primeira linha são os títulos das colunas: <strong>Nome</strong> (obrigatório), Nome completo, Número, Posição, Nascimento, Nacionalidade, Altura, Pé, Nome na XML, E-mail, Nível (Atleta/Comissão), Função, Grupos (separados por ;). Quem já existe (mesmo e-mail ou mesmo nome) é atualizado, não duplicado.</p>
       <div class="inline"><label class="btn primary" for="iFile">Escolher planilha<input type="file" id="iFile" accept=".xlsx,.xls,.csv,text/csv" style="display:none"></label><a class="btn" id="iTemplate" href="#" download="modelo-atletas.csv">Baixar modelo (CSV)</a><span class="pwnote" id="iNote"></span></div>
       <div class="prev" id="iPrev" hidden></div>
       <span class="ferr" id="iErr" hidden></span>
@@ -429,7 +429,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
           <div class="row"><button type="button" class="btn" id="cropCancel">Cancelar</button><button type="button" class="btn primary" id="cropOk">Usar recorte</button></div>
         </div>
       </div>
-      <div class="f"><label for="fName">Nome</label><input type="text" id="fName" required maxlength="80"></div>
+      <div class="f2">
+        <div class="f"><label for="fName">Nome</label><input type="text" id="fName" required maxlength="40" placeholder="Como é chamado"></div>
+        <div class="f"><label for="fFull">Nome completo</label><input type="text" id="fFull" maxlength="100"></div>
+      </div>
       <div class="f3">
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
         <div class="f"><label for="fPos">Posição</label><select id="fPos"><option value="">—</option><option>Goleiro</option><option>Zagueiro</option><option>Lateral</option><option>Volante</option><option>Meia</option><option>Atacante</option></select></div>
@@ -645,7 +648,7 @@ function openForm(m){
   document.getElementById('fDone').hidden=true;document.getElementById('pwField').hidden=!!m||!m?.email;document.getElementById('fPw').value=m?'':genPw();
   document.getElementById('pwLabel').textContent='Senha inicial';
   document.getElementById('mTitle').textContent=m?'Editar cadastro':'Cadastrar';
-  document.getElementById('fName').value=m?.name||'';
+  document.getElementById('fName').value=m?.name||'';document.getElementById('fFull').value=m?.fullName||'';
   const em=document.getElementById('fEmail');em.value=m?.email||'';em.disabled=!!m&&m.id===me?.id;em.title=em.disabled?'Para trocar o seu próprio e-mail, peça a outro administrador.':'';
   document.getElementById('fPos').value=m?.pos||'';document.getElementById('fFoot').value=m?.foot||'';document.getElementById('fBirth').value=m?.birth||'';
   document.getElementById('fNat').value=m?.nat||'';document.getElementById('fHeight').value=m?.height??'';
@@ -667,7 +670,7 @@ form.onsubmit=async e=>{
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
   const g=id=>document.getElementById(id).value;const h=g('fHeight');
-  const data={name:g('fName').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),
+  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),
     number:num===''?null:+num,pos:g('fPos'),foot:g('fFoot'),birth:g('fBirth')||null,nat:g('fNat').trim(),height:h===''?null:+h,
     groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
   if(editing&&editing.id===me.id&&(data.func!=='Administrador'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Administrador.';fErr.hidden=false;return}
@@ -701,7 +704,7 @@ function ageOf(b){if(!b)return null;const d=new Date(b);if(isNaN(d))return null;
 /* ---- importação de planilha ---- */
 const iModal=document.getElementById('iModal'), iPrev=document.getElementById('iPrev'), iErr=document.getElementById('iErr'), iGo=document.getElementById('iGo');
 let iRows=[];
-const COLS={name:['nome','name','atleta','jogador'],number:['numero','número','n','nº','camisa','num'],pos:['posicao','posição','pos','position'],birth:['nascimento','data de nascimento','nasc','birth','data nasc'],
+const COLS={name:['nome','name','atleta','jogador'],fullName:['nome completo','full name','completo'],number:['numero','número','n','nº','camisa','num'],pos:['posicao','posição','pos','position'],birth:['nascimento','data de nascimento','nasc','birth','data nasc'],
   nat:['nacionalidade','pais','país','nationality'],height:['altura','height','altura (cm)'],foot:['pe','pé','pe preferido','pé preferido','foot'],tag:['nome na xml','xml','tag'],
   email:['email','e-mail','mail'],role:['nivel','nível','role'],func:['funcao','função'],groups:['grupos','grupo','groups']};
 function colKey(h){const n=norm(h);for(const k in COLS)if(COLS[k].some(c=>norm(c)===n))return k;return null}
@@ -714,7 +717,7 @@ function normFoot(v){const n=norm(v);if(!n)return '';if(n.startsWith('d')||n.sta
 document.getElementById('importBtn').onclick=()=>{iRows=[];iPrev.hidden=true;iErr.hidden=true;iGo.disabled=true;document.getElementById('iNote').textContent='';iModal.hidden=false};
 document.getElementById('iCancel').onclick=()=>{iModal.hidden=true};
 iModal.addEventListener('click',e=>{if(e.target===iModal)iModal.hidden=true});
-document.getElementById('iTemplate').href='data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeffNome;Número;Posição;Nascimento;Nacionalidade;Altura;Pé;Nome na XML;E-mail;Nível;Grupos\nJoão Silva;10;Meia;15/03/2004;Brasil;178;Direito;J. Silva;;Atleta;Titulares\n');
+document.getElementById('iTemplate').href='data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeffNome;Nome completo;Número;Posição;Nascimento;Nacionalidade;Altura;Pé;Nome na XML;E-mail;Nível;Grupos\nJoão;João Silva de Souza;10;Meia;15/03/2004;Brasil;178;Direito;J. Silva;;Atleta;Titulares\n');
 document.getElementById('iFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;iErr.hidden=true;
   const r=new FileReader();
@@ -724,14 +727,14 @@ document.getElementById('iFile').onchange=e=>{
     const hi=rows.findIndex(rw=>rw.some(c=>colKey(c)==='name'));if(hi<0)throw new Error('Não achei a coluna "Nome" na primeira linha.');
     const keys=rows[hi].map(colKey);
     iRows=rows.slice(hi+1).filter(rw=>rw.some(c=>String(c).trim()!=='')).map(rw=>{const o={};keys.forEach((k,i)=>{if(k)o[k]=rw[i]});
-      const d={name:String(o.name||'').trim(),number:o.number!==''&&o.number!=null&&!isNaN(+o.number)?+o.number:null,pos:normPos(o.pos||''),birth:toDate(o.birth),nat:String(o.nat||'').trim(),
+      const d={name:String(o.name||'').trim(),fullName:String(o.fullName||'').trim(),number:o.number!==''&&o.number!=null&&!isNaN(+o.number)?+o.number:null,pos:normPos(o.pos||''),birth:toDate(o.birth),nat:String(o.nat||'').trim(),
         height:o.height!==''&&o.height!=null&&!isNaN(parseFloat(o.height))?Math.round(parseFloat(o.height)<3?parseFloat(o.height)*100:parseFloat(o.height)):null,foot:normFoot(o.foot||''),tag:String(o.tag||'').trim(),
         email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('com')?'Comissão':'Atleta',func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
         groupNames:String(o.groups||'').split(/[;,|]/).map(x=>x.trim()).filter(Boolean)};
       const ex=members.find(m=>(d.email&&m.id===d.email)||norm(m.name)===norm(d.name));d.existing=ex?ex.id:null;d.ok=!!d.name&&(!d.email||/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email));return d});
     if(!iRows.length)throw new Error('A planilha não tem linhas com dados.');
-    iPrev.innerHTML='<table><thead><tr><th></th><th>Nome</th><th>Nº</th><th>Posição</th><th>Nasc.</th><th>Nac.</th><th>Alt.</th><th>Pé</th><th>XML</th><th>E-mail</th><th>Nível</th><th>Grupos</th></tr></thead><tbody>'+
-      iRows.map(d=>`<tr class="${d.ok?'':'bad'}"><td>${d.ok?(d.existing?'atualiza':'novo'):'erro'}</td><td>${esc(d.name)}</td><td>${d.number??''}</td><td>${esc(d.pos)}</td><td>${d.birth||''}</td><td>${esc(d.nat)}</td><td>${d.height??''}</td><td>${esc(d.foot)}</td><td>${esc(d.tag)}</td><td>${esc(d.email)}</td><td>${d.role}</td><td>${esc(d.groupNames.join('; '))}</td></tr>`).join('')+'</tbody></table>';
+    iPrev.innerHTML='<table><thead><tr><th></th><th>Nome</th><th>Nome completo</th><th>Nº</th><th>Posição</th><th>Nasc.</th><th>Nac.</th><th>Alt.</th><th>Pé</th><th>XML</th><th>E-mail</th><th>Nível</th><th>Grupos</th></tr></thead><tbody>'+
+      iRows.map(d=>`<tr class="${d.ok?'':'bad'}"><td>${d.ok?(d.existing?'atualiza':'novo'):'erro'}</td><td>${esc(d.name)}</td><td>${esc(d.fullName)}</td><td>${d.number??''}</td><td>${esc(d.pos)}</td><td>${d.birth||''}</td><td>${esc(d.nat)}</td><td>${d.height??''}</td><td>${esc(d.foot)}</td><td>${esc(d.tag)}</td><td>${esc(d.email)}</td><td>${d.role}</td><td>${esc(d.groupNames.join('; '))}</td></tr>`).join('')+'</tbody></table>';
     iPrev.hidden=false;const ok=iRows.filter(d=>d.ok).length;const nw=iRows.filter(d=>d.ok&&!d.existing).length;
     document.getElementById('iNote').textContent=`${iRows.length} linha${iRows.length>1?'s':''}: ${nw} nova${nw!==1?'s':''}, ${ok-nw} para atualizar${ok<iRows.length?', '+(iRows.length-ok)+' com erro (sem nome ou e-mail inválido)':''}.`;
     iGo.disabled=!ok;iGo.textContent='Importar '+ok;
@@ -749,7 +752,7 @@ document.getElementById('iForm').onsubmit=async e=>{
       const batch=db.batch();
       rows.slice(i,i+400).forEach(d=>{
         const gids=d.groupNames.map(n=>gmap[norm(n)]).filter(Boolean);
-        const base={name:d.name,number:d.number,pos:d.pos,birth:d.birth,nat:d.nat,height:d.height,foot:d.foot,tag:d.tag,role:d.role};
+        const base={name:d.name,fullName:d.fullName,number:d.number,pos:d.pos,birth:d.birth,nat:d.nat,height:d.height,foot:d.foot,tag:d.tag,role:d.role};
         if(d.existing){const ex=members.find(m=>m.id===d.existing);const upd=Object.assign({},base);if(gids.length)upd.groups=[...new Set([...(ex.groups||[]),...gids])];if(d.email&&!ex.email&&!d.existing.includes('@'))upd.email=d.email;
           if(ex.id===me.id){delete upd.role}batch.update(db.collection('members').doc(d.existing),upd)}
         else batch.set(db.collection('members').doc(d.email||genId()),Object.assign(base,{email:d.email,func:d.func,groups:gids,active:true,photo:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
