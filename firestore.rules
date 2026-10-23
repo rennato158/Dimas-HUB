@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function email() { return request.auth.token.email.lower(); }
+    function signed() { return request.auth != null && request.auth.token.email != null; }
+    function member() { return get(/databases/$(database)/documents/members/$(email())).data; }
+    function isMember() { return signed() && exists(/databases/$(database)/documents/members/$(email())); }
+    function isComissao() { return isMember() && member().role == 'Comissão'; }
+    function isBootstrap() { return signed() && email() == 'rennato158@gmail.com'; }
+    match /members/{id} {
+      allow read: if isMember() || (isBootstrap() && id == email());
+      allow create: if isComissao() || (isBootstrap() && id == email());
+      allow update, delete: if isComissao();
+    }
+    match /groups/{id} {
+      allow read: if isMember();
+      allow write: if isComissao();
+    }
+  }
+}
