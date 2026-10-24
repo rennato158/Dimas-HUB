@@ -184,6 +184,11 @@ tr.active td.num{color:var(--accent)}
 .ibar .games button{padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);font-size:12.5px}
 .ibar .games button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .ibar .games small{opacity:.7;font-family:var(--mono);margin-left:4px}
+.posh{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:6px}
+.posh:first-child{margin-top:0}
+.posh h3{margin:0;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+.posh small{color:var(--muted);font-family:var(--mono);font-size:11px}
+.posh::after{content:"";flex:1;height:1px;background:var(--line)}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
@@ -669,10 +674,13 @@ function renderAthletes(){
   document.getElementById('aCount').textContent=list.length===all.length?all.length+' atleta'+(all.length!==1?'s':''):list.length+' de '+all.length;
   if(!all.length){aCards.innerHTML='<div class="emptyl">Nenhum atleta cadastrado ainda.</div>';return}
   if(!list.length){aCards.innerHTML='<div class="emptyl">Nenhum jogador nesse filtro.</div>';return}
-  aCards.innerHTML=list.map(a=>{const n=counts.get(a.id);
+  const ORDER=['Goleiro','Lateral','Zagueiro','Volante','Meia','Atacante'],PL={Goleiro:'Goleiros',Lateral:'Laterais',Zagueiro:'Zagueiros',Volante:'Volantes',Meia:'Meias',Atacante:'Atacantes'};
+  const sections=[...ORDER,''].map(p=>({p,items:list.filter(a=>(ORDER.includes(a.pos)?a.pos:'')===p).sort((x,y)=>(x.number??999)-(y.number??999)||x.name.localeCompare(y.name,'pt'))})).filter(sct=>sct.items.length);
+  aCards.innerHTML=sections.map(sct=>`<div class="posh"><h3>${PL[sct.p]||'Sem posição'}</h3><small>${sct.items.length}</small></div>`+sct.items.map(a=>card(a)).join('')).join('');
+  function card(a){const n=counts.get(a.id);
     return `<div class="acard ${n?'':'none'}" data-id="${esc(a.id)}" tabindex="0"><div class="av">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>
       <div class="who"><div class="nm">${esc(a.name)}</div><div class="em">${a.number!=null?'#'+a.number+' · ':''}${esc(a.tag||'')}</div></div>
-      <div class="cnt">${n}<small>lances</small></div></div>`}).join('');
+      <div class="cnt">${n}<small>lances</small></div></div>`}
 }
 document.getElementById('aCards').addEventListener('click',e=>{const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))});
 document.getElementById('aCards').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))}});
