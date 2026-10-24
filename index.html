@@ -308,7 +308,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <div class="ibar" id="ibar" hidden>
   <button type="button" class="back" id="ibarBack">← Individuais</button>
-  <div class="av" id="ibarAv"></div><select id="ibarPlayer" aria-label="Jogador" class="nm" style="width:auto;font-family:var(--display);font-weight:700;font-size:18px;padding:4px 8px"></select>
+  <div class="av" id="ibarAv"></div><div style="display:flex;flex-direction:column;min-width:0"><span class="nm" id="ibarName"></span><span id="ibarSub" style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em"></span></div>
   <div class="games" id="ibarGames"><select id="iComp" aria-label="Competição" style="width:auto"></select><select id="iGame" aria-label="Jogo" style="width:auto"></select><span id="iNone" class="em" style="color:var(--muted);font-size:12.5px" hidden>Nenhum lance deste atleta nos vídeos. Confira o campo "Nome na XML" no cadastro.</span></div>
 </div>
 <div class="app">
@@ -674,9 +674,8 @@ function openAthlete(a,videoId){
   if(!a)return;athlete=a;
   const games=videos.map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
   document.getElementById('ibarAv').innerHTML=a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name);
-  const ps=document.getElementById('ibarPlayer');
-  ps.innerHTML=athletesAll().map(x=>`<option value="${esc(x.id)}">${esc(x.name)}${x.number!=null?' · #'+x.number:''}</option>`).join('');ps.value=a.id;
-  ps.onchange=()=>openAthlete(members.find(m=>m.id===ps.value));
+  document.getElementById('ibarName').textContent=a.name;
+  document.getElementById('ibarSub').textContent=[a.number!=null?'#'+a.number:null,a.pos||null,ageOf(a.birth)?ageOf(a.birth)+' anos':null].filter(Boolean).join(' · ');
   const iComp=document.getElementById('iComp'), iGame=document.getElementById('iGame');
   document.getElementById('iNone').hidden=!!games.length;iComp.hidden=iGame.hidden=!games.length;
   const cs=[...new Set(games.map(g=>(g.v.comp||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
