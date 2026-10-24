@@ -112,6 +112,7 @@ tr.active td.num{color:var(--accent)}
 .gate .ok{color:#3ec27a;font-size:13px}
 .pwbox{display:flex;gap:6px;align-items:center}
 .pwbox input{flex:1;min-width:0;font-family:var(--mono)}
+.photo .pbtns .pwbox{min-width:220px}
 .pwnote{font-size:12px;color:var(--muted);margin:0}
 .done{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13px}
 .done code{font-family:var(--mono);font-size:14px;background:var(--panel);padding:4px 8px;border-radius:4px;user-select:all}
@@ -450,6 +451,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
           <div class="av" id="fAv"></div>
           <div class="pbtns">
             <label class="btn" for="fPhoto">Escolher foto<input type="file" id="fPhoto" accept="image/*"></label>
+            <div class="pwbox"><input type="url" id="fPhotoUrl" placeholder="ou cole o link da imagem" style="font-family:var(--body)"><button type="button" class="btn" id="fPhotoUrlBtn">Usar link</button></div>
             <button type="button" class="btn" id="fPhotoEdit" hidden>Ajustar recorte</button>
             <button type="button" class="btn" id="fPhotoDel" hidden>Remover foto</button>
           </div>
@@ -1053,6 +1055,14 @@ document.getElementById('fPhoto').onchange=e=>{
   const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{srcImg=im;openCrop(true)};im.src=r.result};r.readAsDataURL(f);e.target.value='';
 };
 document.getElementById('fPhotoEdit').onclick=()=>openCrop(false);
+document.getElementById('fPhotoUrlBtn').onclick=()=>{
+  const u=document.getElementById('fPhotoUrl').value.trim();if(!u)return;fErr.hidden=true;
+  const im=new Image();im.crossOrigin='anonymous';
+  im.onload=()=>{try{const c=document.createElement('canvas');c.width=1;c.height=1;c.getContext('2d').drawImage(im,0,0);c.toDataURL();srcImg=im;openCrop(true)}
+    catch(_){/* servidor não permite recorte: usa o link direto */photo=u;srcImg=null;renderAv();fErr.textContent='Esse site não permite recortar a imagem; o link foi usado como está.';fErr.hidden=false}};
+  im.onerror=()=>{fErr.textContent='Não consegui carregar a imagem desse link.';fErr.hidden=false};
+  im.src=u;
+};
 document.getElementById('fPhotoDel').onclick=()=>{photo=null;srcImg=null;renderAv()};
 function openCrop(reset){
   if(!srcImg)return;
