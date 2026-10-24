@@ -336,7 +336,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <section class="list">
     <div class="tools">
       <div class="seg" id="xmlSeg" style="margin-left:0" hidden><button type="button" data-x="lances">Coletiva</button><button type="button" data-x="lancesInd">Individual</button></div>
-      <input type="search" id="search" placeholder="Buscar categoria ou observação…" aria-label="Buscar">
+      <input type="search" id="search" placeholder="Buscar ação, jogador ou observação…" aria-label="Buscar">
       <div class="dd" id="dd">
         <button class="ddbtn" type="button" id="ddBtn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="ddLbl">Todas as categorias</span><span class="n" id="ddN"></span></button>
         <div class="ddmenu" id="cats" hidden></div>
@@ -687,7 +687,7 @@ function openAthlete(a,videoId){
   if(pick){currentVideo=pick.v.id;renderVideos();
     P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
     document.getElementById('xmlSeg').hidden=true;
-    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync));P.loadYT(pick.v.ytId);
+    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync),{hidePlayer:true});P.loadYT(pick.v.ytId);
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
@@ -1138,11 +1138,21 @@ function fmt(s){s=Math.max(0,s);const m=Math.floor(s/60),r=Math.floor(s%60);retu
 function dur(a,b){return Math.round(b-a)+'s'}
 function hashColor(str){let h=0;for(const c of str)h=(h*31+c.charCodeAt(0))&0xffffff;const r=120+((h>>16)&127),g=120+((h>>8)&127),b=120+(h&127);return `rgb(${r},${g},${b})`}
 
-function load(d){
-  data=d;
+// "77. Lenny Lobato (852921) - Passes imprecisos" -> {player:"77. Lenny Lobato", action:"Passes imprecisos"}
+function splitCode(code,labels){
+  const act=(labels||[]).map(x=>x.match(/^(?:action|a[cç][aã]o)\s*:\s*(.+)$/i)).find(Boolean);
+  const m=String(code||'').match(/^(.*?)\s+-\s+(.+)$/);
+  if(act)return {player:(m?m[1]:'').replace(/\s*\(\d+\)\s*$/,''),action:act[1].trim()};
+  if(m&&/^\d+\.?\s/.test(m[1]))return {player:m[1].replace(/\s*\(\d+\)\s*$/,''),action:m[2].trim()};
+  return {player:'',action:code};
+}
+function load(d,opts){
+  data=d;opts=opts||{};
   colors={};order={};
-  d.rows.forEach(r=>{colors[r.code]=`rgb(${r.rgb.join(',')})`;order[r.code]=r.order});
-  lances=d.instances.slice().sort((a,b)=>a.start-b.start).map((l,i)=>Object.assign({n:i+1},l));
+  d.rows.forEach(r=>{const a=splitCode(r.code).action;if(!colors[a]){colors[a]=`rgb(${r.rgb.join(',')})`;order[a]=r.order}});
+  lances=d.instances.slice().sort((a,b)=>a.start-b.start).map((l,i)=>{const sc=splitCode(l.code,l.labels);
+    const labels=(l.labels||[]).filter(x=>!/^(action|a[cç][aã]o|pos_x|pos_y|team|time|equipe)\s*:/i.test(x)).map(x=>x.replace(/^half\s*:\s*(\d)/i,(m,h)=>h+'º tempo'));
+    return Object.assign({n:i+1},l,{code:sc.action,player:opts.hidePlayer?'':sc.player,labels:labels.length?labels:undefined,raw:l.code})});
   lances.forEach(l=>{if(!colors[l.code])colors[l.code]=hashColor(l.code);});
   selectedCats.clear();search.value='';current=null;
   renderCats();render();
@@ -1174,12 +1184,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleDD(false)});
 
 function render(){
   const q=search.value.trim().toLowerCase();
-  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&(!q||l.code.toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)));
+  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&(!q||l.code.toLowerCase().includes(q)||(l.player||'').toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)));
   rowsEl.innerHTML='';
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]}">${l.code}</span>${l.labels?`<span class="note">${l.labels.join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
+      <td class="name"><span class="tag" style="background:${colors[l.code]}">${l.code}</span>${l.player||l.labels?`<span class="note">${[l.player,...(l.labels||[])].filter(Boolean).join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
       <td><button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
     tr.onclick=()=>play(l);
     rowsEl.appendChild(tr);
