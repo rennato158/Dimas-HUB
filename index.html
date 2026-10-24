@@ -289,7 +289,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </div>
 <header>
   <div class="brand">DIMAS <b>HUB</b></div>
-  <div class="match">
+  <div class="match" hidden>
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
@@ -592,7 +592,7 @@ function show(v,keepAthlete){
   if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv)playVideo(cv)}}
   document.getElementById('xmlSeg').hidden=!!athlete||document.getElementById('xmlSeg').hidden;
   appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';
-  document.querySelector('header .match').hidden=v!=='lances';
+  document.querySelector('header .match').hidden=true;
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
 }
