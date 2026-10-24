@@ -412,6 +412,13 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
+      <div class="f"><label>Compartilhar com</label>
+        <p class="pwnote" style="margin:0 0 4px">A comissão sempre vê. Atletas só veem o vídeo se estiverem num grupo marcado ou escolhidos abaixo.</p>
+        <div class="gpick" id="vGroups"></div>
+        <input type="search" id="vMemSearch" placeholder="Buscar atleta…" style="margin-top:6px">
+        <div class="prev" id="vMembers" style="max-height:160px"></div>
+        <span class="pwnote" id="vShareSum"></span>
+      </div>
       <div class="f" id="xpBox" hidden><label>Jogadores na XML individual</label>
         <div class="prev" id="xpList" style="max-height:220px"></div>
         <p class="pwnote">Quem não foi reconhecido pode ser vinculado a um atleta; o nome da XML é salvo em "Nome na XML" do cadastro.</p>
@@ -657,7 +664,7 @@ function renderAthletes(){
   const aCards=document.getElementById('aCards');const all=athletesAll();
   fillSelect(document.getElementById('aGroup'),groups.map(g=>({v:g.id,t:g.name})),'Todos os grupos',true);
   const q=norm(document.getElementById('aSearch').value),pos=document.getElementById('aPos').value,gr=document.getElementById('aGroup').value,only=document.getElementById('aOnly').checked;
-  const counts=new Map(all.map(a=>[a.id,videos.reduce((t,v)=>t+athleteLances(a,v).length,0)]));
+  const counts=new Map(all.map(a=>[a.id,videos.filter(canSee).reduce((t,v)=>t+athleteLances(a,v).length,0)]));
   const list=all.filter(a=>(!q||norm(a.name+' '+(a.fullName||'')+' '+(a.tag||'')+' '+(a.number??'')).includes(q))&&(!pos||a.pos===pos)&&(!gr||(a.groups||[]).includes(gr))&&(!only||counts.get(a.id)>0));
   document.getElementById('aCount').textContent=list.length===all.length?all.length+' atleta'+(all.length!==1?'s':''):list.length+' de '+all.length;
   if(!all.length){aCards.innerHTML='<div class="emptyl">Nenhum atleta cadastrado ainda.</div>';return}
@@ -672,7 +679,7 @@ document.getElementById('aCards').addEventListener('keydown',e=>{if(e.key==='Ent
 document.getElementById('ibarBack').onclick=()=>{athlete=null;show('indiv')};
 function openAthlete(a,videoId){
   if(!a)return;athlete=a;
-  const games=videos.map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
+  const games=videos.filter(canSee).map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
   document.getElementById('ibarAv').innerHTML=a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name);
   document.getElementById('ibarName').textContent=a.name;
   document.getElementById('ibarSub').textContent=[a.number!=null?'#'+a.number:null,a.pos||null,ageOf(a.birth)?ageOf(a.birth)+' anos':null].filter(Boolean).join(' · ');
@@ -894,15 +901,15 @@ hComp.onchange=()=>{renderVideos()};hGame.onchange=()=>{renderVideos()};
 function renderVideos(){
   const admin=me&&me.func==='Administrador';
   fillSelect(hComp,comps().map(c=>({v:c,t:c})),'Todas as competições',true);
-  const byComp=videos.filter(v=>!hComp.value||(v.comp||'')===hComp.value);
+  const byComp=videos.filter(canSee).filter(v=>!hComp.value||(v.comp||'')===hComp.value);
   fillSelect(hGame,byComp.map(v=>({v:v.id,t:v.title+(v.comp&&!hComp.value?' · '+v.comp:'')})),'Todos os jogos',true);
   const shown=byComp.filter(v=>!hGame.value||v.id===hGame.value);
   document.getElementById('vCount').textContent=videos.length?videos.length+' vídeo'+(videos.length>1?'s':''):'';
   if(members.length)renderAthletes();
-  if(!videos.length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo publicado ainda.')+'</div>';return}
+  if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
   vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
-    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}</div>
+    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}${admin?`<span class="badge" style="top:auto;bottom:8px;left:8px" title="Compartilhamento">${((v.shareGroups||[]).length||(v.shareMembers||[]).length)?`${(v.shareGroups||[]).length} grp · ${(v.shareMembers||[]).length} atl`:'só comissão'}</span>`:''}</div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>
         ${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances"><svg viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.2"/><circle cx="11" cy="5" r="2.2"/><path d="M1 13c0-2.5 1.8-4 4-4s4 1.5 4 4zM7 13c0-2.5 1.8-4 4-4s4 1.5 4 4z"/></svg>${v.lances.instances.length}</span>`:''}
@@ -946,7 +953,7 @@ function openVideo(v){
   document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
-  xmlNotes();fillSync(v?.sync||null);
+  xmlNotes();fillSync(v?.sync||null);fillShare(v);
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
@@ -964,6 +971,21 @@ document.getElementById('vImg').onchange=e=>{
     c.getContext('2d').drawImage(im,(W-w)/2,(H-h)/2,w,h);vThumb=c.toDataURL('image/jpeg',0.82);updThumb()};im.src=r.result};r.readAsDataURL(f);e.target.value='';
 };
 document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
+function fillShare(v){
+  const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
+  document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Elenco).</span>';
+  const list=document.getElementById('vMembers'),q=document.getElementById('vMemSearch');
+  const draw=()=>{const f=norm(q.value);const ath=athletesAll().filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
+    list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
+    list.querySelectorAll('input[name=sm]').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
+  const sum=()=>{const g=[...document.querySelectorAll('#vGroups input:checked')].length;document.getElementById('vShareSum').textContent=(g||sm.size)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${sm.size} atleta${sm.size!==1?'s':''}.`:'Somente a comissão vê este vídeo.'};
+  document.getElementById('vGroups').onchange=sum;q.oninput=draw;draw();sum();
+  fillShare.read=()=>({shareGroups:[...document.querySelectorAll('#vGroups input:checked')].map(i=>i.value),shareMembers:[...sm]});
+}
+function canSee(v){
+  if(!me)return false;if(me.role==='Comissão'||me.func==='Administrador')return true;
+  return (v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>(me.groups||[]).includes(g));
+}
 function renderXmlPlayers(){
   const box=document.getElementById('xpBox'),list=document.getElementById('xpList');const set=vLancesI;
   if(!set){box.hidden=true;return}
@@ -1020,7 +1042,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
+  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync(),...fillShare.read()};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing)await db.collection('videos').doc(vEditing.id).update(data);
