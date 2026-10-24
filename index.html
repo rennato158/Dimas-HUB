@@ -411,6 +411,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
+      <div class="f" id="xpBox" hidden><label>Jogadores na XML individual</label>
+        <div class="prev" id="xpList" style="max-height:220px"></div>
+        <p class="pwnote">Quem não foi reconhecido pode ser vinculado a um atleta; o nome da XML é salvo em "Nome na XML" do cadastro.</p>
+      </div>
       <div class="f"><label>Sincronização do tempo (XML × vídeo)</label>
         <div class="sync">
           <div class="row2"><span class="lb">Apito inicial 1º tempo</span><input type="text" id="sH1v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
@@ -586,20 +590,64 @@ nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
 /* ---- individuais ---- */
 let athlete=null;
 function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9#]+/g,' ').trim()}
+const STOP=new Set(['de','da','do','dos','das','e','jr','junior','neto','filho']);
 function athleteKeys(a){
-  const k=new Set();const n=norm(a.name),t=norm(a.tag);
-  if(t)k.add(t);if(n){k.add(n);const parts=n.split(' ').filter(w=>w.length>2);if(parts.length>1){k.add(parts[0]+' '+parts[parts.length-1])}}
-  return [...k];
+  // aliases exatos (nome, nome na XML separados por ; ou ,) + tokens do nome completo
+  const k=new Set();const n=norm(a.name);if(n)k.add(n);
+  String(a.tag||'').split(/[;,|]/).map(norm).filter(Boolean).forEach(t=>k.add(t));
+  const full=norm(a.fullName||'').split(' ').filter(w=>w&&!STOP.has(w));
+  const nameToks=n.split(' ').filter(w=>w&&!STOP.has(w));
+  return {aliases:[...k],full,nameToks,number:a.number!=null?String(a.number):null};
 }
-function lanceMatches(l,a,keys){
-  const texts=[...(l.labels||[]),l.code,l.note||''].map(norm);
-  if(keys.some(k=>texts.some(t=>t===k||t.endsWith(': '+k)||(' '+t+' ').includes(' '+k+' '))))return true;
-  if(a.number!=null){const num=String(a.number);
-    return (l.labels||[]).some(x=>{const nx=norm(x);return /jogador|atleta|player|numero|camisa|#/.test(nx)&&(nx.endsWith(' '+num)||nx.endsWith('#'+num)||nx===num)})}
-  return false;
+// Quebra um texto da XML em {num, name}: "7 - PAVANI", "PAVANI (7)", "#7 Pavani", "Jogador: Pavani"
+function splitLabel(t){
+  let s=norm(t);if(s.includes(': '))s=s.split(': ').pop();
+  let num=null;const m=s.match(/(?:^|\s)#?(\d{1,2})(?:\s|$)/);if(m){num=m[1];s=s.replace(m[0],' ')}
+  return {num,name:s.replace(/\s+/g,' ').trim()};
+}
+// Pontuação: 3 = número da camisa bate, 2 = nome/alias exato, 1 = tokens do nome completo. 0 = não casa.
+function nameScore(text,K){
+  const {num,name}=splitLabel(text);
+  if(K.number&&num===K.number&&(!name||K.full.some(w=>name.includes(w))||K.nameToks.some(w=>name.includes(w))||!name.match(/[a-z]{3,}/)))return 3;
+  if(num&&K.number&&num!==K.number&&name.match(/[a-z]{3,}/))return 0;
+  if(!name)return 0;
+  if(K.aliases.some(a=>name===a||(' '+name+' ').includes(' '+a+' ')))return 2;
+  return nameTokensMatch(name,K)?1:0;
+}
+function nameMatches(text,K){return nameScore(text,K)>0}
+function nameTokensMatch(name,K){
+  // "l mugni", "mugni", "lucas mugni": todo token com 3+ letras precisa estar no nome completo/nome; iniciais casam com a 1ª letra
+  const toks=name.split(' ').filter(w=>w&&!STOP.has(w));const pool=[...new Set([...K.full,...K.nameToks])];
+  if(!toks.length||!pool.length)return false;
+  const long=toks.filter(w=>w.length>=3);if(!long.length)return false;
+  const ok=toks.every(w=>w.length>=3?pool.includes(w):pool.some(pw=>pw[0]===w[0]));
+  if(!ok)return false;
+  // exige que o sobrenome/nome característico bata (evita "gabriel" sozinho casar com todos os Gabriel)
+  const distinctive=long.some(w=>K.nameToks.includes(w)||(K.full.includes(w)&&!['gabriel','silva','santos','souza','oliveira','pedro','joao','lucas','matheus','vinicius','gustavo','luiz','rafael'].includes(w)));
+  return distinctive||long.length>=2;
+}
+// Resolve cada texto da XML para o(s) atleta(s) com a melhor pontuação (desempate: só os de pontuação máxima)
+const _resolveCache=new Map();let _resolveKey='';
+function resolveText(text){
+  const key=members.map(m=>m.id+':'+(m.tag||'')+':'+(m.number??'')+':'+m.name).join('|');
+  if(key!==_resolveKey){_resolveCache.clear();_resolveKey=key}
+  if(_resolveCache.has(text))return _resolveCache.get(text);
+  const ath=athletesAll().map(a=>({a,s:nameScore(text,athleteKeys(a))})).filter(x=>x.s>0);
+  const max=ath.reduce((m,x)=>Math.max(m,x.s),0);const r=ath.filter(x=>x.s===max).map(x=>x.a.id);
+  _resolveCache.set(text,r);return r;
+}
+function lanceMatches(l,a){
+  const texts=[...(l.labels||[]),l.code,l.note||''].filter(Boolean);
+  return texts.some(t=>resolveText(t).includes(a.id));
 }
 function athleteSet(v){return v.lancesInd||v.lances||null}
-function athleteLances(a,v){const set=athleteSet(v);if(!set)return [];const keys=athleteKeys(a);return set.instances.filter(l=>lanceMatches(l,a,keys))}
+function athleteLances(a,v){const set=athleteSet(v);if(!set)return [];return set.instances.filter(l=>lanceMatches(l,a))}
+// Nomes de jogador presentes numa XML (códigos e labels), com o atleta reconhecido para cada um
+function xmlPlayers(set){
+  if(!set)return [];const counts=new Map();
+  set.instances.forEach(l=>{[l.code,...(l.labels||[])].forEach(t=>{if(!t)return;counts.set(t,(counts.get(t)||0)+1)})});
+  return [...counts.entries()].map(([text,n])=>{const ids=resolveText(text);const hit=ids.map(id=>members.find(m=>m.id===id)).filter(Boolean);return {text,n,hit}});
+}
 ['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
 function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
 function renderAthletes(){
@@ -914,7 +962,23 @@ document.getElementById('vImg').onchange=e=>{
     c.getContext('2d').drawImage(im,(W-w)/2,(H-h)/2,w,h);vThumb=c.toDataURL('image/jpeg',0.82);updThumb()};im.src=r.result};r.readAsDataURL(f);e.target.value='';
 };
 document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
+function renderXmlPlayers(){
+  const box=document.getElementById('xpBox'),list=document.getElementById('xpList');const set=vLancesI;
+  if(!set){box.hidden=true;return}
+  const rows=xmlPlayers(set).filter(r=>!/sinc|sync|tempo/i.test(r.text)).sort((a,b)=>(a.hit.length?1:0)-(b.hit.length?1:0)||b.n-a.n);
+  if(!rows.length){box.hidden=true;return}
+  const opts=athletesAll().map(a=>`<option value="${esc(a.id)}">${esc(a.name)}${a.number!=null?' · #'+a.number:''}</option>`).join('');
+  list.innerHTML='<table><tbody>'+rows.map(r=>`<tr class="${r.hit.length?'':'bad'}"><td>${esc(r.text)}</td><td>${r.n}</td><td>${r.hit.length?'✓ '+esc(r.hit.map(a=>a.name).join(', ')):`<select data-xp="${esc(r.text)}" style="width:auto;padding:3px 6px"><option value="">vincular a…</option>${opts}</select>`}</td></tr>`).join('')+'</tbody></table>';
+  box.hidden=false;
+  list.querySelectorAll('select[data-xp]').forEach(sel=>sel.onchange=async()=>{
+    const a=members.find(m=>m.id===sel.value);if(!a)return;
+    const cur=String(a.tag||'').split(/[;,|]/).map(x=>x.trim()).filter(Boolean);const name=splitLabel(sel.dataset.xp).name||sel.dataset.xp;
+    if(!cur.map(norm).includes(norm(name)))cur.push(name);
+    try{await db.collection('members').doc(a.id).update({tag:cur.join('; ')});a.tag=cur.join('; ');renderXmlPlayers()}catch(e){vErr.textContent='Não salvou o vínculo: '+(e.code||e.message);vErr.hidden=false}
+  });
+}
 function xmlNotes(){
+  renderXmlPlayers();
   document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances':'nenhuma';document.getElementById('vXmlDel').hidden=!vLances;
   document.getElementById('vXmlINote').textContent=vLancesI?vLancesI.instances.length+' lances':'nenhuma';document.getElementById('vXmlIDel').hidden=!vLancesI;
 }
