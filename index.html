@@ -56,6 +56,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12p
 .empty p{margin:0;max-width:34ch;color:#9aa0b4}
 .now{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap}
 .now .chip{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.03em;padding:3px 10px;border-radius:4px;color:#111}
+.tag,.now .chip{box-shadow:inset 0 0 0 1px rgba(128,128,128,.25)}
 .now .t{font-family:var(--mono);font-size:13px;color:var(--muted)}
 .now .ctl{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .now .ctl label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
@@ -1221,6 +1222,8 @@ function useHTML5(){mode='html5';if(yt){try{yt.pauseVideo()}catch(_){}}ytEl.hidd
 
 function fmt(s){s=Math.max(0,s);const m=Math.floor(s/60),r=Math.floor(s%60);return m+':'+String(r).padStart(2,'0')}
 function dur(a,b){return Math.round(b-a)+'s'}
+// texto branco em fundo escuro, preto em fundo claro
+function fg(c){const m=String(c).match(/(\d+)\D+(\d+)\D+(\d+)/);if(!m)return '#111';const [r,g,b]=[+m[1],+m[2],+m[3]];return (0.2126*r+0.7152*g+0.0722*b)<140?'#fff':'#111'}
 function hashColor(str){let h=0;for(const c of str)h=(h*31+c.charCodeAt(0))&0xffffff;const r=120+((h>>16)&127),g=120+((h>>8)&127),b=120+(h&127);return `rgb(${r},${g},${b})`}
 
 // "77. Lenny Lobato (852921) - Passes imprecisos" -> {player:"77. Lenny Lobato", action:"Passes imprecisos"}
@@ -1274,7 +1277,7 @@ function render(){
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]}">${l.code}</span>${l.player||l.labels?`<span class="note">${[l.player,...(l.labels||[])].filter(Boolean).join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
+      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player||l.labels?`<span class="note">${[l.player,...(l.labels||[])].filter(Boolean).join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
       <td><button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
     tr.onclick=()=>play(l);
     rowsEl.appendChild(tr);
@@ -1290,7 +1293,7 @@ function play(l){
   current=l;clearTimeout(stopTimer);
   rowsEl.querySelectorAll('tr').forEach(tr=>tr.classList.toggle('active',+tr.dataset.id===l.id));
   const active=rowsEl.querySelector('tr.active');if(active)active.scrollIntoView({block:'nearest'});
-  nowChip.textContent=l.code;nowChip.style.background=colors[l.code];
+  nowChip.textContent=l.code;nowChip.style.background=colors[l.code];nowChip.style.color=fg(colors[l.code]);
   nowTime.textContent=`#${l.n} · ${fmt(l.start)} → ${fmt(l.end)}`;
   if(!P.has()){empty.hidden=false;empty.querySelector('.big').textContent='Escolha um vídeo para reproduzir o lance '+l.n;empty.querySelector('p').textContent='Volte à aba Início e clique no vídeo da partida.';return}
   P.seek(l.start);
