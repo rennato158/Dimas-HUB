@@ -6,6 +6,7 @@ service cloud.firestore {
     function member() { return get(/databases/$(database)/documents/members/$(email())).data; }
     function isMember() { return signed() && exists(/databases/$(database)/documents/members/$(email())); }
     function isAdmin() { return isMember() && member().func == 'Administrador'; }
+    function isStaff() { return isMember() && (member().role == 'Comissão' || member().func == 'Administrador'); }
     function isBootstrap() { return signed() && email() == 'rennato158@gmail.com'; }
     function ownFlagOnly() { return signed() && resource.id == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword']); }
     match /members/{id} {
@@ -19,7 +20,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /videos/{id} {
-      allow read: if isMember();
+      allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
       allow write: if isAdmin();
     }
   }

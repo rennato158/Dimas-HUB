@@ -417,13 +417,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
-      <div class="f"><label>Compartilhar com</label>
-        <p class="pwnote" style="margin:0 0 4px">A comissão sempre vê. Atletas só veem o vídeo se estiverem num grupo marcado ou escolhidos abaixo.</p>
-        <div class="gpick" id="vGroups"></div>
-        <input type="search" id="vMemSearch" placeholder="Buscar atleta…" style="margin-top:6px">
-        <div class="prev" id="vMembers" style="max-height:160px"></div>
-        <span class="pwnote" id="vShareSum"></span>
-      </div>
+      <div class="f" id="vShareRow" hidden><label>Compartilhamento</label><div class="inline"><span class="pwnote" id="vShareSumForm"></span><button type="button" class="btn" id="vShareOpen">Compartilhar…</button></div></div>
       <div class="f" id="xpBox" hidden><label>Jogadores na XML individual</label>
         <div class="prev" id="xpList" style="max-height:220px"></div>
         <p class="pwnote">Quem não foi reconhecido pode ser vinculado a um atleta; o nome da XML é salvo em "Nome na XML" do cadastro.</p>
@@ -450,6 +444,21 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="prev" id="iPrev" hidden></div>
       <span class="ferr" id="iErr" hidden></span>
       <div class="actions"><button type="button" class="btn" id="iCancel">Fechar</button><button type="submit" class="btn primary" id="iGo" disabled>Importar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="sModal" hidden>
+  <div class="box">
+    <form id="sForm">
+      <h3>Compartilhar vídeo</h3>
+      <p class="pwnote" id="sVideoName" style="margin:0"></p>
+      <p class="pwnote" style="margin:0">A comissão sempre vê. Cada atleta só vê este vídeo se estiver num grupo marcado ou for escolhido na lista.</p>
+      <div class="f"><label>Grupos</label><div class="gpick" id="vGroups"></div></div>
+      <div class="f"><label>Atletas</label><input type="search" id="vMemSearch" placeholder="Buscar atleta…"><div class="prev" id="vMembers" style="max-height:220px"></div></div>
+      <span class="pwnote" id="vShareSum"></span>
+      <span class="ferr" id="sErr" hidden></span>
+      <div class="actions"><button type="button" class="btn" id="sSkip">Agora não</button><button type="submit" class="btn primary" id="sSave">Salvar compartilhamento</button></div>
     </form>
   </div>
 </div>
@@ -583,7 +592,9 @@ function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
   if(unsubV){unsubV();unsubV=null}
-  if(m){unsubV=db.collection('videos').orderBy('createdAt','desc').onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+  if(m){const staff=m.role==='Comissão'||m.func==='Administrador';
+    const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
+    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(!staff)videos.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
@@ -666,7 +677,7 @@ function xmlPlayers(set){
 ['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
 function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
 function renderAthletes(){
-  const aCards=document.getElementById('aCards');const all=athletesAll();
+  const aCards=document.getElementById('aCards');const all=isStaff()?athletesAll():athletesAll().filter(a=>a.id===me?.id);
   fillSelect(document.getElementById('aGroup'),groups.map(g=>({v:g.id,t:g.name})),'Todos os grupos',true);
   const q=norm(document.getElementById('aSearch').value),pos=document.getElementById('aPos').value,gr=document.getElementById('aGroup').value,only=document.getElementById('aOnly').checked;
   const counts=new Map(all.map(a=>[a.id,videos.filter(canSee).reduce((t,v)=>t+athleteLances(a,v).length,0)]));
@@ -801,6 +812,7 @@ form.onsubmit=async e=>{
     if(loginMsg){const d=document.getElementById('fDone');d.innerHTML=loginMsg+'<button type="button" class="btn primary" id="fDoneOk">Fechar</button>';d.hidden=false;document.getElementById('fDoneOk').onclick=()=>{modal.hidden=true};
       [...form.querySelectorAll('.f,.actions')].forEach(x=>x.hidden=true)}
     else modal.hidden=true;
+    setTimeout(recomputeAllViewers,1500);
   }catch(err){fErr.textContent='Não salvou: '+(err.code||err.message);fErr.hidden=false}
   btn.disabled=false;
 };
@@ -884,7 +896,7 @@ document.getElementById('iForm').onsubmit=async e=>{
       });
       await batch.commit();
     }
-    document.getElementById('iNote').textContent=done+' cadastro'+(done>1?'s':'')+' importado'+(done>1?'s':'')+'.';iPrev.hidden=true;iRows=[];iGo.textContent='Importar';
+    document.getElementById('iNote').textContent=done+' cadastro'+(done>1?'s':'')+' importado'+(done>1?'s':'')+'.';setTimeout(recomputeAllViewers,2000);iPrev.hidden=true;iRows=[];iGo.textContent='Importar';
   }catch(ex){iErr.textContent='Falhou: '+(ex.code||ex.message);iErr.hidden=false;iGo.disabled=false}
 };
 document.getElementById('fDel').onclick=async function(){
@@ -917,7 +929,7 @@ function renderVideos(){
   if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
   vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
-    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button>`:''}${admin?`<span class="badge" style="top:auto;bottom:8px;left:8px" title="Compartilhamento">${((v.shareGroups||[]).length||(v.shareMembers||[]).length)?`${(v.shareGroups||[]).length} grp · ${(v.shareMembers||[]).length} atl`:'só comissão'}</span>`:''}</div>
+    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge">Vídeo</span>${v.duration?`<span class="dur">${fmtDur(v.duration)}</span>`:''}${admin?`<button type="button" class="ed" data-edit="${esc(v.id)}">editar</button><button type="button" class="ed" style="right:auto;left:8px;top:auto;bottom:8px;opacity:1" data-share="${esc(v.id)}" title="${esc(shareSummary(v))}">compartilhar · ${((v.shareGroups||[]).length||(v.shareMembers||[]).length)?`${(v.shareGroups||[]).length} grp · ${(v.shareMembers||[]).length} atl`:'só comissão'}</button>`:''}${false?`<span class="badge" style="top:auto;bottom:8px;left:8px" title="Compartilhamento">${((v.shareGroups||[]).length||(v.shareMembers||[]).length)?`${(v.shareGroups||[]).length} grp · ${(v.shareMembers||[]).length} atl`:'só comissão'}</span>`:''}</div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>
         ${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances"><svg viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.2"/><circle cx="11" cy="5" r="2.2"/><path d="M1 13c0-2.5 1.8-4 4-4s4 1.5 4 4zM7 13c0-2.5 1.8-4 4-4s4 1.5 4 4z"/></svg>${v.lances.instances.length}</span>`:''}
@@ -933,6 +945,7 @@ function renderVideos(){
 })();
 vCards.addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]');if(ed){e.stopPropagation();openVideo(videos.find(v=>v.id===ed.dataset.edit));return}
+  const sh=e.target.closest('[data-share]');if(sh){e.stopPropagation();openShare(videos.find(v=>v.id===sh.dataset.share));return}
   const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id));
 });
 vCards.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id))}});
@@ -943,11 +956,16 @@ function setXmlSeg(v){
   seg.hidden=!(has.lances&&has.lancesInd);
   seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.x===xmlKind);const d=v[b.dataset.x];b.textContent=(b.dataset.x==='lances'?'Coletiva':'Individual')+(d?' ('+d.instances.length+')':'')});
 }
-document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);window.DimasPlayer.loadLances(applySync(v[xmlKind],v.sync));
+document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);const st=lancesFor(v);window.DimasPlayer.loadLances(applySync(st||{instances:[],rows:[]},v.sync));
   window.DimasPlayer.setTitle(v.title,[v.caption,v[xmlKind].instances.length+' lances ('+(xmlKind==='lances'?'coletiva':'individual')+')',v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '))};
+function lancesFor(v){
+  let set=v[xmlKind]||null;
+  if(set&&xmlKind==='lancesInd'&&!isStaff()){const self=members.find(x=>x.id===me.id);set=self?{rows:set.rows,instances:set.instances.filter(l=>lanceMatches(l,self))}:{rows:set.rows,instances:[]}}
+  return set;
+}
 function playVideo(v){
   if(!v)return;currentVideo=v.id;renderVideos();
-  const P=window.DimasPlayer;setXmlSeg(v);const set=v[xmlKind]||null;
+  const P=window.DimasPlayer;setXmlSeg(v);const set=lancesFor(v);
   P.setTitle(v.title,[v.caption,set?set.instances.length+' lances'+(v.lances&&v.lancesInd?' ('+(xmlKind==='lances'?'coletiva':'individual')+')':''):null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
   if(set)P.loadLances(applySync(set,v.sync));else P.loadLances({instances:[],rows:[]});
   document.getElementById('videoUrl').value=v.url;try{localStorage.setItem('dimas-video-url',v.url)}catch(_){}
@@ -961,7 +979,8 @@ function openVideo(v){
   document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
-  xmlNotes();fillSync(v?.sync||null);fillShare(v);
+  xmlNotes();fillSync(v?.sync||null);
+  document.getElementById('vShareRow').hidden=!v;if(v){document.getElementById('vShareSumForm').textContent=shareSummary(v);document.getElementById('vShareOpen').onclick=()=>{vModal.hidden=true;openShare(v)}}
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
@@ -979,6 +998,31 @@ document.getElementById('vImg').onchange=e=>{
     c.getContext('2d').drawImage(im,(W-w)/2,(H-h)/2,w,h);vThumb=c.toDataURL('image/jpeg',0.82);updThumb()};im.src=r.result};r.readAsDataURL(f);e.target.value='';
 };
 document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
+function shareSummary(v){const g=(v.shareGroups||[]).length,m=(v.shareMembers||[]).length;return (g||m)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${m} atleta${m!==1?'s':''}.`:'Somente a comissão vê este vídeo.'}
+// viewers = atletas escolhidos + membros dos grupos escolhidos (gravado no vídeo para as regras do banco)
+function computeViewers(shareGroups,shareMembers){
+  const set=new Set(shareMembers||[]);members.forEach(m=>{if((m.groups||[]).some(g=>(shareGroups||[]).includes(g)))set.add(m.id)});return [...set];
+}
+async function recomputeAllViewers(){
+  if(!me||me.func!=='Administrador')return;
+  const batch=db.batch();let n=0;
+  videos.forEach(v=>{const nv=computeViewers(v.shareGroups,v.shareMembers).sort();const ov=(v.viewers||[]).slice().sort();
+    if(JSON.stringify(nv)!==JSON.stringify(ov)){batch.update(db.collection('videos').doc(v.id),{viewers:nv});n++}});
+  if(n)await batch.commit();
+}
+const sModal=document.getElementById('sModal');let sVideo=null;
+function openShare(v){
+  sVideo=v;document.getElementById('sVideoName').textContent=v.title;document.getElementById('sErr').hidden=true;fillShare(v);sModal.hidden=false;
+}
+document.getElementById('sSkip').onclick=()=>{sModal.hidden=true};
+sModal.addEventListener('click',e=>{if(e.target===sModal)sModal.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sModal.hidden)sModal.hidden=true});
+document.getElementById('sForm').onsubmit=async e=>{
+  e.preventDefault();const b=document.getElementById('sSave');b.disabled=true;
+  try{const sh=fillShare.read();await db.collection('videos').doc(sVideo.id).update(Object.assign(sh,{viewers:computeViewers(sh.shareGroups,sh.shareMembers)}));sModal.hidden=true}
+  catch(err){const x=document.getElementById('sErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}
+  b.disabled=false;
+};
 function fillShare(v){
   const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
   document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Elenco).</span>';
@@ -992,8 +1036,9 @@ function fillShare(v){
 }
 function canSee(v){
   if(!me)return false;if(me.role==='Comissão'||me.func==='Administrador')return true;
-  return (v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>(me.groups||[]).includes(g));
+  return (v.viewers||[]).includes(me.id)||(v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>(me.groups||[]).includes(g));
 }
+function isStaff(){return !!me&&(me.role==='Comissão'||me.func==='Administrador')}
 function renderXmlPlayers(){
   const box=document.getElementById('xpBox'),list=document.getElementById('xpList');const set=vLancesI;
   if(!set){box.hidden=true;return}
@@ -1050,12 +1095,12 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync(),...fillShare.read()};
+  const data={url,ytId,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
-    if(vEditing)await db.collection('videos').doc(vEditing.id).update(data);
-    else await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id}));
-    vModal.hidden=true;
+    if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true}
+    else{const ref=await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id,shareGroups:[],shareMembers:[],viewers:[]}));
+      vModal.hidden=true;openShare(Object.assign({id:ref.id},data,{shareGroups:[],shareMembers:[]}))}
   }catch(err){vErr.textContent='Não salvou: '+(err.code||err.message);vErr.hidden=false}
   b.disabled=false;
 };
