@@ -91,6 +91,14 @@ td.tm{font-family:var(--mono);font-size:13px}
 td.name{white-space:normal;min-width:0}
 .tag{display:inline-block;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.03em;padding:3px 9px;border-radius:4px;color:#111;max-width:100%}
 .note{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.descs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.desc{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);cursor:pointer;white-space:nowrap}
+.desc b{font-weight:500;color:var(--muted)}
+.desc.on{background:var(--accent);color:var(--accent-fg);border-color:transparent}
+.desc.on b{color:inherit;opacity:.75}
+.ddmenu .grp{font-family:var(--body);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 8px 2px;cursor:default}
+.ddmenu .grp:hover{background:none}
+.ddmenu label.sub{font-family:var(--body);font-weight:500;font-size:12.5px;letter-spacing:0;padding-left:16px}
 tr{cursor:pointer}
 tr:hover td{background:var(--panel2)}
 tr.active td{background:color-mix(in srgb,var(--accent) 16%,var(--panel))}
@@ -347,6 +355,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="dd" id="dd">
         <button class="ddbtn" type="button" id="ddBtn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="ddLbl">Todas as categorias</span><span class="n" id="ddN"></span></button>
         <div class="ddmenu" id="cats" hidden></div>
+      </div>
+      <div class="dd" id="dd2" hidden>
+        <button class="ddbtn" type="button" id="dd2Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd2Lbl">Todos os descritores</span><span class="n" id="dd2N"></span></button>
+        <div class="ddmenu" id="descsMenu" hidden></div>
       </div>
       <div class="count"><span id="countLbl"></span><button id="clearBtn" hidden>limpar filtros</button></div>
     </div>
@@ -1182,7 +1194,8 @@ const nowChip=document.getElementById('nowChip'), nowTime=document.getElementByI
 const stopAtEnd=document.getElementById('stopAtEnd'), autoNext=document.getElementById('autoNext');
 
 let data=JSON.parse(document.getElementById('data').textContent);
-let lances=[], colors={}, order={}, selectedCats=new Set(), visible=[], current=null, stopTimer=null;
+let lances=[], colors={}, order={}, selectedCats=new Set(), selectedDescs=new Set(), visible=[], current=null, stopTimer=null;
+const dkey=d=>d.g+'\u0000'+d.v;
 const ytEl=document.getElementById('yt');
 let yt=null, ytReady=false, mode='html5', pollTimer=null;
 const P={
@@ -1240,7 +1253,10 @@ function load(d,opts){
   d.rows.forEach(r=>{const a=splitCode(r.code).action;if(!colors[a]){colors[a]=`rgb(${r.rgb.join(',')})`;order[a]=r.order}});
   lances=d.instances.slice().sort((a,b)=>a.start-b.start).map((l,i)=>{const sc=splitCode(l.code,l.labels);
     const labels=(l.labels||[]).filter(x=>!/^(action|a[cç][aã]o|pos_x|pos_y|team|time|equipe)\s*:/i.test(x)).map(x=>x.replace(/^half\s*:\s*(\d)/i,(m,h)=>h+'º tempo'));
-    return Object.assign({n:i+1},l,{code:sc.action,player:opts.hidePlayer?'':sc.player,labels:labels.length?labels:undefined,raw:l.code})});
+    // descritores: "1 - Type: Interception" -> {g:"Type", v:"Interception"}; sem grupo -> {g:"", v:texto}
+    const descs=labels.map(x=>{const t=x.replace(/^\d+\s*-\s*/,'').trim();const m=t.match(/^([^:]{1,40}):\s*(.+)$/);return m?{g:m[1].trim(),v:m[2].trim()}:{g:'',v:t}}).filter(d=>d.v);
+    return Object.assign({n:i+1},l,{code:sc.action,player:opts.hidePlayer?'':sc.player,labels:labels.length?labels:undefined,descs,raw:l.code})});
+  selectedDescs.clear();
   lances.forEach(l=>{if(!colors[l.code])colors[l.code]=hashColor(l.code);});
   selectedCats.clear();search.value='';current=null;
   renderCats();render();
@@ -1263,7 +1279,33 @@ function renderCats(){
   const lbl=document.getElementById('ddLbl'), n=document.getElementById('ddN');
   if(!selectedCats.size){lbl.textContent='Todas as categorias';n.textContent=''}
   else{const sel=codes.filter(c=>selectedCats.has(c));lbl.textContent=sel.join(', ');n.textContent=sel.length>1?sel.length+' sel.':''}
+  renderDescs();
 }
+function renderDescs(){
+  const menu=document.getElementById('descsMenu'),box=document.getElementById('dd2');
+  const groups=new Map();lances.forEach(l=>(l.descs||[]).forEach(d=>{if(!groups.has(d.g))groups.set(d.g,new Map());const m=groups.get(d.g);m.set(d.v,(m.get(d.v)||0)+1)}));
+  if(!groups.size){box.hidden=true;return}
+  box.hidden=false;menu.innerHTML='';
+  const all=document.createElement('label');all.className='all';all.innerHTML=`<input type="checkbox" ${selectedDescs.size?'':'checked'}> Todos os descritores`;
+  all.querySelector('input').onchange=()=>{selectedDescs.clear();renderDescs();render()};menu.appendChild(all);
+  [...groups.keys()].sort((a,b)=>a.localeCompare(b,'pt')).forEach(g=>{
+    if(g){const h=document.createElement('div');h.className='grp';h.textContent=g;menu.appendChild(h)}
+    [...groups.get(g).entries()].sort((a,b)=>b[1]-a[1]).forEach(([v,c])=>{const k=g+'\u0000'+v;const l=document.createElement('label');l.className='sub';
+      l.innerHTML=`<input type="checkbox" ${selectedDescs.has(k)?'checked':''}>${v}<small>${c}</small>`;
+      l.querySelector('input').onchange=e=>{e.target.checked?selectedDescs.add(k):selectedDescs.delete(k);renderDescs();render()};menu.appendChild(l)});
+  });
+  const lbl=document.getElementById('dd2Lbl'),n=document.getElementById('dd2N');
+  if(!selectedDescs.size){lbl.textContent='Todos os descritores';n.textContent=''}
+  else{const sel=[...selectedDescs].map(k=>k.split('\u0000')[1]);lbl.textContent=sel.join(', ');n.textContent=sel.length>1?sel.length+' sel.':''}
+}
+// filtro por descritor: dentro do mesmo grupo é OU; entre grupos é E
+function descMatch(l){
+  if(!selectedDescs.size)return true;const byG={};[...selectedDescs].forEach(k=>{const [g,v]=k.split('\u0000');(byG[g]=byG[g]||[]).push(v)});
+  return Object.entries(byG).every(([g,vs])=>(l.descs||[]).some(d=>d.g===g&&vs.includes(d.v)));
+}
+(function(){const dd2=document.getElementById('dd2'),b=document.getElementById('dd2Btn'),m=document.getElementById('descsMenu');
+  const t=o=>{const open=o??m.hidden;m.hidden=!open;dd2.classList.toggle('open',open);b.setAttribute('aria-expanded',open)};
+  b.onclick=()=>t();document.addEventListener('click',e=>{if(!dd2.contains(e.target))t(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')t(false)})})();
 const dd=document.getElementById('dd'), ddBtn=document.getElementById('ddBtn');
 function toggleDD(open){const o=open??catsEl.hidden;catsEl.hidden=!o;dd.classList.toggle('open',o);ddBtn.setAttribute('aria-expanded',o)}
 ddBtn.onclick=()=>toggleDD();
@@ -1272,21 +1314,21 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleDD(false)});
 
 function render(){
   const q=search.value.trim().toLowerCase();
-  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&(!q||l.code.toLowerCase().includes(q)||(l.player||'').toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)));
+  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&descMatch(l)&&(!q||l.code.toLowerCase().includes(q)||(l.player||'').toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)||(l.descs||[]).some(d=>(d.g+' '+d.v).toLowerCase().includes(q))));
   rowsEl.innerHTML='';
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player||l.labels?`<span class="note">${[l.player,...(l.labels||[])].filter(Boolean).join(' · ')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
+      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player?`<span class="note">${l.player}</span>`:''}${(l.descs||[]).length?`<span class="descs">${l.descs.map(d=>`<span class="desc ${selectedDescs.has(dkey(d))?'on':''}" data-k="${dkey(d).replace(/"/g,'&quot;')}">${d.g?`<b>${d.g}</b>`:''}${d.v}</span>`).join('')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
       <td><button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
-    tr.onclick=()=>play(l);
+    tr.onclick=e=>{const c=e.target.closest('.desc');if(c){e.stopPropagation();const k=c.dataset.k;selectedDescs.has(k)?selectedDescs.delete(k):selectedDescs.add(k);renderDescs();render();return}play(l)};
     rowsEl.appendChild(tr);
   });
   const filtered=visible.length!==lances.length;
   countLbl.textContent=filtered?`${visible.length} de ${lances.length} lances`:`${lances.length} lances`;
   clearBtn.hidden=!filtered;
 }
-clearBtn.onclick=()=>{selectedCats.clear();search.value='';renderCats();render()};
+clearBtn.onclick=()=>{selectedCats.clear();selectedDescs.clear();search.value='';renderCats();render()};
 search.oninput=render;
 
 function play(l){
