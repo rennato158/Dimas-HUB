@@ -150,7 +150,8 @@ tr.active td.num{color:var(--accent)}
 .card .mt{display:flex;gap:10px;font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:4px;flex-wrap:wrap;align-items:center}
 .card .mt span{display:inline-flex;align-items:center;gap:4px}
 .card .mt svg{width:13px;height:13px;fill:currentColor;flex:none}
-.card .mt .xml{color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.card .mt .xml{color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:11px}
+.card .mt.xmls{margin-top:2px}
 .card .cact{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin-top:auto}
 .card .cact button{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;font-size:12.5px;font-weight:500;color:var(--muted)}
 .card .cact button:first-child{border-right:1px solid var(--line)}
@@ -1020,8 +1021,8 @@ function renderVideos(){
     <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"></div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
-        ${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances"><svg viewBox="0 0 16 16"><circle cx="5" cy="5" r="2.2"/><circle cx="11" cy="5" r="2.2"/><path d="M1 13c0-2.5 1.8-4 4-4s4 1.5 4 4zM7 13c0-2.5 1.8-4 4-4s4 1.5 4 4z"/></svg>${v.lances.instances.length}</span>`:''}
-        ${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances"><svg viewBox="0 0 16 16"><circle cx="8" cy="4.5" r="3"/><path d="M2 15c0-3.5 2.7-6 6-6s6 2.5 6 6z"/></svg>${v.lancesInd.instances.length}</span>`:''}</div></div>
+</div>
+      ${v.lances||v.lancesInd?`<div class="mt xmls">${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col) · ${v.lances.instances.length}</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind) · ${v.lancesInd.instances.length}</span>`:''}</div>`:''}</div>
     ${admin?`<div class="cact"><button type="button" data-edit="${esc(v.id)}"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg>Editar</button><button type="button" data-share="${esc(v.id)}" title="${esc(shareSummary(v))}"><svg viewBox="0 0 16 16"><circle cx="12.5" cy="3" r="2"/><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="13" r="2"/><path d="M5 7l6-3 .6 1.2-6 3zM5 9l6 3 .6-1.2-6-3z"/></svg>Compartilhar</button></div>`:''}
   </div>`).join('');
 }
