@@ -396,7 +396,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <section class="panel">
     <div class="hd">
       <h2>Usuários</h2><span class="sub" id="mCount"></span>
-      <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button></div>
+      <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button><button type="button" data-f="Convidado">Convidados</button></div>
       <button class="btn" type="button" id="wipeBtn" style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
       <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
       <button class="btn" type="button" id="importBtn">Importar planilha</button>
@@ -466,9 +466,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <form id="sForm">
       <h3>Compartilhar vídeo</h3>
       <p class="pwnote" id="sVideoName" style="margin:0"></p>
-      <p class="pwnote" style="margin:0">A comissão sempre vê. Cada atleta só vê este vídeo se estiver num grupo marcado ou for escolhido na lista.</p>
+      <p class="pwnote" style="margin:0">A comissão sempre vê. Atletas e convidados só veem este vídeo se estiverem num grupo marcado ou forem escolhidos na lista.</p>
       <div class="f"><label>Grupos</label><div class="gpick" id="vGroups"></div></div>
-      <div class="f"><label>Atletas</label><input type="search" id="vMemSearch" placeholder="Buscar atleta…"><div class="prev" id="vMembers" style="max-height:220px"></div></div>
+      <div class="f"><label>Atletas e convidados</label><input type="search" id="vMemSearch" placeholder="Buscar pessoa…"><div class="prev" id="vMembers" style="max-height:220px"></div></div>
       <span class="pwnote" id="vShareSum"></span>
       <span class="ferr" id="sErr" hidden></span>
       <div class="actions"><button type="button" class="btn" id="sSkip">Agora não</button><button type="submit" class="btn primary" id="sSave">Salvar compartilhamento</button></div>
@@ -499,6 +499,20 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label for="fName">Nome</label><input type="text" id="fName" required maxlength="40" placeholder="Como é chamado"></div>
       <div class="f"><label for="fFull">Nome completo</label><input type="text" id="fFull" maxlength="100"></div>
+      <div class="f"><label for="fEmail">E-mail de acesso (opcional)</label><input type="email" id="fEmail" placeholder="Sem e-mail, a pessoa não tem login; só a ficha"></div>
+      <div class="f" id="pwField">
+        <label id="pwLabel">Senha inicial</label>
+        <div class="pwbox"><input type="text" id="fPw" minlength="6" maxlength="40" autocomplete="off"><button type="button" class="btn" id="fPwGen">Gerar</button></div>
+        <p class="pwnote">A pessoa entra com o e-mail e esta senha, e troca por uma senha própria no primeiro acesso. Deixe em branco para acesso só pela conta Google.</p>
+      </div>
+      <div class="f"><label>Nível</label>
+        <div class="rolepick" style="grid-template-columns:1fr 1fr 1fr">
+          <label><input type="radio" name="role" value="Atleta" checked><span>Atleta<small>Vê o que for compartilhado</small></span></label>
+          <label><input type="radio" name="role" value="Comissão"><span>Comissão<small>Vê todos os vídeos</small></span></label>
+          <label><input type="radio" name="role" value="Convidado"><span>Convidado<small>Vê o que for compartilhado</small></span></label>
+        </div>
+      </div>
+      <div id="secAtleta">
       <div class="f3">
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
         <div class="f"><label for="fPos">Posição</label><select id="fPos"><option value="">—</option><option>Goleiro</option><option>Zagueiro</option><option>Lateral</option><option>Volante</option><option>Meia</option><option>Atacante</option></select></div>
@@ -509,22 +523,18 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label for="fNat">Nacionalidade</label><input type="text" id="fNat" maxlength="40" placeholder="Brasil"></div>
         <div class="f"><label for="fHeight">Altura (cm)</label><input type="number" id="fHeight" min="100" max="230" placeholder="—"></div>
       </div>
-      <div class="f"><label for="fEmail">E-mail de acesso (opcional)</label><input type="email" id="fEmail" placeholder="Sem e-mail, o atleta não tem login; só a ficha"></div>
-      <div class="f" id="pwField">
-        <label id="pwLabel">Senha inicial</label>
-        <div class="pwbox"><input type="text" id="fPw" minlength="6" maxlength="40" autocomplete="off"><button type="button" class="btn" id="fPwGen">Gerar</button></div>
-        <p class="pwnote">A pessoa entra com o e-mail e esta senha, e troca por uma senha própria no primeiro acesso. Deixe em branco para acesso só pela conta Google.</p>
+        <div class="f"><label for="fTag">Nome na XML</label><input type="text" id="fTag" maxlength="60" placeholder="Como aparece no tagueamento"></div>
       </div>
-      <div class="f"><label>Nível</label>
-        <div class="rolepick">
-          <label><input type="radio" name="role" value="Atleta" checked><span>Atleta<small>Vê os lances</small></span></label>
-          <label><input type="radio" name="role" value="Comissão"><span>Comissão<small>Gerencia elenco e grupos</small></span></label>
+      <div id="secComissao" hidden>
+        <div class="f"><label for="fCargo">Função</label><select id="fCargo"><option value="">—</option><option>Analista</option><option>Treinador</option><option>Coordenador Técnico</option><option>Diretoria</option><option>Outras funções</option></select></div>
+      </div>
+      <div id="secConvidado" hidden>
+        <div class="f2">
+          <div class="f"><label for="fClub">Clube</label><input type="text" id="fClub" maxlength="60"></div>
+          <div class="f"><label for="fCompet">Competição</label><input type="text" id="fCompet" maxlength="60"></div>
         </div>
       </div>
-      <div class="f2">
-        <div class="f"><label for="fTag">Nome na XML</label><input type="text" id="fTag" maxlength="60" placeholder="Como aparece no tagueamento"></div>
-        <div class="f"><label for="fFunc">Função (Administrador gerencia o elenco)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
-      </div>
+      <div class="f"><label for="fFunc">Permissão (Administrador gerencia usuários, vídeos e grupos)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
       <div class="f"><label>Grupos</label><div class="gpick" id="fGroups"><span class="sub" style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span></div></div>
       <div class="f"><label><input type="checkbox" id="fActive" checked> Ativo (pode entrar no HUB)</label></div>
       <div class="done" id="fDone" hidden></div>
@@ -740,15 +750,15 @@ function gname(id){const g=groups.find(x=>x.id===id);return g?g.name:null}
 
 function renderMembers(){
   const list=members.filter(m=>!filter||m.role===filter);
-  const at=members.filter(m=>m.role==='Atleta').length, co=members.length-at;
-  mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão`;
+  const at=members.filter(m=>m.role==='Atleta').length, cv=members.filter(m=>m.role==='Convidado').length, co=members.length-at-cv;
+  mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão · ${cv} convidado${cv!==1?'s':''}`;
   if(!list.length){mList.innerHTML='<div class="emptyl">Ninguém cadastrado'+(filter?' nesse nível':'')+' ainda. Clique em <strong>Cadastrar</strong>.</div>';return}
   mList.innerHTML=list.map(m=>`<div class="mrow" data-id="${esc(m.id)}">
     <div class="av">${m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(m.name)}</div>
-    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.pos,ageOf(m.birth)?ageOf(m.birth)+' anos':null,m.email||null].filter(Boolean).join(' · ')||'sem e-mail')}</div>
+    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.role==='Atleta'?m.pos:(m.role==='Comissão'?m.cargo:[m.club,m.competition].filter(Boolean).join(' · ')),m.role==='Atleta'&&ageOf(m.birth)?ageOf(m.birth)+' anos':null,m.email||null].filter(Boolean).join(' · ')||'sem e-mail')}</div>
       ${(m.groups||[]).length?`<div class="gchips">${(m.groups||[]).map(gname).filter(Boolean).map(n=>`<span class="gchip">${esc(n)}</span>`).join('')}</div>`:''}</div>
     <span class="num">${m.number??''}</span>
-    <span class="pill ${m.role==='Comissão'?'comissao':'atleta'} ${m.active===false?'off':''}">${esc(m.role)}</span>
+    <span class="pill ${m.role==='Comissão'?'comissao':'atleta'} ${m.active===false?'off':''}">${esc(m.role||'Atleta')}</span>
   </div>`).join('');
 }
 mList.onclick=e=>{const r=e.target.closest('.mrow');if(!r)return;openForm(members.find(m=>m.id===r.dataset.id))};
@@ -781,7 +791,8 @@ function openForm(m){
   const em=document.getElementById('fEmail');em.value=m?.email||'';em.disabled=!!m&&m.id===me?.id;em.title=em.disabled?'Para trocar o seu próprio e-mail, peça a outro administrador.':'';
   document.getElementById('fPos').value=m?.pos||'';document.getElementById('fFoot').value=m?.foot||'';document.getElementById('fBirth').value=m?.birth||'';
   document.getElementById('fNat').value=m?.nat||'';document.getElementById('fHeight').value=m?.height??'';
-  form.role.value=m?.role||'Atleta';document.getElementById('fTag').value=m?.tag||'';
+  form.role.value=['Atleta','Comissão','Convidado'].includes(m?.role)?m.role:'Atleta';document.getElementById('fTag').value=m?.tag||'';
+  document.getElementById('fCargo').value=m?.cargo||'';document.getElementById('fClub').value=m?.club||'';document.getElementById('fCompet').value=m?.competition||'';roleSections();
   document.getElementById('fFunc').value=(m?.func==='Administrador')?'Administrador':'Usuário';
   document.getElementById('fNum').value=m?.number??'';
   document.getElementById('fActive').checked=m?m.active!==false:true;
@@ -799,7 +810,7 @@ form.onsubmit=async e=>{
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
   const g=id=>document.getElementById(id).value;const h=g('fHeight');
-  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),
+  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),competition:g('fCompet').trim(),
     number:num===''?null:+num,pos:g('fPos'),foot:g('fFoot'),birth:g('fBirth')||null,nat:g('fNat').trim(),height:h===''?null:+h,
     groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
   if(editing&&editing.id===me.id&&(data.func!=='Administrador'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Administrador.';fErr.hidden=false;return}
@@ -858,7 +869,7 @@ document.getElementById('exportBtn').onclick=()=>{
   const gname=id=>{const g=groups.find(x=>x.id===id);return g?g.name:''};
   const list=members.filter(m=>!filter||m.role===filter);
   const rows=list.map(m=>({'Nome':m.name||'','Nome completo':m.fullName||'','Número':m.number??'','Posição':m.pos||'','Nascimento':m.birth?m.birth.split('-').reverse().join('/'):'','Idade':ageOf(m.birth)??'',
-    'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Função':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
+    'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Função':m.cargo||'','Clube':m.club||'','Competição':m.competition||'','Permissão':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
   const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=Object.keys(rows[0]||{Nome:1}).map(k=>({wch:Math.max(10,k.length+2)}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Usuários');
   XLSX.writeFile(wb,'usuarios-dimas-hub-'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -878,7 +889,7 @@ document.getElementById('iFile').onchange=e=>{
     iRows=rows.slice(hi+1).filter(rw=>rw.some(c=>String(c).trim()!=='')).map(rw=>{const o={};keys.forEach((k,i)=>{if(k)o[k]=rw[i]});
       const d={name:String(o.name||'').trim(),fullName:String(o.fullName||'').trim(),number:o.number!==''&&o.number!=null&&!isNaN(+o.number)?+o.number:null,pos:normPos(o.pos||''),birth:toDate(o.birth),nat:String(o.nat||'').trim(),
         height:o.height!==''&&o.height!=null&&!isNaN(parseFloat(o.height))?Math.round(parseFloat(o.height)<3?parseFloat(o.height)*100:parseFloat(o.height)):null,foot:normFoot(o.foot||''),tag:String(o.tag||'').trim(),
-        email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('com')?'Comissão':'Atleta',func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
+        email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('com')?'Comissão':(norm(o.role||'').startsWith('conv')?'Convidado':'Atleta'),func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
         groupNames:String(o.groups||'').split(/[;,|]/).map(x=>x.trim()).filter(Boolean)};
       const ex=members.find(m=>(d.email&&m.id===d.email)||(norm(m.name)===norm(d.name)&&(d.number==null||m.number==null||m.number===d.number)));d.existing=ex?ex.id:null;d.ok=!!d.name&&(!d.email||/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email));return d});
     if(!iRows.length)throw new Error('A planilha não tem linhas com dados.');
@@ -1040,10 +1051,10 @@ function fillShare(v){
   const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
   document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Usuários).</span>';
   const list=document.getElementById('vMembers'),q=document.getElementById('vMemSearch');
-  const draw=()=>{const f=norm(q.value);const ath=athletesAll().filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
-    list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
+  const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>m.role!=='Comissão'&&m.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='Atleta'?-1:1)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
+    list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role==='Convidado'?' <span style="color:var(--muted)">· convidado'+(a.club?' · '+esc(a.club):'')+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
     list.querySelectorAll('input[name=sm]').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
-  const sum=()=>{const g=[...document.querySelectorAll('#vGroups input:checked')].length;document.getElementById('vShareSum').textContent=(g||sm.size)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${sm.size} atleta${sm.size!==1?'s':''}.`:'Somente a comissão vê este vídeo.'};
+  const sum=()=>{const g=[...document.querySelectorAll('#vGroups input:checked')].length;document.getElementById('vShareSum').textContent=(g||sm.size)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${sm.size} pessoa${sm.size!==1?'s':''}.`:'Somente a comissão vê este vídeo.'};
   document.getElementById('vGroups').onchange=sum;q.oninput=draw;draw();sum();
   fillShare.read=()=>({shareGroups:[...document.querySelectorAll('#vGroups input:checked')].map(i=>i.value),shareMembers:[...sm]});
 }
@@ -1133,6 +1144,8 @@ function renderAv(){
   document.getElementById('fPhotoEdit').hidden=!srcImg;document.getElementById('fPhotoDel').hidden=!photo;
 }
 document.getElementById('fName').addEventListener('input',()=>{if(!photo)renderAv()});
+function roleSections(){const r=form.role.value;document.getElementById('secAtleta').hidden=r!=='Atleta';document.getElementById('secComissao').hidden=r!=='Comissão';document.getElementById('secConvidado').hidden=r!=='Convidado'}
+form.querySelectorAll('input[name=role]').forEach(r=>r.addEventListener('change',roleSections));
 document.getElementById('fEmail').addEventListener('input',e=>{
   const v=e.target.value.trim().toLowerCase();const changed=!!v&&(!editing||v!==(editing.email||''));
   document.getElementById('pwField').hidden=!changed;
