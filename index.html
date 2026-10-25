@@ -837,12 +837,12 @@ function teamHtml(name,away){const t=teamOf(name);return `<span class="tm${away?
 const COMP_LOGOS=[[/serie b|série b/,'https://api.sofascore.app/api/v1/unique-tournament/390/image'],[/serie a|série a|brasileir[aã]o$/,'https://api.sofascore.app/api/v1/unique-tournament/325/image'],[/nordeste/,'https://api.sofascore.app/api/v1/unique-tournament/1596/image'],[/cearense/,'https://api.sofascore.app/api/v1/unique-tournament/378/image'],[/copa do brasil/,'https://api.sofascore.app/api/v1/unique-tournament/373/image']];
 function compLogo(c){if(c.logo)return c.logo;const n=norm(c.name);const f=COMP_LOGOS.find(([re])=>re.test(n));return f?f[1]:''}
 function venueOf(m){return m.venue||(teamOf(m.home)?.venue)||''}
-const PHASES=[[/oitavas|round of 16/,'Oitavas de final',10],[/quartas|quarter/,'Quartas de final',20],[/semi/,'Semifinal',30],[/3[ºo°]? ?lugar|terceiro/,'3º lugar',40],[/5[ºo°]? ?lugar|quinto/,'5º lugar',41],[/^final|final$/,'Final',50]];
+const PHASES=[[/oitavas|round of 16/,'Oitavas de final',10],[/quartas|quarter/,'Quartas de final',20],[/semi/,'Semifinal',30],[/3[ºo°]? ?lugar|terceiro/,'3º lugar',40],[/5[ºo°]? ?lugar|quinto/,'5º lugar',41],[/^final|final$/,'Final',50],[/rebaix|relegat/,null,60]];
 function phaseOf(r){const n=norm(r);return PHASES.find(([re])=>re.test(n))||null}
-function roundLabel(r,cupLike){if(r==null||r==='')return 'Sem rodada';if(/^\d+$/.test(String(r)))return (cupLike?'Fase de grupos · ':'')+'Rodada '+r;const ph=phaseOf(r);return ph?ph[1]:String(r)}
+function roundLabel(r,cupLike){if(r==null||r==='')return 'Sem rodada';if(/^\d+$/.test(String(r)))return (cupLike?'Fase de grupos · ':'')+'Rodada '+r;const ph=phaseOf(r);return ph&&ph[1]?ph[1]:String(r)}
 function roundRank(r){if(/^\d+$/.test(String(r)))return [0,+r,''];const ph=phaseOf(r);return ph?[2,ph[2],String(r)]:[1,0,String(r)]}
 function roundSort(a,b){const ra=roundRank(a),rb=roundRank(b);return ra[0]-rb[0]||ra[1]-rb[1]||ra[2].localeCompare(rb[2],'pt')}
-function isCupLike(ms){return ms.some(m=>phaseOf(String(m.round??'')))}
+function isCupLike(ms){return ms.some(m=>{const ph=phaseOf(String(m.round??''));return ph&&ph[2]<60})}
 ['cSearch','cComp','cRound'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
 document.getElementById('cComp').addEventListener('change',()=>{document.getElementById('cRound').value=''});
 function renderComps(){
