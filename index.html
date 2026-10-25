@@ -453,7 +453,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="box">
     <form id="vForm" autocomplete="off">
       <h3 id="vTitle">Adicionar vídeo</h3>
-      <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo Completo</option><option>Análise</option><option>Treino</option></select></div>
+      <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo</option><option>Análise</option><option>Treino</option></select></div>
       <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="vName">Título</label><input type="text" id="vName" required maxlength="80" placeholder="Ex.: Ceará 2 x 2 Juventude"></div>
       <div class="f"><label for="vComp">Competição</label><input type="text" id="vComp" list="compList" maxlength="60" placeholder="Ex.: Brasileiro Série B 2026"><datalist id="compList"></datalist></div>
@@ -1026,7 +1026,7 @@ function renderVideos(){
   if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
   vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
-    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge tp">${esc(v.type||'Jogo Completo')}</span></div>
+    <div class="th"><img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy"><span class="badge tp">${esc(v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo'))}</span></div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
@@ -1074,7 +1074,7 @@ let vEditing=null, vThumb=null, vLances=null, vLancesI=null, vDurAuto=0;
 function openVideo(v){
   vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vLancesI=v?.lancesInd||null;vDurAuto=0;vErr.hidden=true;
   document.getElementById('vTitle').textContent=v?'Editar vídeo':'Adicionar vídeo';
-  document.getElementById('vType').value=v?.type||'Jogo Completo';document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
+  document.getElementById('vType').value=(v?.type==='Jogo Completo'?'Jogo':v?.type)||'Jogo';document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
   xmlNotes();fillSync(v?.sync||null);
