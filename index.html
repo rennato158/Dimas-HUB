@@ -701,6 +701,10 @@ function xmlPlayers(set){
 }
 ['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
 function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
+// Grupos automáticos por nível (não editáveis)
+const AUTO_GROUPS=[{id:'auto:atletas',name:'Atletas',test:m=>m.role==='Atleta'},{id:'auto:comissao',name:'Comissão',test:m=>m.role==='Comissão'},{id:'auto:diretoria',name:'Diretoria',test:m=>m.role==='Comissão'&&m.cargo==='Diretoria'},{id:'auto:convidados',name:'Convidados',test:m=>m.role==='Convidado'}];
+function inGroup(m,gid){const ag=AUTO_GROUPS.find(g=>g.id===gid);return ag?ag.test(m):(m.groups||[]).includes(gid)}
+function allGroups(){return [...AUTO_GROUPS.map(g=>({id:g.id,name:g.name,auto:true})),...groups]}
 function renderAthletes(){
   const aCards=document.getElementById('aCards');const all=isStaff()?athletesAll():athletesAll().filter(a=>a.id===me?.id);
   fillSelect(document.getElementById('aGroup'),groups.map(g=>({v:g.id,t:g.name})),'Todos os grupos',true);
@@ -766,10 +770,11 @@ function renderMembers(){
 mList.onclick=e=>{const r=e.target.closest('.mrow');if(!r)return;openForm(members.find(m=>m.id===r.dataset.id))};
 
 function renderGroups(){
-  gCount.textContent=groups.length?groups.length+' grupo'+(groups.length>1?'s':''):'';
-  if(!groups.length){gList.innerHTML='<div class="emptyl">Nenhum grupo ainda. Crie um acima e depois marque os membros no cadastro.</div>';return}
-  gList.innerHTML=groups.map(g=>{const n=members.filter(m=>(m.groups||[]).includes(g.id)).length;
+  gCount.textContent=(AUTO_GROUPS.length+groups.length)+' grupos';
+  const auto=AUTO_GROUPS.map(g=>{const n=members.filter(g.test).length;return `<div class="grow"><span class="gn">${esc(g.name)}</span><span class="gc">${n} membro${n!==1?'s':''}</span><span class="x" style="color:var(--muted);font-size:11px;cursor:default" title="Grupo automático, pelo nível">auto</span></div>`}).join('');
+  const custom=groups.map(g=>{const n=members.filter(m=>(m.groups||[]).includes(g.id)).length;
     return `<div class="grow"><span class="gn">${esc(g.name)}</span><span class="gc">${n} membro${n!==1?'s':''}</span><button type="button" class="x" data-id="${g.id}" title="Excluir grupo" aria-label="Excluir ${esc(g.name)}">×</button></div>`}).join('');
+  gList.innerHTML=auto+(custom||'<div class="emptyl" style="padding:14px">Grupos personalizados: crie acima e marque os membros no cadastro.</div>');
 }
 document.getElementById('gForm').onsubmit=async e=>{
   e.preventDefault();const inp=document.getElementById('gName');const name=inp.value.trim();if(!name)return;
@@ -1027,7 +1032,7 @@ document.getElementById('vImgDel').onclick=()=>{vThumb=null;updThumb()};
 function shareSummary(v){const g=(v.shareGroups||[]).length,m=(v.shareMembers||[]).length;return (g||m)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${m} atleta${m!==1?'s':''}.`:'Somente a comissão vê este vídeo.'}
 // viewers = atletas escolhidos + membros dos grupos escolhidos (gravado no vídeo para as regras do banco)
 function computeViewers(shareGroups,shareMembers){
-  const set=new Set(shareMembers||[]);members.forEach(m=>{if((m.groups||[]).some(g=>(shareGroups||[]).includes(g)))set.add(m.id)});return [...set];
+  const set=new Set(shareMembers||[]);members.forEach(m=>{if((shareGroups||[]).some(g=>inGroup(m,g)))set.add(m.id)});return [...set];
 }
 async function recomputeAllViewers(){
   if(!me||me.func!=='Administrador')return;
@@ -1051,7 +1056,7 @@ document.getElementById('sForm').onsubmit=async e=>{
 };
 function fillShare(v){
   const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
-  document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Usuários).</span>';
+  document.getElementById('vGroups').innerHTML=allGroups().map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join('');
   const list=document.getElementById('vMembers'),q=document.getElementById('vMemSearch');
   const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>m.role!=='Comissão'&&m.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='Atleta'?-1:1)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
     list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role==='Convidado'?' <span style="color:var(--muted)">· convidado'+(a.club?' · '+esc(a.club):'')+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
@@ -1062,7 +1067,7 @@ function fillShare(v){
 }
 function canSee(v){
   if(!me)return false;if(me.role==='Comissão'||me.func==='Administrador')return true;
-  return (v.viewers||[]).includes(me.id)||(v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>(me.groups||[]).includes(g));
+  return (v.viewers||[]).includes(me.id)||(v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>inGroup(me,g));
 }
 function isStaff(){return !!me&&(me.role==='Comissão'||me.func==='Administrador')}
 function renderXmlPlayers(){
