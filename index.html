@@ -307,7 +307,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
-  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Elenco</button></nav>
+  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
   <div class="spacer"></div>
   <div class="user" id="userBox" hidden><img id="userPic" alt=""><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
   <div class="src" hidden>
@@ -395,7 +395,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 <div class="elenco" id="elenco" hidden>
   <section class="panel">
     <div class="hd">
-      <h2>Elenco</h2><span class="sub" id="mCount"></span>
+      <h2>Usuários</h2><span class="sub" id="mCount"></span>
       <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button></div>
       <button class="btn" type="button" id="wipeBtn" style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
       <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
@@ -860,8 +860,8 @@ document.getElementById('exportBtn').onclick=()=>{
   const rows=list.map(m=>({'Nome':m.name||'','Nome completo':m.fullName||'','Número':m.number??'','Posição':m.pos||'','Nascimento':m.birth?m.birth.split('-').reverse().join('/'):'','Idade':ageOf(m.birth)??'',
     'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Função':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
   const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=Object.keys(rows[0]||{Nome:1}).map(k=>({wch:Math.max(10,k.length+2)}));
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Elenco');
-  XLSX.writeFile(wb,'elenco-dimas-hub-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Usuários');
+  XLSX.writeFile(wb,'usuarios-dimas-hub-'+new Date().toISOString().slice(0,10)+'.xlsx');
 };
 document.getElementById('importBtn').onclick=()=>{iRows=[];iPrev.hidden=true;iErr.hidden=true;iGo.disabled=true;document.getElementById('iNote').textContent='';iModal.hidden=false};
 document.getElementById('iCancel').onclick=()=>{iModal.hidden=true};
@@ -1038,7 +1038,7 @@ document.getElementById('sForm').onsubmit=async e=>{
 };
 function fillShare(v){
   const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
-  document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Elenco).</span>';
+  document.getElementById('vGroups').innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhum grupo criado (aba Usuários).</span>';
   const list=document.getElementById('vMembers'),q=document.getElementById('vMemSearch');
   const draw=()=>{const f=norm(q.value);const ath=athletesAll().filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
     list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
