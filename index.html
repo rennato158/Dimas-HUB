@@ -450,6 +450,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <span class="spacer"></span>
     <input type="search" id="cSearch" placeholder="Buscar time, estádio ou rodada…" aria-label="Buscar" style="width:240px;max-width:100%">
     <select id="cComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
+    <button class="btn" type="button" id="impMatches" hidden>Importar jogos</button>
     <button class="btn" type="button" id="addComp" hidden>+ Competição</button>
     <button class="btn primary" type="button" id="addMatch" hidden>+ Jogo</button>
   </div>
@@ -466,6 +467,19 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <span class="ferr" id="cErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="cDel" hidden>Remover</button><button type="button" class="btn" id="cCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="imModal" hidden>
+  <div class="box" style="max-width:760px">
+    <form id="imForm">
+      <h3>Importar jogos</h3>
+      <p class="pwnote">Planilha .xlsx ou .csv com as colunas: <strong>Competição</strong>, Temporada, <strong>Rodada</strong>, <strong>Data</strong>, Hora, <strong>Mandante</strong>, Placar mandante, Placar visitante, <strong>Visitante</strong>, Estádio, Link, Observação. Competições novas são criadas; jogo já existente (mesma competição, data, mandante e visitante) é atualizado.</p>
+      <div class="inline"><label class="btn primary" for="imFile">Escolher planilha<input type="file" id="imFile" accept=".xlsx,.xls,.csv,text/csv" style="display:none"></label><a class="btn" id="imTemplate" href="#" download="modelo-jogos.csv">Baixar modelo (CSV)</a><span class="pwnote" id="imNote"></span></div>
+      <div class="prev" id="imPrev" hidden></div>
+      <span class="ferr" id="imErr" hidden></span>
+      <div class="actions"><button type="button" class="btn" id="imCancel">Fechar</button><button type="submit" class="btn primary" id="imGo" disabled>Importar</button></div>
     </form>
   </div>
 </div>
@@ -738,7 +752,7 @@ function setMe(m){
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
   const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');
-  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;
+  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;
   if(staffNow){
     unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
@@ -837,6 +851,47 @@ document.getElementById('jForm').onsubmit=async e=>{
   catch(err){const x=document.getElementById('jErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 document.getElementById('jDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}await db.collection('matches').doc(jEditing.id).delete();jModal.hidden=true};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cModal.hidden=true;jModal.hidden=true}});
+// importação de jogos
+const imModal=document.getElementById('imModal'),imPrev=document.getElementById('imPrev'),imErr=document.getElementById('imErr'),imGo=document.getElementById('imGo');let imRows=[];
+const MCOLS={comp:['competicao','competição','liga','campeonato'],season:['temporada','ano','season'],round:['rodada','round','fase'],date:['data','date'],time:['hora','horario','horário','time'],home:['mandante','casa','home','time 1'],hs:['placar mandante','gols mandante','placar casa','hs'],as:['placar visitante','gols visitante','placar fora','as'],away:['visitante','fora','away','time 2'],venue:['estadio','estádio','local','venue'],url:['link','video','vídeo','youtube','url'],note:['observacao','observação','obs','nota']};
+function mcol(h){const n=norm(h);for(const k in MCOLS)if(MCOLS[k].some(c=>norm(c)===n))return k;return null}
+document.getElementById('imTemplate').href='data:text/csv;charset=utf-8,'+encodeURIComponent('\ufeffCompetição;Temporada;Rodada;Data;Hora;Mandante;Placar mandante;Placar visitante;Visitante;Estádio;Link;Observação\nBrasileiro Série B;2026;34;17/10/2026;17:00;Ceará;2;2;Juventude;Arena Castelão, Fortaleza;https://youtu.be/...;\n');
+document.getElementById('impMatches').onclick=()=>{imRows=[];imPrev.hidden=true;imErr.hidden=true;imGo.disabled=true;document.getElementById('imNote').textContent='';imModal.hidden=false};
+document.getElementById('imCancel').onclick=()=>{imModal.hidden=true};imModal.addEventListener('click',e=>{if(e.target===imModal)imModal.hidden=true});
+document.getElementById('imFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;imErr.hidden=true;const r=new FileReader();
+  r.onload=()=>{try{
+    const wb=XLSX.read(r.result,{type:'array',cellDates:true,raw:false});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    const hi=rows.findIndex(rw=>rw.some(c=>mcol(c)==='home')&&rw.some(c=>mcol(c)==='away'));if(hi<0)throw new Error('Não achei as colunas "Mandante" e "Visitante" na primeira linha.');
+    const keys=rows[hi].map(mcol);
+    imRows=rows.slice(hi+1).filter(rw=>rw.some(c=>String(c).trim()!=='')).map(rw=>{const o={};keys.forEach((k,i)=>{if(k)o[k]=rw[i]});
+      const n=v=>(v===''||v==null||isNaN(+v))?null:+v;const rd=String(o.round??'').trim();
+      let time=String(o.time||'').trim();if(o.time instanceof Date)time=String(o.time.getHours()).padStart(2,'0')+':'+String(o.time.getMinutes()).padStart(2,'0');else if(/^\d\.?\d*$/.test(time)&&+time<1){const mins=Math.round(+time*1440);time=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0')}
+      const url=String(o.url||'').trim();
+      const d={comp:String(o.comp||'').trim(),season:String(o.season||'').trim(),round:/^\d+$/.test(rd)?+rd:(rd||null),date:toDate(o.date),time,home:String(o.home||'').trim(),away:String(o.away||'').trim(),hs:n(o.hs),as:n(o.as),venue:String(o.venue||'').trim(),url:url||null,ytId:url?window.DimasPlayer.ytId(url):null,note:String(o.note||'').trim()};
+      d.ok=!!(d.comp&&d.date&&d.home&&d.away);return d});
+    if(!imRows.length)throw new Error('A planilha não tem linhas com dados.');
+    imPrev.innerHTML='<table><thead><tr><th></th><th>Competição</th><th>Temp.</th><th>Rod.</th><th>Data</th><th>Hora</th><th>Mandante</th><th>Placar</th><th>Visitante</th><th>Estádio</th><th>Vídeo</th></tr></thead><tbody>'+imRows.map(d=>`<tr class="${d.ok?'':'bad'}"><td>${d.ok?'ok':'erro'}</td><td>${esc(d.comp)}</td><td>${esc(d.season)}</td><td>${d.round??''}</td><td>${d.date?fmtD(d.date):''}</td><td>${esc(d.time)}</td><td>${esc(d.home)}</td><td>${d.hs!=null&&d.as!=null?d.hs+'-'+d.as:''}</td><td>${esc(d.away)}</td><td>${esc(d.venue)}</td><td>${d.ytId?'sim':''}</td></tr>`).join('')+'</tbody></table>';
+    imPrev.hidden=false;const ok=imRows.filter(d=>d.ok).length;document.getElementById('imNote').textContent=`${imRows.length} linha${imRows.length>1?'s':''}, ${ok} válida${ok!==1?'s':''}${ok<imRows.length?' (as demais sem competição, data, mandante ou visitante)':''}.`;imGo.disabled=!ok;imGo.textContent='Importar '+ok;
+  }catch(ex){imErr.textContent=ex.message||String(ex);imErr.hidden=false;imGo.disabled=true}};
+  r.readAsArrayBuffer(f);e.target.value='';
+};
+document.getElementById('imForm').onsubmit=async e=>{
+  e.preventDefault();imGo.disabled=true;imErr.hidden=true;
+  try{
+    const rows=imRows.filter(d=>d.ok);const cmap={};leagues.forEach(c=>cmap[norm(c.name+'|'+(c.season||''))]=c.id);
+    for(const d of rows){const k=norm(d.comp+'|'+d.season);if(!cmap[k]){const ref=await db.collection('competitions').add({name:d.comp,season:d.season,createdAt:firebase.firestore.FieldValue.serverTimestamp()});cmap[k]=ref.id}}
+    let done=0;
+    for(let i=0;i<rows.length;i+=300){const batch=db.batch();
+      rows.slice(i,i+300).forEach(d=>{const compId=cmap[norm(d.comp+'|'+d.season)];
+        const ex=matches.find(m=>m.compId===compId&&m.date===d.date&&norm(m.home)===norm(d.home)&&norm(m.away)===norm(d.away));
+        const data={compId,round:d.round,date:d.date,time:d.time,home:d.home,away:d.away,hs:d.hs,as:d.as,venue:d.venue,note:d.note};
+        if(d.url){data.url=d.url;data.ytId=d.ytId}
+        if(ex)batch.update(db.collection('matches').doc(ex.id),data);else batch.set(db.collection('matches').doc(),Object.assign(data,{url:d.url||null,ytId:d.ytId||null,createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id}));done++});
+      await batch.commit()}
+    document.getElementById('imNote').textContent=done+' jogo'+(done>1?'s':'')+' importado'+(done>1?'s':'')+'.';imPrev.hidden=true;imRows=[];imGo.textContent='Importar';
+  }catch(ex){imErr.textContent='Falhou: '+(ex.code||ex.message);imErr.hidden=false;imGo.disabled=false}
+};
 /* ---- notificações ---- */
 function timeAgo(ts){const d=ts&&ts.toDate?ts.toDate():null;if(!d)return 'agora';const m=Math.round((Date.now()-d)/60000);if(m<1)return 'agora';if(m<60)return m+' min';const h=Math.round(m/60);if(h<24)return h+' h';return d.toLocaleDateString('pt-BR')}
 function renderNotifs(){
