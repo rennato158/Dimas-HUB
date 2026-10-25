@@ -1022,7 +1022,7 @@ function renderVideos(){
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
-      ${v.lances||v.lancesInd?`<div class="mt xmls">${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col) · ${v.lances.instances.length}</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind) · ${v.lancesInd.instances.length}</span>`:''}</div>`:''}</div>
+      ${v.lances||v.lancesInd?`<div class="mt xmls">${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col)</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind)</span>`:''}</div>`:''}</div>
     ${admin?`<div class="cact"><button type="button" data-edit="${esc(v.id)}"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg>Editar</button><button type="button" data-share="${esc(v.id)}" title="${esc(shareSummary(v))}"><svg viewBox="0 0 16 16"><circle cx="12.5" cy="3" r="2"/><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="13" r="2"/><path d="M5 7l6-3 .6 1.2-6 3zM5 9l6 3 .6-1.2-6-3z"/></svg>Compartilhar</button></div>`:''}
   </div>`).join('');
 }
