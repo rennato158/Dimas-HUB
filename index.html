@@ -507,9 +507,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label>Nível</label>
         <div class="rolepick" style="grid-template-columns:1fr 1fr 1fr">
-          <label><input type="radio" name="role" value="Atleta" checked><span>Atleta<small>Vê o que for compartilhado</small></span></label>
-          <label><input type="radio" name="role" value="Comissão"><span>Comissão<small>Vê todos os vídeos</small></span></label>
-          <label><input type="radio" name="role" value="Convidado"><span>Convidado<small>Vê o que for compartilhado</small></span></label>
+          <label><input type="radio" name="role" value="Atleta" checked><span>Atleta</span></label>
+          <label><input type="radio" name="role" value="Comissão"><span>Comissão</span></label>
+          <label><input type="radio" name="role" value="Convidado"><span>Convidado</span></label>
         </div>
       </div>
       <div id="secAtleta">
@@ -536,7 +536,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label for="fFunc">Permissão (Administrador gerencia usuários, vídeos e grupos)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
       <div class="f"><label>Grupos</label><div class="gpick" id="fGroups"><span class="sub" style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span></div></div>
-      <div class="f"><label><input type="checkbox" id="fActive" checked> Ativo (pode entrar no HUB)</label></div>
       <div class="done" id="fDone" hidden></div>
       <span class="ferr" id="fErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="fDel" hidden>Remover</button><button type="button" class="btn" id="fCancel">Cancelar</button><button type="submit" class="btn primary" id="fSave">Salvar</button></div>
@@ -795,7 +794,7 @@ function openForm(m){
   document.getElementById('fCargo').value=m?.cargo||'';document.getElementById('fClub').value=m?.club||'';document.getElementById('fCompet').value=m?.competition||'';roleSections();
   document.getElementById('fFunc').value=(m?.func==='Administrador')?'Administrador':'Usuário';
   document.getElementById('fNum').value=m?.number??'';
-  document.getElementById('fActive').checked=m?m.active!==false:true;
+
   const gp=document.getElementById('fGroups');
   gp.innerHTML=groups.length?groups.map(g=>`<label><input type="checkbox" value="${g.id}" ${(m?.groups||[]).includes(g.id)?'checked':''}>${esc(g.name)}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span>';
   const del=document.getElementById('fDel');del.hidden=!m||m.id===me?.id;del.textContent='Remover';del.dataset.confirm='';
@@ -812,8 +811,8 @@ form.onsubmit=async e=>{
   const g=id=>document.getElementById(id).value;const h=g('fHeight');
   const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),competition:g('fCompet').trim(),
     number:num===''?null:+num,pos:g('fPos'),foot:g('fFoot'),birth:g('fBirth')||null,nat:g('fNat').trim(),height:h===''?null:+h,
-    groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:document.getElementById('fActive').checked,photo:photo||null};
-  if(editing&&editing.id===me.id&&(data.func!=='Administrador'||!data.active)){fErr.textContent='Você não pode tirar o próprio acesso de Administrador.';fErr.hidden=false;return}
+    groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:editing?editing.active!==false:true,photo:photo||null};
+  if(editing&&editing.id===me.id&&data.func!=='Administrador'){fErr.textContent='Você não pode tirar a própria permissão de Administrador.';fErr.hidden=false;return}
   const pw=document.getElementById('fPw').value;
   const targetId=email||(editing?editing.id:genId());
   const moved=!!editing&&targetId!==editing.id;
