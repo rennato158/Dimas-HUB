@@ -523,6 +523,17 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label for="jUrl">Link do vídeo (YouTube)</label><input type="url" id="jUrl" placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="jNote">Observação</label><input type="text" id="jNote" maxlength="140"></div>
+      <div class="f2">
+        <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="jXml">Anexar<input type="file" id="jXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="jXmlDel" hidden>×</button></div><span class="pwnote" id="jXmlNote">nenhuma</span></div>
+        <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="jXmlI">Anexar<input type="file" id="jXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="jXmlIDel" hidden>×</button></div><span class="pwnote" id="jXmlINote">nenhuma</span></div>
+      </div>
+      <div class="f"><label>Sincronização (apito inicial no vídeo)</label>
+        <div class="sync">
+          <div class="row2"><span class="lb">1º tempo</span><input type="text" id="jS1" placeholder="mm:ss"><span></span></div>
+          <div class="row2"><span class="lb">2º tempo</span><input type="text" id="jS2" placeholder="mm:ss"><span></span></div>
+          <p class="pwnote">Em branco = nenhum ajuste. Os marcadores "SINC. TEMPO" da XML são alinhados a esses minutos.</p>
+        </div>
+      </div>
       <span class="ferr" id="jErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="jDel" hidden>Remover</button><button type="button" class="btn" id="jCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
     </form>
@@ -805,7 +816,11 @@ function show(v,keepAthlete){
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
 /* ---- competições ---- */
 const cList=document.getElementById('cList'), cModal=document.getElementById('cModal'), jModal=document.getElementById('jModal');
-let cEditing=null, jEditing=null;
+let cEditing=null, jEditing=null, jL=null, jLI=null;
+function jNotes(){document.getElementById('jXmlNote').textContent=jL?jL.instances.length+' lances':'nenhuma';document.getElementById('jXmlDel').hidden=!jL;document.getElementById('jXmlINote').textContent=jLI?jLI.instances.length+' lances':'nenhuma';document.getElementById('jXmlIDel').hidden=!jLI}
+function jPick(id,set){document.getElementById(id).onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{const d=window.DimasPlayer.parseXml(t);const x=document.getElementById('jErr');if(!d){x.textContent='Esse XML não tem lances no formato esperado.';x.hidden=false;return}set(d);x.hidden=true;jNotes()});e.target.value=''}}
+jPick('jXml',d=>{jL=d});jPick('jXmlI',d=>{jLI=d});
+document.getElementById('jXmlDel').onclick=()=>{jL=null;jNotes()};document.getElementById('jXmlIDel').onclick=()=>{jLI=null;jNotes()};
 function fmtD(d){if(!d)return '';const [y,m,dd]=d.split('-');return `${dd}-${m}-${y}`}
 function teamOf(name){const n=norm(name);return teams.find(t=>norm(t.name)===n)||teams.find(t=>norm(t.name).startsWith(n)||n.startsWith(norm(t.name)))||null}
 function teamHtml(name,away){const t=teamOf(name);return `<span class="tm${away?' a':''}">${t&&t.logo?`<img src="${esc(t.logo)}" alt="" referrerpolicy="no-referrer" loading="lazy">`:''}<span>${esc(name)}</span></span>`}
@@ -834,7 +849,7 @@ function renderComps(){
         <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
         <span class="fx">${teamHtml(m.home,false)}<span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span>${teamHtml(m.away,true)}</span>
         <span class="ven" title="${esc(venueOf(m))}">${venueOf(m)?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(venueOf(m))}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
-        <span class="acts"><button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
+        <span class="acts">${m.lances||m.lancesInd?`<button type="button" data-play="${esc(m.id)}" title="${[m.lances?'XML coletiva: '+m.lances.instances.length+' lances':null,m.lancesInd?'XML individual: '+m.lancesInd.instances.length+' lances':null].filter(Boolean).join(' · ')}"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l-5 5a1.5 1.5 0 0 0 2 2l5-5a3 3 0 0 0-4-4l-6 6a4.5 4.5 0 0 0 6 6l5-5-1-1-5 5a3 3 0 0 1-4-4l6-6a1.5 1.5 0 0 1 2 2l-5 5"/></svg></button>`:''}<button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
       </div>`).join('')}).join('');
     const lg=compLogo(c);
     return `<section class="league"><div class="band">${lg?`<img class="clogo" src="${esc(lg)}" alt="" referrerpolicy="no-referrer">`:''}<span class="season">${esc(c.season||'—')}</span><span class="nm">${esc(c.name)}</span><span class="cnt">${ms.length} jogo${ms.length!==1?'s':''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
@@ -848,10 +863,11 @@ cList.addEventListener('click',e=>{
   if(b.dataset.cadd){openMatch(null,b.dataset.cadd);return}
 });
 function playMatch(m){
-  if(!m||!m.ytId)return;currentVideo=null;athlete=null;
-  const P=window.DimasPlayer;document.getElementById('xmlSeg').hidden=true;
-  P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date)].filter(Boolean).join(' · '));
-  P.loadLances({instances:[],rows:[]});P.loadYT(m.ytId);show('lances');
+  if(!m||!m.ytId)return;currentVideo=null;currentItem=m;athlete=null;
+  const P=window.DimasPlayer;setXmlSeg(m);const set=lancesFor(m);
+  P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date),set?set.instances.length+' lances':null].filter(Boolean).join(' · '));
+  if(set)P.loadLances(applySync(set,m.sync),{individual:xmlKind==='lancesInd'});else P.loadLances({instances:[],rows:[]});
+  P.loadYT(m.ytId);show('lances');
 }
 // competição
 function openComp(c){cEditing=c||null;document.getElementById('cTitle').textContent=c?'Editar competição':'Nova competição';document.getElementById('cName').value=c?.name||'';document.getElementById('cSeason').value=c?.season||'';document.getElementById('cLogo').value=c?.logo||'';
@@ -869,6 +885,7 @@ function openMatch(m,compId){
   const sel=document.getElementById('jComp');sel.innerHTML=leagues.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.season?' '+esc(c.season):''}</option>`).join('');sel.value=m?.compId||compId||(leagues[0]?.id||'');
   const g=(id,v)=>document.getElementById(id).value=v??'';
   g('jRound',m?.round);g('jDate',m?.date);g('jTime',m?.time);g('jVenue',m?.venue);g('jHome',m?.home);g('jAway',m?.away);g('jHS',m?.hs);g('jAS',m?.as);g('jUrl',m?.url);g('jNote',m?.note);
+  jL=m?.lances||null;jLI=m?.lancesInd||null;jNotes();g('jS1',m?.sync?.v1!=null?fmtDur(m.sync.v1):'');g('jS2',m?.sync?.v2!=null?fmtDur(m.sync.v2):'');
   const d=document.getElementById('jDel');d.hidden=!m;d.textContent='Remover';d.dataset.confirm='';document.getElementById('jErr').hidden=true;jModal.hidden=false;document.getElementById(m?'jHome':'jRound').focus();
 }
 document.getElementById('jHome').addEventListener('change',()=>{const v=document.getElementById('jVenue');if(!v.value.trim()){const t=teamOf(document.getElementById('jHome').value);if(t?.venue)v.value=t.venue}});
@@ -878,7 +895,9 @@ document.getElementById('jForm').onsubmit=async e=>{
   e.preventDefault();const g=id=>document.getElementById(id).value.trim();const url=g('jUrl');const ytId=url?window.DimasPlayer.ytId(url):null;
   if(url&&!ytId){const x=document.getElementById('jErr');x.textContent='Não reconheci esse link do YouTube.';x.hidden=false;return}
   const n=v=>v===''?null:+v;const r=g('jRound');
-  const data={compId:g('jComp'),round:/^\d+$/.test(r)?+r:(r||null),date:g('jDate'),time:g('jTime'),venue:g('jVenue'),home:g('jHome'),away:g('jAway'),hs:n(g('jHS')),as:n(g('jAS')),url:url||null,ytId:ytId||null,note:g('jNote')};
+  const s1=g('jS1'),s2=g('jS2');
+  const data={compId:g('jComp'),round:/^\d+$/.test(r)?+r:(r||null),date:g('jDate'),time:g('jTime'),venue:g('jVenue'),home:g('jHome'),away:g('jAway'),hs:n(g('jHS')),as:n(g('jAS')),url:url||null,ytId:ytId||null,note:g('jNote'),
+    lances:jL||null,lancesInd:jLI||null,sync:(s1||s2)?{v1:s1?parseDur(s1):null,v2:s2?parseDur(s2):null}:null};
   try{if(jEditing)await db.collection('matches').doc(jEditing.id).update(data);else await db.collection('matches').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id}));jModal.hidden=true}
   catch(err){const x=document.getElementById('jErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 document.getElementById('jDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}await db.collection('matches').doc(jEditing.id).delete();jModal.hidden=true};
@@ -1317,14 +1336,14 @@ vCards.addEventListener('click',e=>{
   const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id));
 });
 vCards.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.card');if(c)playVideo(videos.find(v=>v.id===c.dataset.id))}});
-let xmlKind='lances';
+let xmlKind='lances', currentItem=null;
 function setXmlSeg(v){
   const seg=document.getElementById('xmlSeg');const has={lances:!!v.lances,lancesInd:!!v.lancesInd};
   if(!has[xmlKind])xmlKind=has.lances?'lances':(has.lancesInd?'lancesInd':'lances');
   seg.hidden=!(has.lances&&has.lancesInd);
   seg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.x===xmlKind);const d=v[b.dataset.x];b.textContent=(b.dataset.x==='lances'?'Coletiva':'Individual')+(d?' ('+d.instances.length+')':'')});
 }
-document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentVideo)return;const v=videos.find(x=>x.id===currentVideo);if(!v||!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);const st=lancesFor(v);window.DimasPlayer.loadLances(applySync(st||{instances:[],rows:[]},v.sync),{individual:xmlKind==='lancesInd'});
+document.getElementById('xmlSeg').onclick=e=>{const b=e.target.closest('button');if(!b||!currentItem)return;const v=currentItem;if(!v[b.dataset.x])return;xmlKind=b.dataset.x;setXmlSeg(v);const st=lancesFor(v);window.DimasPlayer.loadLances(applySync(st||{instances:[],rows:[]},v.sync),{individual:xmlKind==='lancesInd'});
   window.DimasPlayer.setTitle(v.title,[v.caption,v[xmlKind].instances.length+' lances ('+(xmlKind==='lances'?'coletiva':'individual')+')',v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '))};
 function lancesFor(v){
   let set=v[xmlKind]||null;
@@ -1332,7 +1351,7 @@ function lancesFor(v){
   return set;
 }
 function playVideo(v){
-  if(!v)return;currentVideo=v.id;renderVideos();
+  if(!v)return;currentVideo=v.id;currentItem=v;renderVideos();
   const P=window.DimasPlayer;setXmlSeg(v);const set=lancesFor(v);
   P.setTitle(v.title,[v.caption,set?set.instances.length+' lances'+(v.lances&&v.lancesInd?' ('+(xmlKind==='lances'?'coletiva':'individual')+')':''):null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
   if(set)P.loadLances(applySync(set,v.sync),{individual:xmlKind==='lancesInd'});else P.loadLances({instances:[],rows:[]});
