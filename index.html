@@ -325,6 +325,8 @@ input[type=text],input[type=email],input[type=number],select{padding:8px 10px;bo
 .crop .zoom{display:flex;align-items:center;gap:8px;width:240px;max-width:100%;font-size:12px;color:var(--muted)}
 .crop .zoom input{flex:1;accent-color:var(--accent)}
 .crop .hint{font-size:12px;color:var(--muted);margin:0}
+.crop .sw{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);cursor:pointer;display:inline-block}
+.crop .sw.on{outline:2px solid var(--accent);outline-offset:1px}
 .crop .row{display:flex;gap:8px}
 .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 @media (max-width:480px){.f3{grid-template-columns:1fr 1fr}}
@@ -657,7 +659,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         </div>
         <div class="crop" id="cropBox" hidden>
           <div class="stage2" id="cropStage"><canvas id="cropCv" width="480" height="480"></canvas></div>
-          <div class="zoom">zoom <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"></div>
+          <div class="zoom">zoom <input type="range" id="cropZoom" min="0.5" max="4" step="0.01" value="1"></div>
+          <div class="zoom" style="justify-content:center;gap:6px">fundo
+            <span class="sw" data-c="#ffffff" style="background:#ffffff"></span><span class="sw" data-c="#f0f0f0" style="background:#f0f0f0"></span><span class="sw" data-c="#000000" style="background:#000000"></span><span class="sw" data-c="#9b65c5" style="background:#9b65c5"></span><span class="sw" data-c="#512465" style="background:#512465"></span>
+            <input type="color" id="cropBg" value="#ffffff" title="Cor de fundo" style="width:28px;height:24px;padding:0;border:1px solid var(--line);border-radius:4px;background:none">
+          </div>
           <p class="hint">Arraste a foto para enquadrar.</p>
           <div class="row"><button type="button" class="btn" id="cropCancel">Cancelar</button><button type="button" class="btn primary" id="cropOk">Usar recorte</button></div>
         </div>
@@ -1521,7 +1527,11 @@ document.getElementById('fPwGen').onclick=()=>{document.getElementById('fPw').va
 /* ---- foto com recorte ---- */
 let photo=null, srcImg=null;
 const cropBox=document.getElementById('cropBox'), cv=document.getElementById('cropCv'), ctx=cv.getContext('2d'), stage=document.getElementById('cropStage'), zoom=document.getElementById('cropZoom');
-let cs={scale:1,x:0,y:0,base:1}; // base = escala para cobrir o quadro
+let cs={scale:1,x:0,y:0,base:1,bg:'#ffffff'}; // base = escala para cobrir o quadro
+const cropBgInput=document.getElementById('cropBg');
+function setBg(c){cs.bg=c;cropBgInput.value=c;document.querySelectorAll('.crop .sw').forEach(x=>x.classList.toggle('on',x.dataset.c===c));draw()}
+document.querySelectorAll('.crop .sw').forEach(x=>x.onclick=()=>setBg(x.dataset.c));
+cropBgInput.oninput=()=>setBg(cropBgInput.value);
 function renderAv(){
   const av=document.getElementById('fAv');const name=document.getElementById('fName').value;
   av.innerHTML=photo?`<img src="${photo}" alt="">`:initials(name);
@@ -1552,17 +1562,17 @@ document.getElementById('fPhotoDel').onclick=()=>{photo=null;srcImg=null;renderA
 function openCrop(reset){
   if(!srcImg)return;
   const S=cv.width;cs.base=Math.max(S/srcImg.width,S/srcImg.height);
-  if(reset){cs.scale=1;cs.x=0;cs.y=0;zoom.value=1}
+  if(reset){cs.scale=1;cs.x=0;cs.y=0;zoom.value=1;setBg('#ffffff')}
   cropBox.hidden=false;draw();
 }
 function clamp(){
   const S=cv.width,k=cs.base*cs.scale,w=srcImg.width*k,h=srcImg.height*k;
-  const mx=Math.max(0,(w-S)/2),my=Math.max(0,(h-S)/2);
+  const mx=Math.max(S/2,(w-S)/2),my=Math.max(S/2,(h-S)/2);
   cs.x=Math.min(mx,Math.max(-mx,cs.x));cs.y=Math.min(my,Math.max(-my,cs.y));
 }
 function draw(){
   if(!srcImg)return;const S=cv.width,k=cs.base*cs.scale,w=srcImg.width*k,h=srcImg.height*k;clamp();
-  ctx.fillStyle='#000';ctx.fillRect(0,0,S,S);
+  ctx.fillStyle=cs.bg||'#ffffff';ctx.fillRect(0,0,S,S);
   ctx.drawImage(srcImg,(S-w)/2+cs.x,(S-h)/2+cs.y,w,h);
 }
 zoom.oninput=()=>{cs.scale=+zoom.value;draw()};
@@ -1571,7 +1581,7 @@ stage.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,ox:cs.x,o
 stage.addEventListener('pointermove',e=>{if(!drag)return;const r=cv.width/stage.clientWidth;cs.x=drag.ox+(e.clientX-drag.x)*r;cs.y=drag.oy+(e.clientY-drag.y)*r;draw()});
 const endDrag=()=>{drag=null;stage.classList.remove('drag')};
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
-stage.addEventListener('wheel',e=>{e.preventDefault();cs.scale=Math.min(4,Math.max(1,cs.scale*(e.deltaY<0?1.06:0.94)));zoom.value=cs.scale;draw()},{passive:false});
+stage.addEventListener('wheel',e=>{e.preventDefault();cs.scale=Math.min(4,Math.max(0.5,cs.scale*(e.deltaY<0?1.06:0.94)));zoom.value=cs.scale;draw()},{passive:false});
 document.getElementById('cropCancel').onclick=()=>{cropBox.hidden=true};
 document.getElementById('cropOk').onclick=()=>{
   const out=document.createElement('canvas');out.width=out.height=192;out.getContext('2d').drawImage(cv,0,0,192,192);
