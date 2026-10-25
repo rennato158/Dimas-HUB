@@ -837,8 +837,12 @@ function teamHtml(name,away){const t=teamOf(name);return `<span class="tm${away?
 const COMP_LOGOS=[[/serie b|série b/,'https://api.sofascore.app/api/v1/unique-tournament/390/image'],[/serie a|série a|brasileir[aã]o$/,'https://api.sofascore.app/api/v1/unique-tournament/325/image'],[/nordeste/,'https://api.sofascore.app/api/v1/unique-tournament/1596/image'],[/cearense/,'https://api.sofascore.app/api/v1/unique-tournament/378/image'],[/copa do brasil/,'https://api.sofascore.app/api/v1/unique-tournament/373/image']];
 function compLogo(c){if(c.logo)return c.logo;const n=norm(c.name);const f=COMP_LOGOS.find(([re])=>re.test(n));return f?f[1]:''}
 function venueOf(m){return m.venue||(teamOf(m.home)?.venue)||''}
-function roundLabel(r){if(r==null||r==='')return 'Sem rodada';return /^\d+$/.test(String(r))?'Rodada '+r:String(r)}
-function roundSort(a,b){const na=+a,nb=+b;if(!isNaN(na)&&!isNaN(nb))return na-nb;if(!isNaN(na))return -1;if(!isNaN(nb))return 1;return String(a).localeCompare(String(b),'pt')}
+const PHASES=[[/oitavas|round of 16/,'Oitavas de final',10],[/quartas|quarter/,'Quartas de final',20],[/semi/,'Semifinal',30],[/3[ºo°]? ?lugar|terceiro/,'3º lugar',40],[/5[ºo°]? ?lugar|quinto/,'5º lugar',41],[/^final|final$/,'Final',50]];
+function phaseOf(r){const n=norm(r);return PHASES.find(([re])=>re.test(n))||null}
+function roundLabel(r,cupLike){if(r==null||r==='')return 'Sem rodada';if(/^\d+$/.test(String(r)))return (cupLike?'Fase de grupos · ':'')+'Rodada '+r;const ph=phaseOf(r);return ph?ph[1]:String(r)}
+function roundRank(r){if(/^\d+$/.test(String(r)))return [0,+r,''];const ph=phaseOf(r);return ph?[2,ph[2],String(r)]:[1,0,String(r)]}
+function roundSort(a,b){const ra=roundRank(a),rb=roundRank(b);return ra[0]-rb[0]||ra[1]-rb[1]||ra[2].localeCompare(rb[2],'pt')}
+function isCupLike(ms){return ms.some(m=>phaseOf(String(m.round??'')))}
 ['cSearch','cComp','cRound'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
 document.getElementById('cComp').addEventListener('change',()=>{document.getElementById('cRound').value=''});
 function renderComps(){
@@ -846,16 +850,17 @@ function renderComps(){
   fillSelect(document.getElementById('cComp'),leagues.map(c=>({v:c.id,t:c.name+(c.season?' '+c.season:'')})),'Todas as competições',true);
   const q=norm(document.getElementById('cSearch').value),cf=document.getElementById('cComp').value;
   const pool=matches.filter(m=>!cf||m.compId===cf);
-  fillSelect(document.getElementById('cRound'),[...new Set(pool.map(m=>String(m.round??'')))].sort(roundSort).map(r=>({v:r,t:roundLabel(r)})),'Todas as rodadas',true);
+  const cupPool=isCupLike(pool);
+  fillSelect(document.getElementById('cRound'),[...new Set(pool.map(m=>String(m.round??'')))].sort(roundSort).map(r=>({v:r,t:roundLabel(r,cupPool)})),'Todas as rodadas',true);
   const rf=document.getElementById('cRound').value;
   document.getElementById('cCount').textContent=leagues.length?`${leagues.length} competiç${leagues.length>1?'ões':'ão'} · ${matches.length} jogo${matches.length!==1?'s':''}`:'';
   const shown=leagues.filter(c=>!cf||c.id===cf);
   if(!leagues.length){cList.innerHTML='<div class="emptyl">'+(admin?'Nenhuma competição ainda. Clique em <strong>+ Competição</strong> para começar.':'Nenhuma competição cadastrada.')+'</div>';return}
   cList.innerHTML=shown.map(c=>{
     const ms=matches.filter(m=>m.compId===c.id&&(!rf||String(m.round??'')===rf)&&(!q||norm([m.home,m.away,venueOf(m),roundLabel(m.round),m.note].join(' ')).includes(q)));
-    const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);
+    const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);const cup=isCupLike(matches.filter(m=>m.compId===c.id));
     const body=rounds.map(r=>{const rm=ms.filter(m=>(m.round??'')===r).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
-      return `<div class="round">${esc(roundLabel(r))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
+      return `<div class="round">${esc(roundLabel(r,cup))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
         <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
         <span class="fx">${teamHtml(m.home,false)}<span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span>${teamHtml(m.away,true)}</span>
         <span class="ven" title="${esc(venueOf(m))}">${venueOf(m)?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(venueOf(m))}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
