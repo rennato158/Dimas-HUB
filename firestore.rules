@@ -27,7 +27,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isMember() && resource.data.to == email());
     }
     match /competitions/{id} {
-      allow read: if isStaff() || isGuest();
+      allow read: if isStaff() || (isGuest() && id in member().get('comps', []));
       allow write: if isAdmin();
     }
     match /teams/{id} {
@@ -35,7 +35,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /matches/{id} {
-      allow read: if isStaff() || isGuest();
+      allow read: if isStaff() || (isGuest() && resource.data.compId in member().get('comps', []));
       allow write: if isAdmin();
     }
     match /videos/{id} {

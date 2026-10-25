@@ -694,10 +694,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label for="fCargo">Função</label><select id="fCargo"><option value="">—</option><option>Analista</option><option>Treinador</option><option>Coordenador Técnico</option><option>Diretoria</option><option>Outras funções</option></select></div>
       </div>
       <div id="secConvidado" hidden>
-        <div class="f2">
-          <div class="f"><label for="fClub">Clube</label><input type="text" id="fClub" maxlength="60"></div>
-          <div class="f"><label for="fCompet">Competição</label><input type="text" id="fCompet" maxlength="60"></div>
-        </div>
+        <div class="f"><label for="fClub">Clube</label><input type="text" id="fClub" maxlength="60" list="clubList"><datalist id="clubList"></datalist></div>
+        <div class="f"><label>Competições que pode ver</label><div class="gpick" id="fComps"></div><input type="hidden" id="fCompet"></div>
       </div>
       <div class="f"><label for="fFunc">Permissão (Administrador gerencia usuários, vídeos e grupos)</label><select id="fFunc"><option value="Usuário">Usuário</option><option value="Administrador">Administrador</option></select></div>
       <div class="f"><label>Grupos</label><div class="gpick" id="fGroups"><span class="sub" style="color:var(--muted);font-size:12px">Crie grupos no painel ao lado.</span></div></div>
@@ -788,9 +786,17 @@ function setMe(m){
   if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
   if(staffNow||guest){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},()=>{})}else teams=[];
-  if(staffNow||guest){
+  if(staffNow){
     unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
+  }else if(guest){
+    const ids=(m.comps||[]).slice(0,30);leagues=[];matches=[];const subs=[];const byC={},byM={};
+    ids.forEach(id=>{
+      subs.push(db.collection('competitions').doc(id).onSnapshot(d=>{if(d.exists)byC[id]=Object.assign({id:d.id},d.data());else delete byC[id];leagues=Object.values(byC).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{}));
+      subs.push(db.collection('matches').where('compId','==',id).onSnapshot(sn=>{byM[id]=sn.docs.map(d=>Object.assign({id:d.id},d.data()));matches=Object.values(byM).flat();renderComps()},()=>{}));
+    });
+    unsubC=()=>subs.forEach(u=>u());
+    if(!ids.length)document.getElementById('cList').innerHTML='<div class="emptyl">Nenhuma competição liberada para o seu acesso. Fale com a comissão.</div>';
   }else{leagues=[];matches=[]}
   if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
   if(m){unsubN=db.collection('notifications').where('to','==',m.id).onSnapshot(sn=>{notifs=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderNotifs()},()=>{})}
@@ -1160,7 +1166,10 @@ function openForm(m){
   document.getElementById('fPos').value=m?.pos||'';document.getElementById('fFoot').value=m?.foot||'';document.getElementById('fBirth').value=m?.birth||'';
   document.getElementById('fNat').value=m?.nat||'';document.getElementById('fHeight').value=m?.height??'';
   form.role.value=['Atleta','Comissão','Convidado'].includes(m?.role)?m.role:'Atleta';document.getElementById('fTag').value=m?.tag||'';
-  document.getElementById('fCargo').value=m?.cargo||'';document.getElementById('fClub').value=m?.club||'';document.getElementById('fCompet').value=m?.competition||'';roleSections();
+  document.getElementById('fCargo').value=m?.cargo||'';document.getElementById('fClub').value=m?.club||'';document.getElementById('fCompet').value=m?.competition||'';
+  document.getElementById('clubList').innerHTML=teams.map(t=>`<option value="${esc(t.name)}">`).join('');
+  const sel=new Set(m?.comps||[]);document.getElementById('fComps').innerHTML=leagues.length?leagues.map(c=>`<label><input type="checkbox" name="fc" value="${esc(c.id)}" ${sel.has(c.id)?'checked':''}>${esc(c.name)}${c.season?' '+esc(c.season):''}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhuma competição cadastrada (aba Competições).</span>';
+  roleSections();
   document.getElementById('fFunc').value=(m?.func==='Administrador')?'Administrador':'Usuário';
   document.getElementById('fNum').value=m?.number??'';
 
@@ -1178,7 +1187,7 @@ form.onsubmit=async e=>{
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
   const g=id=>document.getElementById(id).value;const h=g('fHeight');
-  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),competition:g('fCompet').trim(),
+  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),comps:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.value),competition:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.parentElement.textContent.trim()).join(', '),
     number:num===''?null:+num,pos:g('fPos'),foot:g('fFoot'),birth:g('fBirth')||null,nat:g('fNat').trim(),height:h===''?null:+h,
     groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:editing?editing.active!==false:true,photo:photo||null};
   if(editing&&editing.id===me.id&&data.func!=='Administrador'){fErr.textContent='Você não pode tirar a própria permissão de Administrador.';fErr.hidden=false;return}
