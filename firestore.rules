@@ -25,6 +25,14 @@ service cloud.firestore {
       allow update: if isMember() && resource.data.to == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if isAdmin() || (isMember() && resource.data.to == email());
     }
+    match /competitions/{id} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+    match /matches/{id} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
       allow write: if isAdmin();

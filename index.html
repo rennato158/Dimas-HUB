@@ -230,6 +230,36 @@ tr.active td.num{color:var(--accent)}
 .nrow.read .t1{font-weight:500}
 .nrow .t2{font-size:12px;color:var(--muted)}
 .nrow .when{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+/* competições */
+.comps{display:flex;flex-direction:column;gap:18px}
+.comps .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.comps .top h2{margin:0;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+.league{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow)}
+.league .band{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--fg);color:var(--bg)}
+.league .band .season{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-fg);padding:3px 10px;border-radius:6px}
+.league .band .nm{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.03em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.league .band .cnt{font-family:var(--mono);font-size:11.5px;opacity:.7}
+.league .band button{color:inherit;opacity:.85;font-size:12.5px;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.25)}
+.league .band button:hover{opacity:1;background:rgba(255,255,255,.12)}
+.round{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel2);border-top:1px solid var(--line);font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.round small{font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none}
+.mrow2{display:grid;grid-template-columns:92px 48px minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.mrow2:hover{background:var(--panel2)}
+.mrow2 .d{font-family:var(--mono);font-size:13px;font-weight:600}
+.mrow2 .t{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mrow2 .fx{display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}
+.mrow2 .fx .tm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;flex:1}
+.mrow2 .fx .tm.a{text-align:left}
+.mrow2 .fx .sc{font-family:var(--mono);font-weight:600;font-size:13px;padding:2px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+.mrow2 .ven{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.mrow2 .ven svg{width:13px;height:13px;fill:currentColor;flex:none}
+.mrow2 .acts{display:flex;gap:4px}
+.mrow2 .acts button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;color:var(--muted);background:var(--panel)}
+.mrow2 .acts button:hover{color:var(--fg);border-color:var(--muted)}
+.mrow2 .acts button.play2{background:var(--fg);color:var(--bg);border-color:transparent}
+.mrow2 .acts button.play2:disabled{opacity:.3}
+.mrow2 .acts svg{width:12px;height:12px;fill:currentColor}
+@media (max-width:760px){.mrow2{grid-template-columns:70px 1fr auto;grid-template-areas:"d fx a" "t ven a"}.mrow2 .d{grid-area:d}.mrow2 .t{grid-area:t}.mrow2 .fx{grid-area:fx}.mrow2 .ven{grid-area:ven}.mrow2 .acts{grid-area:a}}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
@@ -339,7 +369,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
-  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
+  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="comps" id="navComps" hidden>Competições</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
   <div class="spacer"></div>
   <button type="button" class="bell" id="bell" title="Notificações" aria-label="Notificações" hidden><svg viewBox="0 0 16 16"><path d="M8 1.5a4 4 0 0 0-4 4v2.6L2.6 11h10.8L12 8.1V5.5a4 4 0 0 0-4-4zM6.2 12.5a1.8 1.8 0 0 0 3.6 0z"/></svg><span class="n" id="bellN" hidden></span></button>
   <div class="user" id="userBox" hidden><span class="av" id="userAv" style="width:28px;height:28px;font-size:12px"></span><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
@@ -413,6 +443,57 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
     <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
+</div>
+
+<div class="comps" id="comps" hidden>
+  <div class="top"><h2>Competições</h2><span class="sub" id="cCount" style="color:var(--muted);font-size:12px"></span>
+    <span class="spacer"></span>
+    <input type="search" id="cSearch" placeholder="Buscar time, estádio ou rodada…" aria-label="Buscar" style="width:240px;max-width:100%">
+    <select id="cComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
+    <button class="btn" type="button" id="addComp" hidden>+ Competição</button>
+    <button class="btn primary" type="button" id="addMatch" hidden>+ Jogo</button>
+  </div>
+  <div id="cList"><div class="emptyl">Carregando…</div></div>
+</div>
+
+<div class="modal" id="cModal" hidden>
+  <div class="box">
+    <form id="cForm" autocomplete="off">
+      <h3 id="cTitle">Nova competição</h3>
+      <div class="f2">
+        <div class="f"><label for="cName">Nome</label><input type="text" id="cName" required maxlength="60" placeholder="Ex.: Brasileiro Série B"></div>
+        <div class="f"><label for="cSeason">Temporada</label><input type="text" id="cSeason" maxlength="20" placeholder="2026"></div>
+      </div>
+      <span class="ferr" id="cErr" hidden></span>
+      <div class="actions"><button type="button" class="del" id="cDel" hidden>Remover</button><button type="button" class="btn" id="cCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="jModal" hidden>
+  <div class="box">
+    <form id="jForm" autocomplete="off">
+      <h3 id="jTitle">Novo jogo</h3>
+      <div class="f2">
+        <div class="f"><label for="jComp">Competição</label><select id="jComp" required></select></div>
+        <div class="f"><label for="jRound">Rodada</label><input type="text" id="jRound" maxlength="30" placeholder="Ex.: 34 ou Quartas"></div>
+      </div>
+      <div class="f3">
+        <div class="f"><label for="jDate">Data</label><input type="date" id="jDate" required></div>
+        <div class="f"><label for="jTime">Hora</label><input type="text" id="jTime" maxlength="5" placeholder="20:00"></div>
+        <div class="f"><label for="jVenue">Estádio</label><input type="text" id="jVenue" maxlength="80" placeholder="Estádio, cidade"></div>
+      </div>
+      <div class="f3" style="grid-template-columns:1fr auto 1fr;align-items:end">
+        <div class="f"><label for="jHome">Mandante</label><input type="text" id="jHome" required maxlength="40"></div>
+        <div class="f"><label>Placar</label><div class="inline" style="flex-wrap:nowrap"><input type="number" id="jHS" min="0" max="99" style="width:56px;text-align:center" placeholder="–"><span>×</span><input type="number" id="jAS" min="0" max="99" style="width:56px;text-align:center" placeholder="–"></div></div>
+        <div class="f"><label for="jAway">Visitante</label><input type="text" id="jAway" required maxlength="40"></div>
+      </div>
+      <div class="f"><label for="jUrl">Link do vídeo (YouTube)</label><input type="url" id="jUrl" placeholder="https://youtu.be/…"></div>
+      <div class="f"><label for="jNote">Observação</label><input type="text" id="jNote" maxlength="140"></div>
+      <span class="ferr" id="jErr" hidden></span>
+      <div class="actions"><button type="button" class="del" id="jDel" hidden>Remover</button><button type="button" class="btn" id="jCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+    </form>
+  </div>
 </div>
 
 <div class="notifs" id="notifs" hidden>
@@ -649,12 +730,19 @@ const nav=document.getElementById('nav'), navElenco=document.getElementById('nav
 const appEl=document.querySelector('.app'), elencoEl=document.getElementById('elenco');
 const mList=document.getElementById('mList'), gList=document.getElementById('gList'), mCount=document.getElementById('mCount'), gCount=document.getElementById('gCount');
 const modal=document.getElementById('mModal'), form=document.getElementById('mForm'), fErr=document.getElementById('fErr');
-let me=null, members=[], groups=[], videos=[], notifs=[], filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, unsubN=null, currentVideo=null;
+let me=null, members=[], groups=[], videos=[], notifs=[], leagues=[], matches=[], unsubC=null, unsubJ=null, filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, unsubN=null, currentVideo=null;
 const vCards=document.getElementById('vCards');
 
 function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
+  if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
+  const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');
+  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;
+  if(staffNow){
+    unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
+    unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
+  }else{leagues=[];matches=[]}
   if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
   if(m){unsubN=db.collection('notifications').where('to','==',m.id).onSnapshot(sn=>{notifs=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderNotifs()},()=>{})}
   else{notifs=[];renderNotifs()}
@@ -674,12 +762,81 @@ function show(v,keepAthlete){
   if(!keepAthlete&&v!=='lances'){athlete=null}
   if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv)playVideo(cv)}}
   document.getElementById('xmlSeg').hidden=!!athlete||document.getElementById('xmlSeg').hidden;
-  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';document.getElementById('notifs').hidden=v!=='notifs';
+  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';document.getElementById('notifs').hidden=v!=='notifs';document.getElementById('comps').hidden=v!=='comps';
   document.querySelector('header .match').hidden=true;
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
+/* ---- competições ---- */
+const cList=document.getElementById('cList'), cModal=document.getElementById('cModal'), jModal=document.getElementById('jModal');
+let cEditing=null, jEditing=null;
+function fmtD(d){if(!d)return '';const [y,m,dd]=d.split('-');return `${dd}-${m}-${y}`}
+function roundLabel(r){if(r==null||r==='')return 'Sem rodada';return /^\d+$/.test(String(r))?'Rodada '+r:String(r)}
+function roundSort(a,b){const na=+a,nb=+b;if(!isNaN(na)&&!isNaN(nb))return na-nb;if(!isNaN(na))return -1;if(!isNaN(nb))return 1;return String(a).localeCompare(String(b),'pt')}
+['cSearch','cComp'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
+function renderComps(){
+  const admin=me&&me.func==='Administrador';
+  fillSelect(document.getElementById('cComp'),leagues.map(c=>({v:c.id,t:c.name+(c.season?' '+c.season:'')})),'Todas as competições',true);
+  const q=norm(document.getElementById('cSearch').value),cf=document.getElementById('cComp').value;
+  document.getElementById('cCount').textContent=leagues.length?`${leagues.length} competiç${leagues.length>1?'ões':'ão'} · ${matches.length} jogo${matches.length!==1?'s':''}`:'';
+  const shown=leagues.filter(c=>!cf||c.id===cf);
+  if(!leagues.length){cList.innerHTML='<div class="emptyl">'+(admin?'Nenhuma competição ainda. Clique em <strong>+ Competição</strong> para começar.':'Nenhuma competição cadastrada.')+'</div>';return}
+  cList.innerHTML=shown.map(c=>{
+    const ms=matches.filter(m=>m.compId===c.id&&(!q||norm([m.home,m.away,m.venue,roundLabel(m.round),m.note].join(' ')).includes(q)));
+    const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);
+    const body=rounds.map(r=>{const rm=ms.filter(m=>(m.round??'')===r).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
+      return `<div class="round">${esc(roundLabel(r))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
+        <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
+        <span class="fx"><span class="tm">${esc(m.home)}</span><span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span><span class="tm a">${esc(m.away)}</span></span>
+        <span class="ven" title="${esc(m.venue||'')}">${m.venue?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(m.venue)}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
+        <span class="acts"><button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
+      </div>`).join('')}).join('');
+    return `<section class="league"><div class="band"><span class="season">${esc(c.season||'—')}</span><span class="nm">${esc(c.name)}</span><span class="cnt">${ms.length} jogo${ms.length!==1?'s':''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
+  }).join('')||'<div class="emptyl">Nenhuma competição nesse filtro.</div>';
+}
+cList.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.play){playMatch(matches.find(m=>m.id===b.dataset.play));return}
+  if(b.dataset.edit){openMatch(matches.find(m=>m.id===b.dataset.edit));return}
+  if(b.dataset.cedit){openComp(leagues.find(c=>c.id===b.dataset.cedit));return}
+  if(b.dataset.cadd){openMatch(null,b.dataset.cadd);return}
+});
+function playMatch(m){
+  if(!m||!m.ytId)return;currentVideo=null;athlete=null;
+  const P=window.DimasPlayer;document.getElementById('xmlSeg').hidden=true;
+  P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date)].filter(Boolean).join(' · '));
+  P.loadLances({instances:[],rows:[]});P.loadYT(m.ytId);show('lances');
+}
+// competição
+function openComp(c){cEditing=c||null;document.getElementById('cTitle').textContent=c?'Editar competição':'Nova competição';document.getElementById('cName').value=c?.name||'';document.getElementById('cSeason').value=c?.season||'';
+  const d=document.getElementById('cDel');d.hidden=!c;d.textContent='Remover';d.dataset.confirm='';document.getElementById('cErr').hidden=true;cModal.hidden=false;document.getElementById('cName').focus()}
+document.getElementById('addComp').onclick=()=>openComp(null);
+document.getElementById('cCancel').onclick=()=>{cModal.hidden=true};cModal.addEventListener('click',e=>{if(e.target===cModal)cModal.hidden=true});
+document.getElementById('cForm').onsubmit=async e=>{e.preventDefault();const data={name:document.getElementById('cName').value.trim(),season:document.getElementById('cSeason').value.trim()};
+  try{if(cEditing)await db.collection('competitions').doc(cEditing.id).update(data);else await db.collection('competitions').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));cModal.hidden=true}
+  catch(err){const x=document.getElementById('cErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
+document.getElementById('cDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar: remove a competição e seus jogos';return}
+  const batch=db.batch();matches.filter(m=>m.compId===cEditing.id).forEach(m=>batch.delete(db.collection('matches').doc(m.id)));batch.delete(db.collection('competitions').doc(cEditing.id));await batch.commit();cModal.hidden=true};
+// jogo
+function openMatch(m,compId){
+  jEditing=m||null;document.getElementById('jTitle').textContent=m?'Editar jogo':'Novo jogo';
+  const sel=document.getElementById('jComp');sel.innerHTML=leagues.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.season?' '+esc(c.season):''}</option>`).join('');sel.value=m?.compId||compId||(leagues[0]?.id||'');
+  const g=(id,v)=>document.getElementById(id).value=v??'';
+  g('jRound',m?.round);g('jDate',m?.date);g('jTime',m?.time);g('jVenue',m?.venue);g('jHome',m?.home);g('jAway',m?.away);g('jHS',m?.hs);g('jAS',m?.as);g('jUrl',m?.url);g('jNote',m?.note);
+  const d=document.getElementById('jDel');d.hidden=!m;d.textContent='Remover';d.dataset.confirm='';document.getElementById('jErr').hidden=true;jModal.hidden=false;document.getElementById(m?'jHome':'jRound').focus();
+}
+document.getElementById('addMatch').onclick=()=>{if(!leagues.length){openComp(null);return}openMatch(null,document.getElementById('cComp').value||null)};
+document.getElementById('jCancel').onclick=()=>{jModal.hidden=true};jModal.addEventListener('click',e=>{if(e.target===jModal)jModal.hidden=true});
+document.getElementById('jForm').onsubmit=async e=>{
+  e.preventDefault();const g=id=>document.getElementById(id).value.trim();const url=g('jUrl');const ytId=url?window.DimasPlayer.ytId(url):null;
+  if(url&&!ytId){const x=document.getElementById('jErr');x.textContent='Não reconheci esse link do YouTube.';x.hidden=false;return}
+  const n=v=>v===''?null:+v;const r=g('jRound');
+  const data={compId:g('jComp'),round:/^\d+$/.test(r)?+r:(r||null),date:g('jDate'),time:g('jTime'),venue:g('jVenue'),home:g('jHome'),away:g('jAway'),hs:n(g('jHS')),as:n(g('jAS')),url:url||null,ytId:ytId||null,note:g('jNote')};
+  try{if(jEditing)await db.collection('matches').doc(jEditing.id).update(data);else await db.collection('matches').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id}));jModal.hidden=true}
+  catch(err){const x=document.getElementById('jErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
+document.getElementById('jDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}await db.collection('matches').doc(jEditing.id).delete();jModal.hidden=true};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cModal.hidden=true;jModal.hidden=true}});
 /* ---- notificações ---- */
 function timeAgo(ts){const d=ts&&ts.toDate?ts.toDate():null;if(!d)return 'agora';const m=Math.round((Date.now()-d)/60000);if(m<1)return 'agora';if(m<60)return m+' min';const h=Math.round(m/60);if(h<24)return h+' h';return d.toLocaleDateString('pt-BR')}
 function renderNotifs(){
