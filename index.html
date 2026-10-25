@@ -309,7 +309,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
   <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
   <div class="spacer"></div>
-  <div class="user" id="userBox" hidden><img id="userPic" alt=""><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
+  <div class="user" id="userBox" hidden><span class="av" id="userAv" style="width:28px;height:28px;font-size:12px"></span><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
   <div class="src" hidden>
     <form class="urlbox" id="urlForm">
       <input type="url" id="videoUrl" placeholder="Link do YouTube ou .mp4" aria-label="Link do vídeo">
@@ -594,7 +594,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     const byPassword=(u.providerData||[]).some(p=>p.providerId==='password');
     if(me.mustChangePassword&&byPassword){gate.hidden=false;box.hidden=true;msg.textContent='Olá, '+(me.name||'')+'!';loginUI(false);newPwForm.hidden=false;document.getElementById('newPw1').focus();return}
     gate.hidden=true;box.hidden=false;
-    document.getElementById('userPic').src=u.photoURL||'';document.getElementById('userName').textContent=me.name||u.displayName||u.email;
+    const av=document.getElementById('userAv'),nm=me.name||u.displayName||u.email,ini=nm.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const src=me.photo||u.photoURL||'';av.textContent=ini;
+    if(src){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.onload=()=>{av.textContent='';av.appendChild(im)};im.src=src}
+    document.getElementById('userName').textContent=nm;
     window.DimasHub.setMe(Object.assign({id:email,photo:me.photo||u.photoURL||''},me));
   }
 })();
