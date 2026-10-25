@@ -248,8 +248,10 @@ tr.active td.num{color:var(--accent)}
 .mrow2 .d{font-family:var(--mono);font-size:13px;font-weight:600}
 .mrow2 .t{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .mrow2 .fx{display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}
-.mrow2 .fx .tm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;flex:1}
-.mrow2 .fx .tm.a{text-align:left}
+.mrow2 .fx .tm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;flex:1;display:flex;align-items:center;justify-content:flex-end;gap:7px}
+.mrow2 .fx .tm.a{text-align:left;justify-content:flex-start}
+.mrow2 .fx .tm img{width:22px;height:22px;object-fit:contain;flex:none}
+.mrow2 .fx .tm.a img{order:-1}
 .mrow2 .fx .sc{font-family:var(--mono);font-weight:600;font-size:13px;padding:2px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
 .mrow2 .ven{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .mrow2 .ven svg{width:13px;height:13px;fill:currentColor;flex:none}
@@ -451,6 +453,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <input type="search" id="cSearch" placeholder="Buscar time, estádio ou rodada…" aria-label="Buscar" style="width:240px;max-width:100%">
     <select id="cComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
     <select id="cRound" aria-label="Rodada" style="width:auto"><option value="">Todas as rodadas</option></select>
+    <button class="btn" type="button" id="impClubs" hidden>Importar clubes</button>
     <button class="btn" type="button" id="impMatches" hidden>Importar jogos</button>
     <button class="btn" type="button" id="addComp" hidden>+ Competição</button>
     <button class="btn primary" type="button" id="addMatch" hidden>+ Jogo</button>
@@ -481,6 +484,19 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="prev" id="imPrev" hidden></div>
       <span class="ferr" id="imErr" hidden></span>
       <div class="actions"><button type="button" class="btn" id="imCancel">Fechar</button><button type="submit" class="btn primary" id="imGo" disabled>Importar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="tModal" hidden>
+  <div class="box" style="max-width:720px">
+    <form id="tForm">
+      <h3>Importar clubes</h3>
+      <p class="pwnote">Planilha .xlsx ou .csv com as colunas <strong>Clube</strong>, Estádio e Escudo (link da imagem). Clube já existente é atualizado. O estádio do clube preenche automaticamente os jogos em que ele é mandante e que não têm estádio informado.</p>
+      <div class="inline"><label class="btn primary" for="tFile">Escolher planilha<input type="file" id="tFile" accept=".xlsx,.xls,.csv,text/csv" style="display:none"></label><span class="pwnote" id="tNote"></span></div>
+      <div class="prev" id="tPrev" hidden></div>
+      <span class="ferr" id="tErr" hidden></span>
+      <div class="actions"><button type="button" class="btn" id="tCancel">Fechar</button><button type="submit" class="btn primary" id="tGo" disabled>Importar</button></div>
     </form>
   </div>
 </div>
@@ -745,7 +761,7 @@ const nav=document.getElementById('nav'), navElenco=document.getElementById('nav
 const appEl=document.querySelector('.app'), elencoEl=document.getElementById('elenco');
 const mList=document.getElementById('mList'), gList=document.getElementById('gList'), mCount=document.getElementById('mCount'), gCount=document.getElementById('gCount');
 const modal=document.getElementById('mModal'), form=document.getElementById('mForm'), fErr=document.getElementById('fErr');
-let me=null, members=[], groups=[], videos=[], notifs=[], leagues=[], matches=[], unsubC=null, unsubJ=null, filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, unsubN=null, currentVideo=null;
+let me=null, members=[], groups=[], videos=[], notifs=[], leagues=[], matches=[], teams=[], unsubC=null, unsubJ=null, unsubT=null, filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, unsubN=null, currentVideo=null;
 const vCards=document.getElementById('vCards');
 
 function setMe(m){
@@ -753,7 +769,9 @@ function setMe(m){
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
   const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');
-  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;
+  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
+  if(unsubT){unsubT();unsubT=null}
+  if(staffNow){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},()=>{})}else teams=[];
   if(staffNow){
     unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
@@ -787,6 +805,9 @@ nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
 const cList=document.getElementById('cList'), cModal=document.getElementById('cModal'), jModal=document.getElementById('jModal');
 let cEditing=null, jEditing=null;
 function fmtD(d){if(!d)return '';const [y,m,dd]=d.split('-');return `${dd}-${m}-${y}`}
+function teamOf(name){const n=norm(name);return teams.find(t=>norm(t.name)===n)||teams.find(t=>norm(t.name).startsWith(n)||n.startsWith(norm(t.name)))||null}
+function teamHtml(name,away){const t=teamOf(name);return `<span class="tm${away?' a':''}">${t&&t.logo?`<img src="${esc(t.logo)}" alt="" referrerpolicy="no-referrer" loading="lazy">`:''}<span>${esc(name)}</span></span>`}
+function venueOf(m){return m.venue||(teamOf(m.home)?.venue)||''}
 function roundLabel(r){if(r==null||r==='')return 'Sem rodada';return /^\d+$/.test(String(r))?'Rodada '+r:String(r)}
 function roundSort(a,b){const na=+a,nb=+b;if(!isNaN(na)&&!isNaN(nb))return na-nb;if(!isNaN(na))return -1;if(!isNaN(nb))return 1;return String(a).localeCompare(String(b),'pt')}
 ['cSearch','cComp','cRound'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
@@ -802,13 +823,13 @@ function renderComps(){
   const shown=leagues.filter(c=>!cf||c.id===cf);
   if(!leagues.length){cList.innerHTML='<div class="emptyl">'+(admin?'Nenhuma competição ainda. Clique em <strong>+ Competição</strong> para começar.':'Nenhuma competição cadastrada.')+'</div>';return}
   cList.innerHTML=shown.map(c=>{
-    const ms=matches.filter(m=>m.compId===c.id&&(!rf||String(m.round??'')===rf)&&(!q||norm([m.home,m.away,m.venue,roundLabel(m.round),m.note].join(' ')).includes(q)));
+    const ms=matches.filter(m=>m.compId===c.id&&(!rf||String(m.round??'')===rf)&&(!q||norm([m.home,m.away,venueOf(m),roundLabel(m.round),m.note].join(' ')).includes(q)));
     const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);
     const body=rounds.map(r=>{const rm=ms.filter(m=>(m.round??'')===r).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
       return `<div class="round">${esc(roundLabel(r))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
         <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
-        <span class="fx"><span class="tm">${esc(m.home)}</span><span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span><span class="tm a">${esc(m.away)}</span></span>
-        <span class="ven" title="${esc(m.venue||'')}">${m.venue?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(m.venue)}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
+        <span class="fx">${teamHtml(m.home,false)}<span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span>${teamHtml(m.away,true)}</span>
+        <span class="ven" title="${esc(venueOf(m))}">${venueOf(m)?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(venueOf(m))}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
         <span class="acts"><button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
       </div>`).join('')}).join('');
     return `<section class="league"><div class="band"><span class="season">${esc(c.season||'—')}</span><span class="nm">${esc(c.name)}</span><span class="cnt">${ms.length} jogo${ms.length!==1?'s':''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
@@ -845,6 +866,7 @@ function openMatch(m,compId){
   g('jRound',m?.round);g('jDate',m?.date);g('jTime',m?.time);g('jVenue',m?.venue);g('jHome',m?.home);g('jAway',m?.away);g('jHS',m?.hs);g('jAS',m?.as);g('jUrl',m?.url);g('jNote',m?.note);
   const d=document.getElementById('jDel');d.hidden=!m;d.textContent='Remover';d.dataset.confirm='';document.getElementById('jErr').hidden=true;jModal.hidden=false;document.getElementById(m?'jHome':'jRound').focus();
 }
+document.getElementById('jHome').addEventListener('change',()=>{const v=document.getElementById('jVenue');if(!v.value.trim()){const t=teamOf(document.getElementById('jHome').value);if(t?.venue)v.value=t.venue}});
 document.getElementById('addMatch').onclick=()=>{if(!leagues.length){openComp(null);return}openMatch(null,document.getElementById('cComp').value||null)};
 document.getElementById('jCancel').onclick=()=>{jModal.hidden=true};jModal.addEventListener('click',e=>{if(e.target===jModal)jModal.hidden=true});
 document.getElementById('jForm').onsubmit=async e=>{
@@ -856,6 +878,32 @@ document.getElementById('jForm').onsubmit=async e=>{
   catch(err){const x=document.getElementById('jErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 document.getElementById('jDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar remoção';return}await db.collection('matches').doc(jEditing.id).delete();jModal.hidden=true};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cModal.hidden=true;jModal.hidden=true}});
+// importação de clubes
+const tModal=document.getElementById('tModal'),tPrev=document.getElementById('tPrev'),tErr=document.getElementById('tErr'),tGo=document.getElementById('tGo');let tRows=[];
+const TCOLS={name:['clube','time','equipe','nome','club','team'],venue:['estadio','estádio','stadium','venue','local'],logo:['escudo','logo','imagem','badge','crest']};
+function tcol(h){const n=norm(h);for(const k in TCOLS)if(TCOLS[k].some(c=>norm(c)===n))return k;return null}
+document.getElementById('impClubs').onclick=()=>{tRows=[];tPrev.hidden=true;tErr.hidden=true;tGo.disabled=true;document.getElementById('tNote').textContent='';tModal.hidden=false};
+document.getElementById('tCancel').onclick=()=>{tModal.hidden=true};tModal.addEventListener('click',e=>{if(e.target===tModal)tModal.hidden=true});
+document.getElementById('tFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;tErr.hidden=true;const r=new FileReader();
+  r.onload=()=>{try{
+    const wb=XLSX.read(r.result,{type:'array',raw:false});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    const hi=rows.findIndex(rw=>rw.some(c=>tcol(c)==='name'));if(hi<0)throw new Error('Não achei a coluna "Clube" na primeira linha.');
+    const keys=rows[hi].map(tcol);
+    tRows=rows.slice(hi+1).filter(rw=>rw.some(c=>String(c).trim()!=='')).map(rw=>{const o={};keys.forEach((k,i)=>{if(k)o[k]=rw[i]});return {name:String(o.name||'').trim(),venue:String(o.venue||'').trim(),logo:String(o.logo||'').trim()}}).filter(d=>d.name);
+    if(!tRows.length)throw new Error('A planilha não tem linhas com dados.');
+    tPrev.innerHTML='<table><thead><tr><th></th><th>Clube</th><th>Estádio</th><th>Escudo</th></tr></thead><tbody>'+tRows.map(d=>`<tr><td>${teams.some(t=>norm(t.name)===norm(d.name))?'atualiza':'novo'}</td><td>${esc(d.name)}</td><td>${esc(d.venue)}</td><td>${d.logo?`<img src="${esc(d.logo)}" alt="" referrerpolicy="no-referrer" style="width:22px;height:22px;object-fit:contain">`:''}</td></tr>`).join('')+'</tbody></table>';
+    tPrev.hidden=false;document.getElementById('tNote').textContent=tRows.length+' clube'+(tRows.length>1?'s':'')+'.';tGo.disabled=false;tGo.textContent='Importar '+tRows.length;
+  }catch(ex){tErr.textContent=ex.message||String(ex);tErr.hidden=false;tGo.disabled=true}};
+  r.readAsArrayBuffer(f);e.target.value='';
+};
+document.getElementById('tForm').onsubmit=async e=>{
+  e.preventDefault();tGo.disabled=true;tErr.hidden=true;
+  try{const batch=db.batch();tRows.forEach(d=>{const ex=teams.find(t=>norm(t.name)===norm(d.name));const ref=ex?db.collection('teams').doc(ex.id):db.collection('teams').doc();
+      const data={name:d.name};if(d.venue)data.venue=d.venue;if(d.logo)data.logo=d.logo;batch.set(ref,data,{merge:true})});await batch.commit();
+    document.getElementById('tNote').textContent=tRows.length+' clube'+(tRows.length>1?'s':'')+' importado'+(tRows.length>1?'s':'')+'.';tPrev.hidden=true;tRows=[];tGo.textContent='Importar';
+  }catch(ex){tErr.textContent='Falhou: '+(ex.code||ex.message);tErr.hidden=false;tGo.disabled=false}
+};
 // importação de jogos
 const imModal=document.getElementById('imModal'),imPrev=document.getElementById('imPrev'),imErr=document.getElementById('imErr'),imGo=document.getElementById('imGo');let imRows=[];
 const MCOLS={comp:['competicao','competição','liga','campeonato'],season:['temporada','ano','season'],round:['rodada','round','fase'],date:['data','date'],time:['hora','horario','horário','time'],home:['mandante','casa','home','time 1'],hs:['placar mandante','gols mandante','placar casa','hs'],as:['placar visitante','gols visitante','placar fora','as'],away:['visitante','fora','away','time 2'],venue:['estadio','estádio','local','venue'],url:['link','video','vídeo','youtube','url'],note:['observacao','observação','obs','nota']};
