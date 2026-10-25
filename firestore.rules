@@ -7,6 +7,7 @@ service cloud.firestore {
     function isMember() { return signed() && exists(/databases/$(database)/documents/members/$(email())); }
     function isAdmin() { return isMember() && member().func == 'Administrador'; }
     function isStaff() { return isMember() && (member().role == 'Comissão' || member().func == 'Administrador'); }
+    function isGuest() { return isMember() && member().role == 'Convidado'; }
     function isBootstrap() { return signed() && email() == 'rennato158@gmail.com'; }
     function ownFlagOnly() { return signed() && resource.id == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword']); }
     match /members/{id} {
@@ -26,15 +27,15 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isMember() && resource.data.to == email());
     }
     match /competitions/{id} {
-      allow read: if isStaff();
+      allow read: if isStaff() || isGuest();
       allow write: if isAdmin();
     }
     match /teams/{id} {
-      allow read: if isStaff();
+      allow read: if isStaff() || isGuest();
       allow write: if isAdmin();
     }
     match /matches/{id} {
-      allow read: if isStaff();
+      allow read: if isStaff() || isGuest();
       allow write: if isAdmin();
     }
     match /videos/{id} {

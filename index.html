@@ -386,6 +386,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </header>
 
+<div class="ibar" id="cbar" hidden><button type="button" class="back" id="cbarBack">← Competições</button><span class="nm" id="cbarName"></span></div>
 <div class="ibar" id="ibar" hidden>
   <button type="button" class="back" id="ibarBack">← Individuais</button>
   <div class="av" id="ibarAv"></div><div style="display:flex;flex-direction:column;min-width:0"><span class="nm" id="ibarName"></span><span id="ibarSub" style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em"></span></div>
@@ -781,11 +782,13 @@ function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
-  const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');
-  document.getElementById('navComps').hidden=!staffNow;document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
+  const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');const guest=!!m&&m.role==='Convidado'&&!staffNow;
+  document.getElementById('navComps').hidden=!(staffNow||guest);
+  nav.querySelector('[data-view=home]').hidden=guest;nav.querySelector('[data-view=indiv]').hidden=guest;nav.querySelector('[data-view=lances]').hidden=guest;
+  if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
-  if(staffNow){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},()=>{})}else teams=[];
-  if(staffNow){
+  if(staffNow||guest){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},()=>{})}else teams=[];
+  if(staffNow||guest){
     unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
   }else{leagues=[];matches=[]}
@@ -811,7 +814,8 @@ function show(v,keepAthlete){
   appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';document.getElementById('notifs').hidden=v!=='notifs';document.getElementById('comps').hidden=v!=='comps';
   document.querySelector('header .match').hidden=true;
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
-  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
+  document.getElementById('cbar').hidden=!(v==='lances'&&currentItem&&currentItem.compId);
+  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':(v==='lances'&&currentItem&&currentItem.compId?'comps':v))));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
 /* ---- competições ---- */
@@ -865,6 +869,7 @@ cList.addEventListener('click',e=>{
 function playMatch(m){
   if(!m||!m.ytId)return;currentVideo=null;currentItem=m;athlete=null;
   const P=window.DimasPlayer;setXmlSeg(m);const set=lancesFor(m);
+  document.getElementById('cbarName').textContent=`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`;
   P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date),set?set.instances.length+' lances':null].filter(Boolean).join(' · '));
   if(set)P.loadLances(applySync(set,m.sync),{individual:xmlKind==='lancesInd'});else P.loadLances({instances:[],rows:[]});
   P.loadYT(m.ytId);show('lances');
@@ -1079,6 +1084,7 @@ function renderAthletes(){
 }
 document.getElementById('aCards').addEventListener('click',e=>{const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))});
 document.getElementById('aCards').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.acard');if(c)openAthlete(members.find(m=>m.id===c.dataset.id))}});
+document.getElementById('cbarBack').onclick=()=>{currentItem=null;show('comps')};
 document.getElementById('ibarBack').onclick=()=>{athlete=null;show('indiv')};
 function openAthlete(a,videoId){
   if(!a)return;athlete=a;
