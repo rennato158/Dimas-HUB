@@ -198,6 +198,24 @@ tr.active td.num{color:var(--accent)}
 .posh h3{margin:0;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
 .posh small{color:var(--muted);font-family:var(--mono);font-size:11px}
 .posh::after{content:"";flex:1;height:1px;background:var(--line)}
+/* notificações */
+.bell{position:relative;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);border:1px solid var(--line);background:var(--panel2)}
+.bell:hover{color:var(--fg)}
+.bell svg{width:17px;height:17px;fill:currentColor}
+.bell .n{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5533d;color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.notifs{display:flex;flex-direction:column;gap:14px;max-width:760px}
+.nrow{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.nrow:hover{background:var(--panel2)}
+.nrow:last-child{border-bottom:0}
+.nrow .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none}
+.nrow.read .dot{background:transparent;border:1px solid var(--line)}
+.nrow .th2{width:72px;aspect-ratio:16/9;border-radius:4px;overflow:hidden;background:#000;flex:none}
+.nrow .th2 img{width:100%;height:100%;object-fit:cover;display:block}
+.nrow .tx{flex:1;min-width:0}
+.nrow .t1{font-weight:600}
+.nrow.read .t1{font-weight:500}
+.nrow .t2{font-size:12px;color:var(--muted)}
+.nrow .when{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
@@ -309,6 +327,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
   <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
   <div class="spacer"></div>
+  <button type="button" class="bell" id="bell" title="Notificações" aria-label="Notificações" hidden><svg viewBox="0 0 16 16"><path d="M8 1.5a4 4 0 0 0-4 4v2.6L2.6 11h10.8L12 8.1V5.5a4 4 0 0 0-4-4zM6.2 12.5a1.8 1.8 0 0 0 3.6 0z"/></svg><span class="n" id="bellN" hidden></span></button>
   <div class="user" id="userBox" hidden><span class="av" id="userAv" style="width:28px;height:28px;font-size:12px"></span><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
   <div class="src" hidden>
     <form class="urlbox" id="urlForm">
@@ -380,6 +399,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
     <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
+</div>
+
+<div class="notifs" id="notifs" hidden>
+  <div class="top" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em">Notificações</h2><span class="sub" id="nCount" style="color:var(--muted);font-size:12px"></span><span class="spacer"></span><button class="btn" type="button" id="nReadAll">Marcar todas como lidas</button></div>
+  <section class="panel" id="nList"><div class="emptyl">Nenhuma notificação.</div></section>
 </div>
 
 <div class="indiv" id="indiv" hidden>
@@ -610,12 +634,15 @@ const nav=document.getElementById('nav'), navElenco=document.getElementById('nav
 const appEl=document.querySelector('.app'), elencoEl=document.getElementById('elenco');
 const mList=document.getElementById('mList'), gList=document.getElementById('gList'), mCount=document.getElementById('mCount'), gCount=document.getElementById('gCount');
 const modal=document.getElementById('mModal'), form=document.getElementById('mForm'), fErr=document.getElementById('fErr');
-let me=null, members=[], groups=[], videos=[], filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, currentVideo=null;
+let me=null, members=[], groups=[], videos=[], notifs=[], filter='', editing=null, unsubM=null, unsubG=null, unsubV=null, unsubN=null, currentVideo=null;
 const vCards=document.getElementById('vCards');
 
 function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
+  if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
+  if(m){unsubN=db.collection('notifications').where('to','==',m.id).onSnapshot(sn=>{notifs=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderNotifs()},()=>{})}
+  else{notifs=[];renderNotifs()}
   if(unsubV){unsubV();unsubV=null}
   if(m){const staff=m.role==='Comissão'||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
@@ -632,12 +659,36 @@ function show(v,keepAthlete){
   if(!keepAthlete&&v!=='lances'){athlete=null}
   if(!keepAthlete&&v==='lances'&&athlete){athlete=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv)playVideo(cv)}}
   document.getElementById('xmlSeg').hidden=!!athlete||document.getElementById('xmlSeg').hidden;
-  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';
+  appEl.hidden=v!=='lances';elencoEl.hidden=v!=='elenco';document.getElementById('home').hidden=v!=='home';document.getElementById('indiv').hidden=v!=='indiv';document.getElementById('notifs').hidden=v!=='notifs';
   document.querySelector('header .match').hidden=true;
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(athlete?'indiv':v)));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
+/* ---- notificações ---- */
+function timeAgo(ts){const d=ts&&ts.toDate?ts.toDate():null;if(!d)return 'agora';const m=Math.round((Date.now()-d)/60000);if(m<1)return 'agora';if(m<60)return m+' min';const h=Math.round(m/60);if(h<24)return h+' h';return d.toLocaleDateString('pt-BR')}
+function renderNotifs(){
+  const unread=notifs.filter(n=>!n.read).length;const b=document.getElementById('bellN');b.hidden=!unread;b.textContent=unread>99?'99+':unread;
+  document.getElementById('nCount').textContent=notifs.length?(unread?unread+' não lida'+(unread>1?'s':'')+' · ':'')+notifs.length+' no total':'';
+  const list=document.getElementById('nList');
+  if(!notifs.length){list.innerHTML='<div class="emptyl">Nenhuma notificação.</div>';return}
+  list.innerHTML=notifs.map(n=>`<div class="nrow ${n.read?'read':''}" data-id="${esc(n.id)}"><span class="dot"></span><span class="th2">${n.thumb?`<img src="${esc(n.thumb)}" alt="">`:''}</span>
+    <span class="tx"><div class="t1">${esc(n.title||'Vídeo compartilhado')}</div><div class="t2">${esc(n.text||'')}</div></span><span class="when">${timeAgo(n.createdAt)}</span></div>`).join('');
+}
+document.getElementById('bell').onclick=()=>show('notifs');
+document.getElementById('nList').addEventListener('click',async e=>{
+  const r=e.target.closest('.nrow');if(!r)return;const n=notifs.find(x=>x.id===r.dataset.id);if(!n)return;
+  if(!n.read){try{await db.collection('notifications').doc(n.id).update({read:true})}catch(_){}}
+  if(n.videoId){const v=videos.find(x=>x.id===n.videoId);if(v)playVideo(v);else{alertNote('Esse vídeo não está mais disponível para você.')}}
+});
+function alertNote(t){const c=document.getElementById('nCount');c.textContent=t;setTimeout(renderNotifs,3000)}
+document.getElementById('nReadAll').onclick=async()=>{const un=notifs.filter(n=>!n.read);if(!un.length)return;const batch=db.batch();un.forEach(n=>batch.update(db.collection('notifications').doc(n.id),{read:true}));await batch.commit()};
+// cria notificações para quem passou a ver o vídeo
+async function notifyNewViewers(v,oldViewers,newViewers){
+  const added=newViewers.filter(id=>!oldViewers.includes(id)&&id!==me.id);if(!added.length)return;
+  const batch=db.batch();added.forEach(id=>batch.set(db.collection('notifications').doc(),{to:id,type:'share',videoId:v.id,title:v.title,text:[v.comp,v.caption].filter(Boolean).join(' · ')||'Novo vídeo compartilhado com você',thumb:v.thumb||ytThumb(v.ytId),by:me.id,read:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+  await batch.commit();
+}
 /* ---- individuais ---- */
 let athlete=null;
 function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9#]+/g,' ').trim()}
@@ -1038,7 +1089,7 @@ async function recomputeAllViewers(){
   if(!me||me.func!=='Administrador')return;
   const batch=db.batch();let n=0;
   videos.forEach(v=>{const nv=computeViewers(v.shareGroups,v.shareMembers).sort();const ov=(v.viewers||[]).slice().sort();
-    if(JSON.stringify(nv)!==JSON.stringify(ov)){batch.update(db.collection('videos').doc(v.id),{viewers:nv});n++}});
+    if(JSON.stringify(nv)!==JSON.stringify(ov)){batch.update(db.collection('videos').doc(v.id),{viewers:nv});n++;notifyNewViewers(v,ov,nv).catch(()=>{})}});
   if(n)await batch.commit();
 }
 const sModal=document.getElementById('sModal');let sVideo=null;
@@ -1050,7 +1101,8 @@ sModal.addEventListener('click',e=>{if(e.target===sModal)sModal.hidden=true});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sModal.hidden)sModal.hidden=true});
 document.getElementById('sForm').onsubmit=async e=>{
   e.preventDefault();const b=document.getElementById('sSave');b.disabled=true;
-  try{const sh=fillShare.read();await db.collection('videos').doc(sVideo.id).update(Object.assign(sh,{viewers:computeViewers(sh.shareGroups,sh.shareMembers)}));sModal.hidden=true}
+  try{const sh=fillShare.read();const nv=computeViewers(sh.shareGroups,sh.shareMembers);const ov=(videos.find(x=>x.id===sVideo.id)||sVideo).viewers||[];
+    await db.collection('videos').doc(sVideo.id).update(Object.assign(sh,{viewers:nv}));await notifyNewViewers(sVideo,ov,nv);sModal.hidden=true}
   catch(err){const x=document.getElementById('sErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}
   b.disabled=false;
 };
