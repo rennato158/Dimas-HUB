@@ -450,6 +450,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <span class="spacer"></span>
     <input type="search" id="cSearch" placeholder="Buscar time, estádio ou rodada…" aria-label="Buscar" style="width:240px;max-width:100%">
     <select id="cComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
+    <select id="cRound" aria-label="Rodada" style="width:auto"><option value="">Todas as rodadas</option></select>
     <button class="btn" type="button" id="impMatches" hidden>Importar jogos</button>
     <button class="btn" type="button" id="addComp" hidden>+ Competição</button>
     <button class="btn primary" type="button" id="addMatch" hidden>+ Jogo</button>
@@ -788,16 +789,20 @@ let cEditing=null, jEditing=null;
 function fmtD(d){if(!d)return '';const [y,m,dd]=d.split('-');return `${dd}-${m}-${y}`}
 function roundLabel(r){if(r==null||r==='')return 'Sem rodada';return /^\d+$/.test(String(r))?'Rodada '+r:String(r)}
 function roundSort(a,b){const na=+a,nb=+b;if(!isNaN(na)&&!isNaN(nb))return na-nb;if(!isNaN(na))return -1;if(!isNaN(nb))return 1;return String(a).localeCompare(String(b),'pt')}
-['cSearch','cComp'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
+['cSearch','cComp','cRound'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
+document.getElementById('cComp').addEventListener('change',()=>{document.getElementById('cRound').value=''});
 function renderComps(){
   const admin=me&&me.func==='Administrador';
   fillSelect(document.getElementById('cComp'),leagues.map(c=>({v:c.id,t:c.name+(c.season?' '+c.season:'')})),'Todas as competições',true);
   const q=norm(document.getElementById('cSearch').value),cf=document.getElementById('cComp').value;
+  const pool=matches.filter(m=>!cf||m.compId===cf);
+  fillSelect(document.getElementById('cRound'),[...new Set(pool.map(m=>String(m.round??'')))].sort(roundSort).map(r=>({v:r,t:roundLabel(r)})),'Todas as rodadas',true);
+  const rf=document.getElementById('cRound').value;
   document.getElementById('cCount').textContent=leagues.length?`${leagues.length} competiç${leagues.length>1?'ões':'ão'} · ${matches.length} jogo${matches.length!==1?'s':''}`:'';
   const shown=leagues.filter(c=>!cf||c.id===cf);
   if(!leagues.length){cList.innerHTML='<div class="emptyl">'+(admin?'Nenhuma competição ainda. Clique em <strong>+ Competição</strong> para começar.':'Nenhuma competição cadastrada.')+'</div>';return}
   cList.innerHTML=shown.map(c=>{
-    const ms=matches.filter(m=>m.compId===c.id&&(!q||norm([m.home,m.away,m.venue,roundLabel(m.round),m.note].join(' ')).includes(q)));
+    const ms=matches.filter(m=>m.compId===c.id&&(!rf||String(m.round??'')===rf)&&(!q||norm([m.home,m.away,m.venue,roundLabel(m.round),m.note].join(' ')).includes(q)));
     const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);
     const body=rounds.map(r=>{const rm=ms.filter(m=>(m.round??'')===r).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
       return `<div class="round">${esc(roundLabel(r))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
