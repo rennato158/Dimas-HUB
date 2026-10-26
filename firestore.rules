@@ -40,8 +40,7 @@ service cloud.firestore {
     }
     match /playlists/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.get('shareMembers', []));
-      allow create: if isStaff() && request.resource.data.by == email();
-      allow update, delete: if isAdmin() || (isStaff() && resource.data.by == email());
+      allow create, update, delete: if isStaff();
     }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
