@@ -899,7 +899,7 @@ function setMe(m){
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
   const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');const guest=!!m&&m.role==='Convidado'&&!staffNow;
   document.getElementById('navComps').hidden=!(staffNow||guest);
-  nav.querySelector('[data-view=home]').hidden=guest;nav.querySelector('[data-view=indiv]').hidden=guest;nav.querySelector('[data-view=lances]').hidden=guest;nav.querySelector('[data-view=plays]').hidden=guest||!m;document.getElementById('addPlay').hidden=!staffNow;document.getElementById('pHint').hidden=!staffNow;
+  nav.querySelector('[data-view=home]').hidden=guest;nav.querySelector('[data-view=indiv]').hidden=guest;nav.querySelector('[data-view=lances]').hidden=true;nav.querySelector('[data-view=plays]').hidden=guest||!m;document.getElementById('addPlay').hidden=!staffNow;document.getElementById('pHint').hidden=!staffNow;
   if(unsubP){unsubP();unsubP=null}playlist=null;
   if(m&&!guest){const byQ={};const apply=()=>{const all={};Object.values(byQ).flat().forEach(p=>all[p.id]=p);playlists=Object.values(all).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));renderPlaylists();if(playlist){const np=playlists.find(x=>x.id===playlist.id);if(np)playlist=np}window.DimasPlayer.refresh()};const onErr=e=>{document.getElementById('pCards').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'};
     const subs=[db.collection('playlists').where('shareMembers','array-contains',m.id).onSnapshot(sn=>{byQ.sh=sn.docs.map(d=>Object.assign({id:d.id},d.data()));apply()},onErr)];
