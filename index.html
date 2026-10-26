@@ -406,7 +406,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
   </div>
-  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances">Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="comps" id="navComps" hidden>Competições</button><button type="button" data-view="plays" id="navPlays">Playlists</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
+  <nav class="nav" id="nav"><button type="button" class="on" data-view="home">Início</button><button type="button" data-view="lances" hidden>Lances</button><button type="button" data-view="indiv">Individuais</button><button type="button" data-view="comps" id="navComps" hidden>Competições</button><button type="button" data-view="plays" id="navPlays">Playlists</button><button type="button" data-view="elenco" id="navElenco" hidden>Usuários</button></nav>
   <div class="spacer"></div>
   <button type="button" class="bell" id="bell" title="Notificações" aria-label="Notificações" hidden><svg viewBox="0 0 16 16"><path d="M8 1.5a4 4 0 0 0-4 4v2.6L2.6 11h10.8L12 8.1V5.5a4 4 0 0 0-4-4zM6.2 12.5a1.8 1.8 0 0 0 3.6 0z"/></svg><span class="n" id="bellN" hidden></span></button>
   <div class="user" id="userBox" hidden><span class="av" id="userAv" style="width:28px;height:28px;font-size:12px"></span><span id="userName"></span><button type="button" id="logoutBtn">sair</button></div>
@@ -420,6 +420,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </header>
 
+<div class="ibar" id="hbar" hidden><button type="button" class="back" id="hbarBack">← Início</button><span class="nm" id="hbarName"></span><span id="hbarSub" style="font-size:12.5px;color:var(--muted)"></span></div>
 <div class="ibar" id="pbar" hidden><button type="button" class="back" id="pbarBack">← Playlists</button><span class="nm" id="pbarName"></span><span id="pbarSub" style="font-size:12.5px;color:var(--muted)"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn" id="pbarShare" hidden>Compartilhar</button><button type="button" class="btn" id="pbarEdit" hidden>Editar</button></div>
 <div class="ibar" id="cbar" hidden><button type="button" class="back" id="cbarBack">← Competições</button><span class="nm" id="cbarName"></span></div>
 <div class="ibar" id="ibar" hidden>
@@ -948,8 +949,10 @@ function show(v,keepAthlete){
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   document.getElementById('pbar').hidden=!(v==='lances'&&playlist);
   document.getElementById('cbar').hidden=!(v==='lances'&&currentItem&&currentItem.compId&&!playlist);
+  const homeV=v==='lances'&&!athlete&&!playlist&&currentItem&&!currentItem.compId;document.getElementById('hbar').hidden=!homeV;
+  if(homeV){document.getElementById('hbarName').textContent=currentItem.title||'';document.getElementById('hbarSub').textContent=[currentItem.comp,currentItem.caption].filter(Boolean).join(' · ')}
   renderTagbar();
-  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(playlist?'plays':athlete?'indiv':(v==='lances'&&currentItem&&currentItem.compId?'comps':v))));
+  nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(playlist?'plays':athlete?'indiv':(v==='lances'?(currentItem&&currentItem.compId?'comps':'home'):v))));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
 /* ---- competições ---- */
@@ -1182,6 +1185,7 @@ function renderPlaylists(){
 document.getElementById('pCards').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b){e.stopPropagation();openPlaylistEdit(playlists.find(p=>p.id===b.dataset.edit));return}const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))});
 document.getElementById('pCards').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))}});
 document.getElementById('addPlay').onclick=()=>openPlaylistEdit(null);
+document.getElementById('hbarBack').onclick=()=>show('home');
 document.getElementById('pbarBack').onclick=()=>{playlist=null;show('plays')};
 document.getElementById('pbarShare').onclick=()=>{if(playlist)openPlaylistEdit(playlist)};document.getElementById('pbarEdit').onclick=()=>{if(playlist)openPlaylistEdit(playlist)};
 function openPlaylist(p,keep){
