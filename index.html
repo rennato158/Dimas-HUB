@@ -1745,9 +1745,9 @@ function render(){
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player?`<span class="note">${l.player}</span>`:''}${individualMode&&(l.descs||[]).length?`<span class="descs">${l.descs.filter(d=>!selectedDescs.size||selectedDescs.has(dkey(d))).map(d=>`<span class="desc ${selectedDescs.has(dkey(d))?'on':''}" data-k="${dkey(d).replace(/"/g,'&quot;')}">${d.g?`<b>${d.g}</b>`:''}${d.v}</span>`).join('')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
+      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player?`<span class="note">${l.player}</span>`:''}${individualMode&&(l.descs||[]).length?`<span class="descs">${l.descs.filter(d=>!selectedDescs.size||selectedDescs.has(dkey(d))).map(d=>`<span class="desc ${selectedDescs.has(dkey(d))?'on':''}" data-g="${String(d.g).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-v="${String(d.v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${d.g?`<b>${d.g}</b>`:''}${d.v}</span>`).join('')}</span>`:''}${l.note?`<span class="note">${l.note}</span>`:''}</td>
       <td><button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
-    tr.onclick=e=>{const c=e.target.closest('.desc');if(c){e.stopPropagation();const k=c.dataset.k;selectedDescs.has(k)?selectedDescs.delete(k):selectedDescs.add(k);renderDescs();render();return}play(l)};
+    tr.onclick=e=>{const c=e.target.closest('.desc');if(c){e.stopPropagation();const k=dkey({g:c.dataset.g,v:c.dataset.v});selectedDescs.has(k)?selectedDescs.delete(k):selectedDescs.add(k);renderDescs();render();return}play(l)};
     rowsEl.appendChild(tr);
   });
   const filtered=visible.length!==lances.length;
