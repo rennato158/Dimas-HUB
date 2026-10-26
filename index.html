@@ -113,10 +113,12 @@ tr.active td.num{color:var(--accent)}
 td.act{text-align:right}td.act .star{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);margin-right:4px;vertical-align:middle}
 td.act .star svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}td.act .star:hover{color:var(--accent);background:var(--panel2)}
 td.act .star.on{color:var(--accent)}td.act .star.on svg{fill:currentColor}td.act .play{vertical-align:middle}
-.pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;min-width:0}
-.pcard:hover{border-color:var(--muted)}.pcard .ic{width:48px;height:48px;border-radius:12px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
-.pcard .ic svg{width:24px;height:24px;fill:currentColor}.pcard .who{flex:1;min-width:0}.pcard .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pcard .em{font-size:12px;color:var(--muted)}
-.pcard .cnt{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em;text-align:right;line-height:1}.pcard .cnt small{display:block;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;cursor:pointer;min-width:0}
+.pcard:hover{border-color:var(--muted)}.pcard .row{display:flex;align-items:center;gap:12px;min-width:0}
+.pcard .ic{width:56px;height:56px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.pcard .ic img{width:100%;height:100%;object-fit:cover}.pcard .ic.logo img{object-fit:contain;padding:8px}.pcard .ic svg{width:24px;height:24px;fill:currentColor}
+.pcard .who{flex:1;min-width:0}.pcard .nm{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pcard .em{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .cnt{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em;text-align:right;line-height:1;margin-left:auto}.pcard .cnt small{display:block;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .pcard .mini{display:flex;gap:6px}.pcard .mini .btn{padding:5px 9px;font-size:12px}
 .plpick{display:flex;flex-direction:column;gap:6px}.plpick label{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}.plpick label:hover{background:var(--panel2)}.plpick small{margin-left:auto;color:var(--muted);font-family:var(--mono);font-size:11px}
 .play svg{width:12px;height:12px;fill:currentColor;margin-left:2px}
@@ -1086,7 +1088,7 @@ function favClick(src,l,inList){
 }
 let curFav=null;const fModal=document.getElementById('fModal'),pModal=document.getElementById('pModal');
 function fmtT(s){s=Math.max(0,s||0);const m=Math.floor(s/60),r=Math.floor(s%60);return m+':'+String(r).padStart(2,'0')}
-function favItem(src,l){return {key:itemKey(src,l),srcId:src.id,kind:src.kind,title:src.title,ytId:src.ytId,lanceId:l.id,start:l.start,end:l.end,code:l.code,player:l.player||'',note:l.note||'',labels:l.labels||[]}}
+function favItem(src,l){let aid=src.athleteId||null;if(!aid){const ids=[l.raw||l.code,...(l.labels||[])].flatMap(t=>resolveText(t));aid=ids[0]||null}return {key:itemKey(src,l),srcId:src.id,kind:src.kind,title:src.title,ytId:src.ytId,lanceId:l.id,start:l.start,end:l.end,code:l.code,player:l.player||'',note:l.note||'',labels:l.labels||[],athleteId:aid}}
 function drawPick(){
   const box=document.getElementById('fPick');if(!curFav)return;const k=itemKey(curFav.src,curFav.l);
   const mine=playlists.filter(p=>p.by===me.id||me.func==='Administrador');
@@ -1101,11 +1103,17 @@ document.getElementById('fNewBtn').onclick=async()=>{const n=document.getElement
 document.getElementById('fForm').onsubmit=e=>{e.preventDefault();document.getElementById('fNewBtn').click()};
 document.getElementById('fClose').onclick=()=>{fModal.hidden=true};fModal.addEventListener('click',e=>{if(e.target===fModal)fModal.hidden=true});
 function savePlaylist(id,data){return db.collection('playlists').doc(id).update(Object.assign({},data,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}))}
+function playlistIcon(p){
+  const items=p.items||[];const ids=[...new Set(items.map(it=>it.athleteId).filter(Boolean))];
+  if(items.length&&ids.length===1&&items.every(it=>it.athleteId===ids[0])){const a=members.find(m=>m.id===ids[0]);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
+  const t=teamOf('Ceará');const logo=t&&t.logo?t.logo:'https://api.sofascore.app/api/v1/team/2001/image';
+  return `<div class="ic logo"><img src="${esc(logo)}" alt="" referrerpolicy="no-referrer"></div>`;
+}
 function renderPlaylists(){
   const box=document.getElementById('pCards');const n=playlists.length;document.getElementById('pCount').textContent=n?n+' playlist'+(n>1?'s':''):'';
   if(!n){box.innerHTML='<div class="emptyl">'+(isStaff()?'Nenhuma playlist ainda. Clique na estrela de um lance para começar.':'Nenhuma playlist compartilhada com você.')+'</div>';return}
   box.innerHTML=playlists.map(p=>{const k=(p.items||[]).length,sh=(p.shareMembers||[]).length;const sub=isStaff()?[p.byName?'por '+p.byName:null,sh?'compartilhada com '+sh+' jogador'+(sh>1?'es':''):'não compartilhada'].filter(Boolean).join(' · '):(p.byName?'por '+p.byName:'');
-    return `<div class="pcard" data-id="${esc(p.id)}" tabindex="0"><div class="ic"><svg viewBox="0 0 16 16"><path d="M8 1.5l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.9l-4.2 2.3.9-4.6L1.3 6.4 6 5.8z"/></svg></div><div class="who"><div class="nm">${esc(p.name)}</div><div class="em">${esc(sub)}</div></div>${isStaff()?`<div class="mini"><button type="button" class="btn" data-edit="${esc(p.id)}">Editar</button></div>`:''}<div class="cnt">${k}<small>lances</small></div></div>`}).join('');
+    return `<div class="pcard" data-id="${esc(p.id)}" tabindex="0"><div class="row">${playlistIcon(p)}<div class="who"><div class="nm">${esc(p.name)}</div><div class="em">${esc(sub)}</div></div></div><div class="row">${isStaff()?`<div class="mini"><button type="button" class="btn" data-edit="${esc(p.id)}">Editar</button></div>`:''}<div class="cnt">${k}<small>lance${k!==1?'s':''}</small></div></div></div>`}).join('');
 }
 document.getElementById('pCards').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b){e.stopPropagation();openPlaylistEdit(playlists.find(p=>p.id===b.dataset.edit));return}const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))});
 document.getElementById('pCards').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))}});
@@ -1259,7 +1267,7 @@ function openAthlete(a,videoId){
   if(pick){currentVideo=pick.v.id;renderVideos();
     P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
     document.getElementById('xmlSeg').hidden=true;
-    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync),{hidePlayer:true,individual:true,hideCats:true,src:srcOf(pick.v)});P.loadYT(pick.v.ytId);
+    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync),{hidePlayer:true,individual:true,hideCats:true,src:Object.assign(srcOf(pick.v),{athleteId:a.id})});P.loadYT(pick.v.ytId);
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
