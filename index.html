@@ -688,6 +688,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <form id="pForm">
       <h3 id="pTitle">Playlist</h3>
       <div class="f"><label>Nome</label><input type="text" id="pName" required></div>
+      <div class="f"><label>Vínculo</label><div class="seg" id="pKind" style="margin-left:0"><button type="button" class="on" data-k="team">Equipe</button><button type="button" data-k="indiv">Individual</button></div></div>
+      <div class="f" id="pAthRow" hidden><label>Atleta</label><select id="pAth"><option value="">Escolha o atleta</option></select></div>
       <div class="f"><label>Compartilhar com</label><input type="search" id="pMemSearch" placeholder="Buscar jogador…"><div class="prev" id="pMembers" style="max-height:220px"></div></div>
       <span class="pwnote" id="pSum"></span>
       <p class="pwnote" style="margin:0">Quem for marcado recebe uma notificação e passa a ver a playlist na aba Playlists.</p>
@@ -1105,14 +1107,15 @@ document.getElementById('fClose').onclick=()=>{fModal.hidden=true};fModal.addEve
 function savePlaylist(id,data){return db.collection('playlists').doc(id).update(Object.assign({},data,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}))}
 function playlistIcon(p){
   const items=p.items||[];const ids=[...new Set(items.map(it=>it.athleteId).filter(Boolean))];
-  if(items.length&&ids.length===1&&items.every(it=>it.athleteId===ids[0])){const a=members.find(m=>m.id===ids[0]);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
+  if(p.kind==='indiv'&&p.athleteId){const a=members.find(m=>m.id===p.athleteId);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
+  if(p.kind!=='team'&&items.length&&ids.length===1&&items.every(it=>it.athleteId===ids[0])){const a=members.find(m=>m.id===ids[0]);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
   const t=teamOf('Ceará');const logo=t&&t.logo?t.logo:'https://api.sofascore.app/api/v1/team/2001/image';
   return `<div class="ic logo"><img src="${esc(logo)}" alt="" referrerpolicy="no-referrer"></div>`;
 }
 function renderPlaylists(){
   const box=document.getElementById('pCards');const n=playlists.length;document.getElementById('pCount').textContent=n?n+' playlist'+(n>1?'s':''):'';
   if(!n){box.innerHTML='<div class="emptyl">'+(isStaff()?'Nenhuma playlist ainda. Clique na estrela de um lance para começar.':'Nenhuma playlist compartilhada com você.')+'</div>';return}
-  box.innerHTML=playlists.map(p=>{const k=(p.items||[]).length,sh=(p.shareMembers||[]).length;const sub=isStaff()?[p.byName?'por '+p.byName:null,sh?'compartilhada com '+sh+' jogador'+(sh>1?'es':''):'não compartilhada'].filter(Boolean).join(' · '):(p.byName?'por '+p.byName:'');
+  box.innerHTML=playlists.map(p=>{const k=(p.items||[]).length,sh=(p.shareMembers||[]).length;const an=p.kind==='indiv'&&p.athleteId?(members.find(m=>m.id===p.athleteId)||{}).name:null;const sub=isStaff()?[an?'Individual · '+an:(p.kind==='team'?'Equipe':null),p.byName?'por '+p.byName:null,sh?'compartilhada com '+sh+' jogador'+(sh>1?'es':''):'não compartilhada'].filter(Boolean).join(' · '):[an?'Individual · '+an:(p.kind==='team'?'Equipe':null),p.byName?'por '+p.byName:null].filter(Boolean).join(' · ');
     return `<div class="pcard" data-id="${esc(p.id)}" tabindex="0"><div class="row">${playlistIcon(p)}<div class="who"><div class="nm">${esc(p.name)}</div><div class="em">${esc(sub)}</div></div></div><div class="row">${isStaff()?`<div class="mini"><button type="button" class="btn" data-edit="${esc(p.id)}">Editar</button></div>`:''}<div class="cnt">${k}<small>lance${k!==1?'s':''}</small></div></div></div>`}).join('');
 }
 document.getElementById('pCards').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b){e.stopPropagation();openPlaylistEdit(playlists.find(p=>p.id===b.dataset.edit));return}const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))});
@@ -1136,6 +1139,13 @@ let pEditing=null;
 function openPlaylistEdit(p){
   pEditing=p||null;document.getElementById('pTitle').textContent=p?'Editar playlist':'Nova playlist';document.getElementById('pName').value=p?.name||'';document.getElementById('pErr').hidden=true;document.getElementById('pDel').hidden=!p;document.getElementById('pDel').dataset.confirm='';document.getElementById('pDel').textContent='Apagar';
   const sm=new Set(p?.shareMembers||[]);const list=document.getElementById('pMembers'),q=document.getElementById('pMemSearch');q.value='';
+  let kind=p?.kind||'team';const kseg=document.getElementById('pKind'),athRow=document.getElementById('pAthRow'),athSel=document.getElementById('pAth');
+  const aths=members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt'));
+  athSel.innerHTML='<option value="">Escolha o atleta</option>'+aths.map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');athSel.value=p?.athleteId||'';
+  const setKind=k=>{kind=k;kseg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));athRow.hidden=k!=='indiv'};setKind(kind);
+  kseg.onclick=e=>{const b=e.target.closest('button');if(b)setKind(b.dataset.k)};
+  athSel.onchange=()=>{if(athSel.value&&!sm.has(athSel.value)){sm.add(athSel.value);draw();sum()}};
+  openPlaylistEdit.kind=()=>({kind,athleteId:kind==='indiv'?(athSel.value||null):null});
   const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
     list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
     list.querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
@@ -1144,10 +1154,10 @@ function openPlaylistEdit(p){
 }
 document.getElementById('pCancel').onclick=()=>{pModal.hidden=true};pModal.addEventListener('click',e=>{if(e.target===pModal)pModal.hidden=true});
 document.getElementById('pForm').onsubmit=async e=>{
-  e.preventDefault();const b=document.getElementById('pSave');b.disabled=true;const name=document.getElementById('pName').value.trim();const sh=openPlaylistEdit.read();
+  e.preventDefault();const b=document.getElementById('pSave');b.disabled=true;const name=document.getElementById('pName').value.trim();const sh=openPlaylistEdit.read();const kd=openPlaylistEdit.kind();
   try{
-    if(pEditing){const old=pEditing.shareMembers||[];await savePlaylist(pEditing.id,{name,shareMembers:sh});await notifyPlaylist(Object.assign({},pEditing,{name}),old,sh);if(playlist&&playlist.id===pEditing.id){playlist.name=name;playlist.shareMembers=sh;document.getElementById('pbarName').textContent=name}}
-    else{const ref=await db.collection('playlists').add({name,by:me.id,byName:me.name||'',shareMembers:sh,items:[],createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});await notifyPlaylist({id:ref.id,name,items:[]},[],sh)}
+    if(pEditing){const old=pEditing.shareMembers||[];await savePlaylist(pEditing.id,Object.assign({name,shareMembers:sh},kd));await notifyPlaylist(Object.assign({},pEditing,{name}),old,sh);if(playlist&&playlist.id===pEditing.id){playlist.name=name;playlist.shareMembers=sh;document.getElementById('pbarName').textContent=name}}
+    else{const ref=await db.collection('playlists').add(Object.assign({name,by:me.id,byName:me.name||'',shareMembers:sh,items:[]},kd,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()}));await notifyPlaylist({id:ref.id,name,items:[]},[],sh)}
     pModal.hidden=true;
   }catch(err){const x=document.getElementById('pErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}
   b.disabled=false;
