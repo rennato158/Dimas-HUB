@@ -916,7 +916,7 @@ function renderComps(){
   const cupPool=isCupLike(pool);
   fillSelect(document.getElementById('cRound'),[...new Set(pool.map(m=>String(m.round??'')))].sort(roundSort).map(r=>({v:r,t:roundLabel(r,cupPool)})),'Todas as rodadas',true);
   const rf=document.getElementById('cRound').value;
-  document.getElementById('cCount').textContent=leagues.length?`${leagues.length} competiç${leagues.length>1?'ões':'ão'} · ${matches.length} jogo${matches.length!==1?'s':''}`:'';
+  document.getElementById('cCount').textContent='';
   const shown=leagues.filter(c=>!cf||c.id===cf);
   if(!leagues.length){cList.innerHTML='<div class="emptyl">'+(admin?'Nenhuma competição ainda. Clique em <strong>+ Competição</strong> para começar.':'Nenhuma competição cadastrada.')+'</div>';return}
   cList.innerHTML=shown.map(c=>{
