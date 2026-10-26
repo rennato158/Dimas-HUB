@@ -22,7 +22,7 @@ service cloud.firestore {
     }
     match /notifications/{id} {
       allow read: if isMember() && resource.data.to == email();
-      allow create: if isAdmin();
+      allow create: if isStaff();
       allow update: if isMember() && resource.data.to == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if isAdmin() || (isMember() && resource.data.to == email());
     }
