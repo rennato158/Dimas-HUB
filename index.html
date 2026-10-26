@@ -746,7 +746,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f" id="pAthRow" hidden><label>Atleta</label><select id="pAth"><option value="">Escolha o atleta</option></select></div>
       <div class="f"><label>Compartilhar com</label><input type="search" id="pMemSearch" placeholder="Buscar jogador…"><div class="prev" id="pMembers" style="max-height:220px"></div></div>
       <span class="pwnote" id="pSum"></span>
-      <p class="pwnote" style="margin:0">Quem for marcado recebe uma notificação e passa a ver a playlist na aba Playlists.</p>
+      <p class="pwnote" style="margin:0">Atletas e membros da comissão marcados recebem uma notificação e passam a ver a playlist na aba Playlists.</p>
       <span class="ferr" id="pErr" hidden></span>
       <div class="actions"><button type="button" class="btn" id="pDel" style="color:#e5533d;margin-right:auto" hidden>Apagar</button><button type="button" class="btn" id="pCancel">Cancelar</button><button type="submit" class="btn primary" id="pSave">Salvar</button></div>
     </form>
@@ -900,7 +900,10 @@ function setMe(m){
   document.getElementById('navComps').hidden=!(staffNow||guest);
   nav.querySelector('[data-view=home]').hidden=guest;nav.querySelector('[data-view=indiv]').hidden=guest;nav.querySelector('[data-view=lances]').hidden=guest;nav.querySelector('[data-view=plays]').hidden=guest||!m;document.getElementById('addPlay').hidden=!staffNow;document.getElementById('pHint').hidden=!staffNow;
   if(unsubP){unsubP();unsubP=null}playlist=null;
-  if(m&&!guest){const qp=staffNow?db.collection('playlists'):db.collection('playlists').where('shareMembers','array-contains',m.id);unsubP=qp.onSnapshot(sn=>{playlists=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));renderPlaylists();if(playlist){const np=playlists.find(x=>x.id===playlist.id);if(np)playlist=np}window.DimasPlayer.refresh()},e=>{document.getElementById('pCards').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}else{playlists=[];renderPlaylists()}
+  if(m&&!guest){const byQ={};const apply=()=>{const all={};Object.values(byQ).flat().forEach(p=>all[p.id]=p);playlists=Object.values(all).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));renderPlaylists();if(playlist){const np=playlists.find(x=>x.id===playlist.id);if(np)playlist=np}window.DimasPlayer.refresh()};const onErr=e=>{document.getElementById('pCards').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'};
+    const subs=[db.collection('playlists').where('shareMembers','array-contains',m.id).onSnapshot(sn=>{byQ.sh=sn.docs.map(d=>Object.assign({id:d.id},d.data()));apply()},onErr)];
+    if(staffNow)subs.push(db.collection('playlists').where('by','==',m.id).onSnapshot(sn=>{byQ.own=sn.docs.map(d=>Object.assign({id:d.id},d.data()));apply()},onErr));
+    unsubP=()=>subs.forEach(u=>u())}else{playlists=[];renderPlaylists()}
   if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
   if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps();renderVideos();renderPlaylists()},()=>{})}else teams=[];
@@ -1173,7 +1176,7 @@ function playlistIcon(p){
 function renderPlaylists(){
   const box=document.getElementById('pCards');const n=playlists.length;document.getElementById('pCount').textContent=n?n+' playlist'+(n>1?'s':''):'';
   if(!n){box.innerHTML='<div class="emptyl">'+(isStaff()?'Nenhuma playlist ainda. Clique na estrela de um lance para começar.':'Nenhuma playlist compartilhada com você.')+'</div>';return}
-  box.innerHTML=playlists.map(p=>{const k=(p.items||[]).length,sh=(p.shareMembers||[]).length;const an=p.kind==='indiv'&&p.athleteId?(members.find(m=>m.id===p.athleteId)||{}).name:null;const sub=isStaff()?[p.byName?'por '+p.byName:null,sh?'compartilhada com '+sh+' jogador'+(sh>1?'es':''):'não compartilhada'].filter(Boolean).join(' · '):(p.byName?'por '+p.byName:'');
+  box.innerHTML=playlists.map(p=>{const k=(p.items||[]).length,sh=(p.shareMembers||[]).length;const an=p.kind==='indiv'&&p.athleteId?(members.find(m=>m.id===p.athleteId)||{}).name:null;const sub=isStaff()?[p.byName?'por '+p.byName:null,sh?'compartilhada com '+sh+' pessoa'+(sh>1?'s':''):'não compartilhada'].filter(Boolean).join(' · '):(p.byName?'por '+p.byName:'');
     return `<div class="pcard" data-id="${esc(p.id)}" tabindex="0"><div class="row">${playlistIcon(p)}<div class="who"><div class="nm">${esc(p.name)}</div><div class="em">${esc(sub)}</div><div class="dt">${p.createdAt&&p.createdAt.toDate?'criada em '+p.createdAt.toDate().toLocaleDateString('pt-BR'):''}</div></div></div><div class="row">${isStaff()?`<div class="mini"><button type="button" class="btn" data-edit="${esc(p.id)}">Editar</button></div>`:''}<div class="cnt">${k}<small>lance${k!==1?'s':''}</small></div></div></div>`}).join('');
 }
 document.getElementById('pCards').addEventListener('click',e=>{const b=e.target.closest('[data-edit]');if(b){e.stopPropagation();openPlaylistEdit(playlists.find(p=>p.id===b.dataset.edit));return}const c=e.target.closest('.pcard');if(c)openPlaylist(playlists.find(p=>p.id===c.dataset.id))});
@@ -1211,10 +1214,13 @@ function openPlaylistEdit(p){
   kseg.onclick=e=>{const b=e.target.closest('button');if(b)setKind(b.dataset.k)};
   athSel.onchange=()=>{if(athSel.value&&!sm.has(athSel.value)){sm.add(athSel.value);draw();sum()}};
   openPlaylistEdit.kind=()=>({kind,athleteId:kind==='indiv'?(athSel.value||null):null});
-  const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
-    list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
+  const draw=()=>{const f=norm(q.value);const pool=members.filter(m=>(m.role==='Atleta'||m.role==='Comissão')&&m.active!==false&&m.id!==me.id).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')+' '+(a.cargo||'')).includes(f));
+    const ath=pool.filter(m=>m.role==='Atleta').sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')),stf=pool.filter(m=>m.role==='Comissão').sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+    const row=a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role==='Comissão'&&a.cargo?' <span style="color:var(--muted)">· '+esc(a.cargo)+'</span>':''}</label></td></tr>`;
+    const hd=t=>`<tr><td style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:8px">${t}</td></tr>`;
+    list.innerHTML='<table><tbody>'+(ath.length?hd('Atletas')+ath.map(row).join(''):'')+(stf.length?hd('Comissão')+stf.map(row).join(''):'')+'</tbody></table>';
     list.querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
-  const sum=()=>{document.getElementById('pSum').textContent=sm.size?`Compartilhada com ${sm.size} jogador${sm.size>1?'es':''}.`:'Somente a comissão vê esta playlist.'};
+  const sum=()=>{document.getElementById('pSum').textContent=sm.size?`Compartilhada com ${sm.size} pessoa${sm.size>1?'s':''}.`:'Somente você vê esta playlist.'};
   q.oninput=draw;draw();sum();openPlaylistEdit.read=()=>[...sm];pModal.hidden=false;document.getElementById('pName').focus();
 }
 document.getElementById('pCancel').onclick=()=>{pModal.hidden=true};pModal.addEventListener('click',e=>{if(e.target===pModal)pModal.hidden=true});
