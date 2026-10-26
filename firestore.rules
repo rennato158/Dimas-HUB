@@ -31,7 +31,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     match /teams/{id} {
-      allow read: if isStaff() || isGuest();
+      allow read: if isMember();
       allow write: if isAdmin();
     }
     match /matches/{id} {
