@@ -939,6 +939,7 @@ function setMe(m){
   if(!admin&&!elencoEl.hidden)show('home');
 }
 function show(v,keepAthlete){
+  if(v==='elenco'&&!(me&&me.func==='Administrador'))v='home';
   if(!keepAthlete&&v!=='lances'){athlete=null}
   if(!keepAthlete&&v==='lances'&&playlist){playlist=null;if(currentVideo){const cv=videos.find(x=>x.id===currentVideo);if(cv)playVideo(cv)}else window.DimasPlayer.loadLances({instances:[],rows:[]})}
   if(v!=='lances')playlist=null;
