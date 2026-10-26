@@ -847,7 +847,7 @@ function setMe(m){
   if(m&&!guest){const qp=staffNow?db.collection('playlists'):db.collection('playlists').where('shareMembers','array-contains',m.id);unsubP=qp.onSnapshot(sn=>{playlists=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));renderPlaylists();if(playlist){const np=playlists.find(x=>x.id===playlist.id);if(np)playlist=np}window.DimasPlayer.refresh()},e=>{document.getElementById('pCards').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}else{playlists=[];renderPlaylists()}
   if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
-  if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps();renderVideos()},()=>{})}else teams=[];
+  if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps();renderVideos();renderPlaylists()},()=>{})}else teams=[];
   if(staffNow){
     unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
@@ -870,7 +870,7 @@ function setMe(m){
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
-    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups();renderAthletes()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
+    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups();renderAthletes();renderPlaylists()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
     unsubG=db.collection('groups').orderBy('name').onSnapshot(s=>{groups=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderGroups();renderMembers()});
   }else{members=[];groups=[]}
   if(!admin&&!elencoEl.hidden)show('home');
