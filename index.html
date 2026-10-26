@@ -66,6 +66,20 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16p
 .now .t{font-family:var(--mono);font-size:13px;color:var(--muted)}
 .now .ctl{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .now .ctl label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.tagbar{border-top:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
+.tagbar .tgrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tagbar .tgl{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tagbar label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.tagbar input[type=number]{width:54px;padding:4px 6px}
+.tagbar select{width:auto;padding:5px 8px;font-size:12.5px}
+.tagbar .cat{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.03em;padding:7px 12px;border-radius:6px;color:#111;border:2px solid transparent;transition:transform .08s}
+.tagbar .cat:active{transform:scale(.96)}.tagbar .cat.rec{border-color:var(--fg);box-shadow:0 0 0 3px rgba(229,83,61,.35);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 3px rgba(229,83,61,.05)}}
+.tagbar .dsc{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--fg)}
+.tagbar .dsc.on{background:var(--accent);border-color:var(--accent);color:#fff}.tagbar .dsc b{font-weight:500;color:inherit;opacity:.7;margin-right:3px}
+.tagbar .st{font-family:var(--mono);font-size:12px;color:var(--muted)}.tagbar .st.ok{color:#16a34a}.tagbar .st.err{color:#e5533d}
+.tgedit table{width:100%;border-collapse:collapse}.tgedit td{padding:3px 4px;border:0;white-space:normal}.tgedit input[type=text]{width:100%}.tgedit input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--line);border-radius:4px;background:none}
+.tgedit .x{color:#e5533d;font-size:16px;padding:0 6px}
 .icon{width:34px;height:34px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center}
 .icon svg{width:16px;height:16px;fill:currentColor}
 
@@ -434,6 +448,17 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <button class="icon" id="nextBtn" title="Próximo lance (J)" aria-label="Próximo lance"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM3 2v12l8-6z"/></svg></button>
       </div>
     </div>
+    <div class="tagbar" id="tagbar" hidden>
+      <div class="tgrow"><span class="tgl">Marcação</span>
+        <div class="seg" id="tgSet" style="margin-left:0"><button type="button" class="on" data-s="lances">Coletiva</button><button type="button" data-s="lancesInd">Individual</button></div>
+        <select id="tgAth" aria-label="Atleta" hidden><option value="">Escolha o atleta</option></select>
+        <div class="seg" id="tgMode" style="margin-left:0"><button type="button" class="on" data-m="inst">1 clique</button><button type="button" data-m="span">Início / Fim</button></div>
+        <label>pré <input type="number" id="tgPre" value="3" min="0" max="60">s</label><label>pós <input type="number" id="tgPos" value="3" min="0" max="60">s</label>
+        <span class="spacer" style="flex:1"></span><button type="button" class="btn" id="tgEdit">✎ Editar botões</button></div>
+      <div class="tgrow" id="tgCats"></div>
+      <div class="tgrow" id="tgDescs"></div>
+      <div class="tgrow"><input type="text" id="tgNote" placeholder="Nota para o próximo lance…" style="flex:1;min-width:160px"><button type="button" class="btn" id="tgClear">limpar</button><span class="st" id="tgStatus"></span></div>
+    </div>
   </section>
 
   <section class="list">
@@ -699,6 +724,19 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </div>
 
+<div class="modal" id="tgModal" hidden>
+  <div class="box" style="max-width:560px">
+    <form id="tgForm" class="tgedit">
+      <h3>Botões de marcação</h3>
+      <div class="f"><label>Categorias</label><table><tbody id="tgCatRows"></tbody></table><button type="button" class="btn" id="tgCatAdd">+ categoria</button></div>
+      <div class="f"><label>Descritores (grupo · texto)</label><table><tbody id="tgDescRows"></tbody></table><button type="button" class="btn" id="tgDescAdd">+ descritor</button></div>
+      <p class="pwnote" style="margin:0">Os botões valem para toda a comissão. O grupo do descritor é opcional (ex.: Resultado · Positivo).</p>
+      <span class="ferr" id="tgErr" hidden></span>
+      <div class="actions"><button type="button" class="btn" id="tgCancel">Cancelar</button><button type="submit" class="btn primary">Salvar botões</button></div>
+    </form>
+  </div>
+</div>
+
 <div class="modal" id="pModal" hidden>
   <div class="box">
     <form id="pForm">
@@ -878,6 +916,7 @@ function setMe(m){
     unsubC=()=>subs.forEach(u=>u());
     if(!ids.length)document.getElementById('cList').innerHTML='<div class="emptyl">Nenhuma competição liberada para o seu acesso. Fale com a comissão.</div>';
   }else{leagues=[];matches=[]}
+  tgSub(m);
   if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
   if(m){unsubN=db.collection('notifications').where('to','==',m.id).onSnapshot(sn=>{notifs=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderNotifs()},()=>{})}
   else{notifs=[];renderNotifs()}
@@ -904,6 +943,7 @@ function show(v,keepAthlete){
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   document.getElementById('pbar').hidden=!(v==='lances'&&playlist);
   document.getElementById('cbar').hidden=!(v==='lances'&&currentItem&&currentItem.compId&&!playlist);
+  renderTagbar();
   nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.view===(playlist?'plays':athlete?'indiv':(v==='lances'&&currentItem&&currentItem.compId?'comps':v))));
 }
 nav.onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.view)};
@@ -1193,6 +1233,78 @@ async function notifyPlaylist(p,oldSh,newSh){
   added.forEach(id=>batch.set(db.collection('notifications').doc(),{to:id,type:'playlist',playlistId:p.id,title:'Playlist: '+p.name,text:n+' lance'+(n!==1?'s':'')+' selecionado'+(n!==1?'s':'')+' para você'+(me.name?' · por '+me.name:''),thumb:'',by:me.id,read:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
   await batch.commit();
 }
+/* ---- marcação ---- */
+let tgCfg=null,unsubTg=null,tgSetKey='lances',tgMode='inst',tgRec=null,tgTimer=null,tgDescOn=new Set();
+const DEF_TG={cats:[{name:'Lance Ceará',color:'#c7c7c7'},{name:'Transição Ofensiva',color:'#9fdcd8'},{name:'Transição Defensiva',color:'#ffd9a8'},{name:'Bloco Baixo',color:'#e5533d'},{name:'Bloco Médio',color:'#e5533d'},{name:'Bloco Alto',color:'#e5533d'},{name:'1ª Fase de Construção',color:'#cde7c1'},{name:'2ª Fase de Construção',color:'#cde7c1'},{name:'Escanteio Ofensivo',color:'#fff3a8'},{name:'Escanteio Defensivo',color:'#fff3a8'},{name:'Finalização',color:'#9b65c5'}],descs:[{g:'Resultado',v:'Positivo'},{g:'Resultado',v:'Negativo'},{g:'',v:'Gol'},{g:'',v:'Perda de bola'}]};
+function tgSub(m){if(unsubTg){unsubTg();unsubTg=null}tgCfg=null;if(!m)return;unsubTg=db.collection('settings').doc('tagging').onSnapshot(d=>{tgCfg=d.exists?d.data():null;renderTagbar()},()=>{renderTagbar()})}
+function tgButtons(){const c=tgCfg&&tgCfg.cats&&tgCfg.cats.length?tgCfg:DEF_TG;return {cats:c.cats||[],descs:c.descs||[]}}
+function tgCanTag(){return isStaff()&&currentItem&&!athlete&&!playlist&&window.DimasPlayer.hasVideo()}
+function renderTagbar(){
+  const bar=document.getElementById('tagbar');const ok=isStaff()&&!!currentItem&&!athlete&&!playlist;bar.hidden=!ok;if(!ok){tgStop(true);return}
+  document.querySelectorAll('#tgSet button').forEach(b=>b.classList.toggle('on',b.dataset.s===tgSetKey));
+  document.querySelectorAll('#tgMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===tgMode));
+  const sel=document.getElementById('tgAth');sel.hidden=tgSetKey!=='lancesInd';
+  if(!sel.hidden&&sel.dataset.n!==String(members.length)){const cur=sel.value;const aths=members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt'));
+    sel.innerHTML='<option value="">Escolha o atleta</option>'+aths.map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');sel.value=cur;sel.dataset.n=String(members.length)}
+  const {cats,descs}=tgButtons();
+  document.getElementById('tgCats').innerHTML=cats.map((c,i)=>`<button type="button" class="cat ${tgRec&&tgRec.i===i?'rec':''}" data-i="${i}" style="background:${esc(c.color||'#ddd')};color:${tgFg(c.color)}">${esc(c.name)}${tgRec&&tgRec.i===i?` <span class="st" style="color:inherit" data-el>0:00</span>`:''}</button>`).join('')||'<span class="st">Nenhum botão. Clique em "Editar botões".</span>';
+  document.getElementById('tgDescs').innerHTML=descs.map((d,i)=>`<button type="button" class="dsc ${tgDescOn.has(i)?'on':''}" data-i="${i}">${d.g?`<b>${esc(d.g)}</b>`:''}${esc(d.v)}</button>`).join('');
+}
+function tgFg(c){const m=String(c||'').match(/^#?([0-9a-f]{6})$/i);if(!m)return '#111';const n=parseInt(m[1],16);const r=n>>16,g=(n>>8)&255,b=n&255;return (0.2126*r+0.7152*g+0.0722*b)<140?'#fff':'#111'}
+function hexRgb(c){const m=String(c||'').match(/^#?([0-9a-f]{6})$/i);if(!m)return [200,200,200];const n=parseInt(m[1],16);return [n>>16,(n>>8)&255,n&255]}
+document.getElementById('tgSet').onclick=e=>{const b=e.target.closest('button');if(!b)return;tgStop(true);tgSetKey=b.dataset.s;renderTagbar()};
+document.getElementById('tgMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;tgStop(true);tgMode=b.dataset.m;renderTagbar()};
+document.getElementById('tgDescs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i;tgDescOn.has(i)?tgDescOn.delete(i):tgDescOn.add(i);b.classList.toggle('on',tgDescOn.has(i))};
+document.getElementById('tgClear').onclick=()=>{tgDescOn.clear();document.getElementById('tgNote').value='';renderTagbar()};
+function tgStatus(t,cls){const s=document.getElementById('tgStatus');s.textContent=t;s.className='st '+(cls||'')}
+function tgStop(silent){clearInterval(tgTimer);tgTimer=null;tgRec=null;if(!silent)renderTagbar()}
+// tempo do vídeo -> tempo da XML (desfaz a sincronização)
+function toRaw(set,sync,T){
+  if(!set||!sync||(sync.v1==null&&sync.v2==null))return T;const {x1,x2}=xmlKicks(set);
+  const o1=sync.v1!=null?sync.v1-x1:null,o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
+  if(o2!=null&&T-o2>=x2)return T-o2;return T-((o1??o2)||0);
+}
+document.getElementById('tgCats').onclick=e=>{
+  const b=e.target.closest('button.cat');if(!b)return;const i=+b.dataset.i;const P=window.DimasPlayer;
+  if(!P.hasVideo()){tgStatus('Abra o vídeo primeiro.','err');return}
+  if(tgSetKey==='lancesInd'&&!document.getElementById('tgAth').value){tgStatus('Escolha o atleta para a marcação individual.','err');return}
+  const T=P.time();const cat=tgButtons().cats[i];
+  if(tgMode==='inst'){const pre=+document.getElementById('tgPre').value||0,pos=+document.getElementById('tgPos').value||0;tgSave(cat,Math.max(0,T-pre),T+pos);return}
+  if(tgRec&&tgRec.i===i){const st=tgRec.start;tgStop(true);tgSave(cat,st,Math.max(st+1,T));return}
+  if(tgRec){const prev=tgButtons().cats[tgRec.i],st=tgRec.start;tgStop(true);tgSave(prev,st,Math.max(st+1,T))}
+  tgRec={i,start:T};renderTagbar();tgStatus('Gravando '+cat.name+'… clique de novo para encerrar.');
+  tgTimer=setInterval(()=>{const el=document.querySelector('#tgCats [data-el]');if(el&&tgRec)el.textContent=fmtT(Math.max(0,P.time()-tgRec.start))},250);
+};
+async function tgSave(cat,startV,endV){
+  const item=currentItem;if(!item)return;const key=tgSetKey;const old=item[key]||{instances:[],rows:[]};
+  const sync=item.sync||null;const start=Math.round(toRaw(old,sync,startV)*100)/100,end=Math.round(toRaw(old,sync,endV)*100)/100;
+  let code=cat.name;if(key==='lancesInd'){const a=members.find(m=>m.id===document.getElementById('tgAth').value);if(!a)return;code=(a.number!=null?a.number+'. ':'')+a.name+' - '+cat.name}
+  const {descs}=tgButtons();const labels=[...tgDescOn].map(i=>descs[i]).filter(Boolean).map(d=>d.g?d.g+': '+d.v:d.v);
+  const note=document.getElementById('tgNote').value.trim();
+  const inst={id:(old.instances||[]).reduce((m,l)=>Math.max(m,+l.id||0),0)+1,start,end,code};if(note)inst.note=note;if(labels.length)inst.labels=labels;
+  const rows=(old.rows||[]).slice();if(!rows.some(r=>r.code===code))rows.push({code,rgb:hexRgb(cat.color),order:rows.length});
+  const set={instances:(old.instances||[]).concat([inst]),rows};
+  const col=item.compId?'matches':'videos';
+  try{await db.collection(col).doc(item.id).update({[key]:set});item[key]=set;
+    document.getElementById('tgNote').value='';tgStatus(`✓ ${cat.name} ${fmtT(startV)} → ${fmtT(endV)} gravado na XML ${key==='lances'?'coletiva':'individual'} (${set.instances.length} lances)`,'ok');
+    if(xmlKind===key){const st=lancesFor(item);window.DimasPlayer.loadLances(applySync(st,item.sync),{individual:key==='lancesInd',src:srcOf(item)});setXmlSeg(item)}
+  }catch(err){tgStatus('Não gravou: '+(err.code||err.message),'err')}
+}
+// editor dos botões
+const tgModal=document.getElementById('tgModal');
+function tgRow(kind,d){const tr=document.createElement('tr');tr.innerHTML=kind==='cat'?`<td><input type="text" placeholder="Nome da categoria" value="${esc(d.name||'')}"></td><td style="width:44px"><input type="color" value="${esc(d.color||'#dddddd')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`
+  :`<td style="width:38%"><input type="text" placeholder="Grupo (opcional)" value="${esc(d.g||'')}"></td><td><input type="text" placeholder="Texto" value="${esc(d.v||'')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`;
+  tr.querySelector('.x').onclick=()=>tr.remove();return tr}
+document.getElementById('tgEdit').onclick=()=>{const {cats,descs}=tgButtons();const cr=document.getElementById('tgCatRows'),dr=document.getElementById('tgDescRows');cr.innerHTML='';dr.innerHTML='';
+  cats.forEach(c=>cr.appendChild(tgRow('cat',c)));descs.forEach(d=>dr.appendChild(tgRow('desc',d)));document.getElementById('tgErr').hidden=true;tgModal.hidden=false};
+document.getElementById('tgCatAdd').onclick=()=>{document.getElementById('tgCatRows').appendChild(tgRow('cat',{color:'#9b65c5'}))};
+document.getElementById('tgDescAdd').onclick=()=>{document.getElementById('tgDescRows').appendChild(tgRow('desc',{}))};
+document.getElementById('tgCancel').onclick=()=>{tgModal.hidden=true};tgModal.addEventListener('click',e=>{if(e.target===tgModal)tgModal.hidden=true});
+document.getElementById('tgForm').onsubmit=async e=>{e.preventDefault();
+  const cats=[...document.querySelectorAll('#tgCatRows tr')].map(tr=>({name:tr.querySelector('input[type=text]').value.trim(),color:tr.querySelector('input[type=color]').value})).filter(c=>c.name);
+  const descs=[...document.querySelectorAll('#tgDescRows tr')].map(tr=>{const [g,v]=[...tr.querySelectorAll('input[type=text]')].map(i=>i.value.trim());return {g,v}}).filter(d=>d.v);
+  try{await db.collection('settings').doc('tagging').set({cats,descs,by:me.id,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});tgDescOn.clear();tgModal.hidden=true}
+  catch(err){const x=document.getElementById('tgErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 /* ---- individuais ---- */
 let athlete=null;
 function norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9#]+/g,' ').trim()}
