@@ -38,6 +38,11 @@ service cloud.firestore {
       allow read: if isStaff() || (isGuest() && resource.data.compId in member().get('comps', []));
       allow write: if isAdmin();
     }
+    match /playlists/{id} {
+      allow read: if isStaff() || (isMember() && email() in resource.data.get('shareMembers', []));
+      allow create: if isStaff() && request.resource.data.by == email();
+      allow update, delete: if isAdmin() || (isStaff() && resource.data.by == email());
+    }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
       allow write: if isAdmin();
