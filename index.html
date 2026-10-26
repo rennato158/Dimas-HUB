@@ -113,6 +113,8 @@ tr.active td.num{color:var(--accent)}
 td.act{text-align:right}td.act .star{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);margin-right:4px;vertical-align:middle}
 td.act .star svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}td.act .star:hover{color:var(--accent);background:var(--panel2)}
 td.act .star.on{color:var(--accent)}td.act .star.on svg{fill:currentColor}td.act .play{vertical-align:middle}td.act .pen svg{fill:none}td.act .pen.on{color:var(--fg)}td.act .pen.on svg{fill:none}
+.pltag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}.pltag.pos{background:#dcfce7;color:#166534}.pltag.adj{background:#ffedd5;color:#9a3412}
+@media (prefers-color-scheme:dark){.pltag.pos{background:#14532d;color:#bbf7d0}.pltag.adj{background:#7c2d12;color:#fed7aa}}
 .plnote{display:block;font-size:12.5px;color:var(--fg);white-space:normal;max-width:420px;margin-top:3px;font-style:italic}
 .pcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;cursor:pointer;min-width:0}
 .pcard:hover{border-color:var(--muted)}.pcard .row{display:flex;align-items:center;gap:12px;min-width:0}
@@ -689,6 +691,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <form id="nForm">
       <h3>Nota do lance</h3>
       <p class="pwnote" id="nLance" style="margin:0"></p>
+      <div class="f"><label>Rótulo</label><div class="seg" id="nTag" style="margin-left:0"><button type="button" class="on" data-t="">Nenhum</button><button type="button" data-t="Reforço Positivo">Reforço Positivo</button><button type="button" data-t="Ajuste">Ajuste</button></div></div>
       <div class="f"><label>Nota</label><textarea id="nText" rows="4" style="resize:vertical;font-family:var(--body)" placeholder="Observação sobre o lance…"></textarea></div>
       <span class="ferr" id="nErr" hidden></span>
       <div class="actions"><button type="button" class="btn" id="nCancel">Cancelar</button><button type="submit" class="btn primary" id="nSave">Salvar nota</button></div>
@@ -1144,15 +1147,16 @@ function openPlaylist(p,keep){
   document.getElementById('xmlSeg').hidden=true;
   P.setTitle(p.name,items.length+' lance'+(items.length!==1?'s':''));
   const rows=[];const seen=new Set();items.forEach(it=>{if(!seen.has(it.code)){seen.add(it.code);rows.push({code:it.code,rgb:[155,101,197],order:rows.length})}});
-  P.loadLances({instances:items.map((it,i)=>({id:i+1,start:it.start,end:it.end,code:it.code,note:it.note||undefined,ytId:it.ytId,key:it.key,vt:it.title})),rows},{playlist:true,src:{id:p.id,kind:'playlist',title:p.name},playlistTitles:true});
+  P.loadLances({instances:items.map((it,i)=>({id:i+1,start:it.start,end:it.end,code:it.code,note:it.note||undefined,tag:it.tag||'',ytId:it.ytId,key:it.key,vt:it.title})),rows},{playlist:true,src:{id:p.id,kind:'playlist',title:p.name},playlistTitles:true});
   if(items[0]&&items[0].ytId&&!keep)P.loadYT(items[0].ytId);
   show('lances',true);
 }
 const nModal=document.getElementById('nModal');let noteL=null;
-function noteClick(l){if(!playlist||!isStaff())return;noteL=l;document.getElementById('nLance').textContent=`${l.code} · ${fmtT(l.start)} → ${fmtT(l.end)} · ${l.vt||''}`;document.getElementById('nText').value=l.note||'';document.getElementById('nErr').hidden=true;nModal.hidden=false;document.getElementById('nText').focus()}
+let noteTag='';const nTagSeg=document.getElementById('nTag');const setNTag=t=>{noteTag=t;nTagSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))};nTagSeg.onclick=e=>{const b=e.target.closest('button');if(b)setNTag(b.dataset.t)};
+function noteClick(l){if(!playlist||!isStaff())return;noteL=l;setNTag(l.tag||'');document.getElementById('nLance').textContent=`${l.code} · ${fmtT(l.start)} → ${fmtT(l.end)} · ${l.vt||''}`;document.getElementById('nText').value=l.note||'';document.getElementById('nErr').hidden=true;nModal.hidden=false;document.getElementById('nText').focus()}
 document.getElementById('nCancel').onclick=()=>{nModal.hidden=true};nModal.addEventListener('click',e=>{if(e.target===nModal)nModal.hidden=true});
 document.getElementById('nForm').onsubmit=async e=>{e.preventDefault();if(!playlist||!noteL)return;const note=document.getElementById('nText').value.trim();
-  const items=(playlist.items||[]).map(it=>it.key===noteL.key?Object.assign({},it,{note}):it);
+  const items=(playlist.items||[]).map(it=>it.key===noteL.key?Object.assign({},it,{note,tag:noteTag}):it);
   try{await savePlaylist(playlist.id,{items});playlist.items=items;nModal.hidden=true;openPlaylist(playlist,true)}catch(err){const x=document.getElementById('nErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 let pEditing=null;
 function openPlaylistEdit(p){
@@ -1910,8 +1914,8 @@ function render(){
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
     tr.innerHTML=`<td class="num">${l.n}</td><td class="tm">${fmt(l.start)}</td><td class="tm">${fmt(l.end)}</td><td class="num">${dur(l.start,l.end)}</td>
-      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${l.player?`<span class="note">${l.player}</span>`:''}${l.vt?`<span class="note" style="color:var(--accent)">${String(l.vt).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span>`:''}${individualMode&&(l.descs||[]).length?`<span class="descs">${l.descs.filter(d=>!selectedDescs.size||selectedDescs.has(dkey(d))).map(d=>`<span class="desc ${selectedDescs.has(dkey(d))?'on':''}" data-g="${String(d.g).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-v="${String(d.v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${d.g?`<b>${d.g}</b>`:''}${d.v}</span>`).join('')}</span>`:''}${l.note?(listMode?`<span class="plnote">${String(l.note).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span>`:`<span class="note">${l.note}</span>`):''}</td>
-      <td class="act">${listMode&&window.DimasHub&&window.DimasHub.canFav()?`<button class="star pen ${l.note?'on':''}" type="button" title="Nota do lance" aria-label="Nota"><svg viewBox="0 0 16 16"><path d="M11.5 2.5l2 2L5 13H3v-2zM10 4l2 2"/></svg></button>`:''}${curSrc&&window.DimasHub&&window.DimasHub.canFav()?`<button class="star ${window.DimasHub&&window.DimasHub.favHas(curSrc,l)?'on':''}" type="button" title="${listMode?'Tirar da playlist':'Guardar na playlist'}" aria-label="Favorito"><svg viewBox="0 0 16 16"><path d="M8 1.5l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.9l-4.2 2.3.9-4.6L1.3 6.4 6 5.8z"/></svg></button>`:''}<button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
+      <td class="name"><span class="tag" style="background:${colors[l.code]};color:${fg(colors[l.code])}">${l.code}</span>${listMode&&l.tag?`<span class="pltag ${l.tag==='Ajuste'?'adj':'pos'}">${l.tag==='Ajuste'?'Ajuste':'Reforço positivo'}</span>`:''}${l.player?`<span class="note">${l.player}</span>`:''}${l.vt?`<span class="note" style="color:var(--accent)">${String(l.vt).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span>`:''}${individualMode&&(l.descs||[]).length?`<span class="descs">${l.descs.filter(d=>!selectedDescs.size||selectedDescs.has(dkey(d))).map(d=>`<span class="desc ${selectedDescs.has(dkey(d))?'on':''}" data-g="${String(d.g).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-v="${String(d.v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${d.g?`<b>${d.g}</b>`:''}${d.v}</span>`).join('')}</span>`:''}${l.note?(listMode?`<span class="plnote">${String(l.note).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span>`:`<span class="note">${l.note}</span>`):''}</td>
+      <td class="act">${listMode&&window.DimasHub&&window.DimasHub.canFav()?`<button class="star pen ${l.note||l.tag?'on':''}" type="button" title="Nota do lance" aria-label="Nota"><svg viewBox="0 0 16 16"><path d="M11.5 2.5l2 2L5 13H3v-2zM10 4l2 2"/></svg></button>`:''}${curSrc&&window.DimasHub&&window.DimasHub.canFav()?`<button class="star ${window.DimasHub&&window.DimasHub.favHas(curSrc,l)?'on':''}" type="button" title="${listMode?'Tirar da playlist':'Guardar na playlist'}" aria-label="Favorito"><svg viewBox="0 0 16 16"><path d="M8 1.5l2 4.3 4.7.6-3.4 3.2.9 4.6L8 11.9l-4.2 2.3.9-4.6L1.3 6.4 6 5.8z"/></svg></button>`:''}<button class="play" type="button" aria-label="Reproduzir lance ${l.n}"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button></td>`;
     tr.onclick=e=>{const pn=e.target.closest('.pen');if(pn){e.stopPropagation();window.DimasHub.noteClick(l);return}const st=e.target.closest('.star');if(st){e.stopPropagation();window.DimasHub.favClick(curSrc,l,listMode);return}const c=e.target.closest('.desc');if(c){e.stopPropagation();const k=dkey({g:c.dataset.g,v:c.dataset.v});selectedDescs.has(k)?selectedDescs.delete(k):selectedDescs.add(k);renderDescs();render();return}play(l)};
     rowsEl.appendChild(tr);
   });
