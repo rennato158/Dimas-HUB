@@ -634,6 +634,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <form id="vForm" autocomplete="off">
       <h3 id="vTitle">Adicionar vídeo</h3>
       <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo</option><option>Análise</option><option>Treino</option></select></div>
+      <div class="f" id="vSubRow" hidden><label for="vSub">Tipo de análise</label><select id="vSub"><option>Treino</option><option>Pós-jogo</option><option>Adversário</option><option>Individual</option></select></div>
+      <div class="f" id="vAthRow" hidden><label for="vAth">Atleta</label><select id="vAth"><option value="">Escolha o atleta</option></select></div>
       <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="vName">Título</label><input type="text" id="vName" required maxlength="80" placeholder="Ex.: Ceará 2 x 2 Juventude"></div>
       <div class="f2" id="vTeamsRow">
@@ -1416,7 +1418,7 @@ document.getElementById('cbarBack').onclick=()=>{currentItem=null;show('comps')}
 document.getElementById('ibarBack').onclick=()=>{athlete=null;show('indiv')};
 function openAthlete(a,videoId){
   if(!a)return;athlete=a;
-  const games=videos.filter(canSee).map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length);
+  const games=videos.filter(canSee).map(v=>({v,ls:athleteLances(a,v)})).filter(g=>g.ls.length||(g.v.athleteId===a.id&&g.v.sub==='Individual'));
   document.getElementById('ibarAv').innerHTML=a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name);
   document.getElementById('ibarName').textContent=a.name;
   document.getElementById('ibarSub').textContent=[a.number!=null?'#'+a.number:null,a.pos||null,ageOf(a.birth)?ageOf(a.birth)+' anos':null].filter(Boolean).join(' · ');
@@ -1426,7 +1428,7 @@ function openAthlete(a,videoId){
   if(videoId===undefined)iComp.dataset.v='';
   fillSelect(iComp,cs.map(c=>({v:c,t:c})),'Todas as competições',true);
   const gs=games.filter(g=>!iComp.value||(g.v.comp||'')===iComp.value);
-  fillSelect(iGame,gs.map(g=>({v:g.v.id,t:g.v.title+' ('+g.ls.length+')'})),'Escolha o jogo',true);
+  fillSelect(iGame,gs.map(g=>({v:g.v.id,t:g.v.title+(g.ls.length?' ('+g.ls.length+')':' · análise')})),'Escolha o jogo',true);
   const pick=gs.find(g=>g.v.id===videoId)||gs[0];if(pick)iGame.value=pick.v.id;
   iComp.onchange=()=>openAthlete(a,null);iGame.onchange=()=>openAthlete(a,iGame.value);
   const P=window.DimasPlayer;
@@ -1641,6 +1643,7 @@ function comps(){return [...new Set(videos.map(v=>(v.comp||'').trim()).filter(Bo
 function fillSelect(sel,items,allLabel,keep){const cur=keep?sel.value:'';sel.innerHTML=`<option value="">${allLabel}</option>`+items.map(i=>`<option value="${esc(i.v)}">${esc(i.t)}</option>`).join('');sel.value=items.some(i=>i.v===cur)?cur:''}
 const hComp=document.getElementById('hComp'), hGame=document.getElementById('hGame');
 hComp.onchange=()=>{renderVideos()};hGame.onchange=()=>{renderVideos()};
+function typeLabel(v){const t=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');if(t!=='Análise'||!v.sub)return t;if(v.sub==='Individual'){const a=members.find(m=>m.id===v.athleteId);return 'Análise · '+(a?a.name:'Individual')}return 'Análise · '+v.sub}
 function coverHtml(v){
   const type=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
   if(!v.thumb&&type==='Jogo'&&(v.home||v.away)){const h=teamOf(v.home||''),a=teamOf(v.away||'');
@@ -1672,7 +1675,7 @@ function renderVideos(){
   if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
   vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0" ${admin?'draggable="true" title="Arraste para reordenar"':''}>
-    <div class="th">${coverHtml(v)}<span class="badge tp">${esc(v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo'))}</span></div>
+    <div class="th">${coverHtml(v)}<span class="badge tp">${esc(typeLabel(v))}</span></div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
@@ -1728,7 +1731,8 @@ let vEditing=null, vThumb=null, vLances=null, vLancesI=null, vDurAuto=0;
 function openVideo(v){
   vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vLancesI=v?.lancesInd||null;vDurAuto=0;vErr.hidden=true;
   document.getElementById('vTitle').textContent=v?'Editar vídeo':'Adicionar vídeo';
-  document.getElementById('vType').value=(v?.type==='Jogo Completo'?'Jogo':v?.type)||'Jogo';
+  document.getElementById('vType').value=(v?.type==='Jogo Completo'?'Jogo':v?.type)||'Jogo';document.getElementById('vSub').value=v?.sub||'Treino';
+  const vAth=document.getElementById('vAth');vAth.innerHTML='<option value="">Escolha o atleta</option>'+members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')).map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');vAth.value=v?.athleteId||'';vSubUpd();
   document.getElementById('vHome').value=v?.home||'';document.getElementById('vAway').value=v?.away||'';document.getElementById('clubList2').innerHTML=teams.map(t=>`<option value="${esc(t.name)}">`).join('');document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
   document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
@@ -1737,6 +1741,8 @@ function openVideo(v){
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
+function vSubUpd(){const t=document.getElementById('vType').value,sb=document.getElementById('vSub').value;document.getElementById('vSubRow').hidden=t!=='Análise';document.getElementById('vAthRow').hidden=!(t==='Análise'&&sb==='Individual')}
+document.getElementById('vType').onchange=vSubUpd;document.getElementById('vSub').onchange=vSubUpd;
 function updThumb(){
   const id=window.DimasPlayer.ytId(document.getElementById('vUrl').value.trim());
   const img=document.getElementById('vThumbImg');img.src=vThumb||(id?ytThumb(id):'');img.style.visibility=img.src?'':'hidden';
@@ -1851,7 +1857,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const data={url,ytId,type:document.getElementById('vType').value,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
+  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true}
