@@ -15,6 +15,9 @@ service cloud.firestore {
       allow create: if isAdmin() || (isBootstrap() && id == email());
       allow update: if isAdmin() || ownFlagOnly();
       allow delete: if isAdmin();
+      match /marks/{vid} {
+        allow read, write: if isStaff() && id == email();
+      }
     }
     match /groups/{id} {
       allow read: if isMember();
@@ -36,8 +39,7 @@ service cloud.firestore {
     }
     match /matches/{id} {
       allow read: if isStaff() || (isGuest() && resource.data.compId in member().get('comps', []));
-      allow create, delete: if isAdmin();
-      allow update: if isStaff();
+      allow write: if isAdmin();
     }
     match /settings/{id} {
       allow read: if isMember();
@@ -49,8 +51,7 @@ service cloud.firestore {
     }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
-      allow create, delete: if isAdmin();
-      allow update: if isStaff();
+      allow write: if isAdmin();
     }
   }
 }
