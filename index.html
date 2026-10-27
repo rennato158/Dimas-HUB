@@ -2028,7 +2028,7 @@ function loadYT(id){
     if(yt){if(pendingSeek!=null){yt.loadVideoById({videoId:id,startSeconds:pendingSeek});pendingSeek=null}else yt.cueVideoById(id);return}
     yt=new YT.Player('yt',{videoId:id,playerVars:{rel:0,modestbranding:1,playsinline:1,origin:location.origin},events:{onReady:()=>{ytReady=true;if(pendingSeek!=null){yt.seekTo(pendingSeek,true);yt.playVideo();pendingSeek=null}}}});
   });
-  nowChip.textContent='YouTube';nowChip.style.background='#9aa0b4';nowTime.textContent=id;
+  nowChip.hidden=true;nowTime.textContent='';
   clearInterval(pollTimer);pollTimer=setInterval(tick,250);
 }
 // Lê a duração de um vídeo do YouTube com um player oculto.
@@ -2145,7 +2145,7 @@ function play(l){
   current=l;clearTimeout(stopTimer);
   rowsEl.querySelectorAll('tr').forEach(tr=>tr.classList.toggle('active',+tr.dataset.id===l.id));
   const active=rowsEl.querySelector('tr.active');if(active)active.scrollIntoView({block:'nearest'});
-  nowChip.textContent=l.code;nowChip.style.background=colors[l.code];nowChip.style.color=fg(colors[l.code]);
+  nowChip.hidden=false;nowChip.textContent=l.code;nowChip.style.background=colors[l.code];nowChip.style.color=fg(colors[l.code]);
   nowTime.textContent=`#${l.n} · ${fmt(l.start)} → ${fmt(l.end)}`;
   if(l.ytId&&l.ytId!==curYt){pendingSeek=l.start;loadYT(l.ytId);nowTime.textContent=`#${l.n} · ${fmt(l.start)} → ${fmt(l.end)}`;return}
   if(!P.has()){empty.hidden=false;empty.querySelector('.big').textContent='Escolha um vídeo para reproduzir o lance '+l.n;empty.querySelector('p').textContent='Volte à aba Diretório e clique no vídeo da partida.';return}
