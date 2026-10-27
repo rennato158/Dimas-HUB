@@ -79,7 +79,8 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16p
 .tagbar .dsc.on{background:var(--accent);border-color:var(--accent);color:#fff}.tagbar .dsc b{font-weight:500;color:inherit;opacity:.7;margin-right:3px}
 .tagbar .st{font-family:var(--mono);font-size:12px;color:var(--muted)}.tagbar .st.ok{color:#16a34a}.tagbar .st.err{color:#e5533d}
 .tgedit table{width:100%;border-collapse:collapse}.tgedit td{padding:3px 4px;border:0;white-space:normal}.tgedit input[type=text]{width:100%}.tgedit input[type=color]{width:34px;height:28px;padding:0;border:1px solid var(--line);border-radius:4px;background:none}
-.tgedit .x{color:#e5533d;font-size:16px;padding:0 6px}
+.tgedit .x{color:#e5533d;font-size:16px;padding:0 6px}.tgedit .mv{padding:2px 5px;color:var(--muted);font-size:14px}.tgedit .mv:hover{color:var(--fg)}
+.tagbar [draggable=true]{cursor:grab}.tagbar .dragging{opacity:.35;outline:2px dashed var(--muted)}
 .icon{width:34px;height:34px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center}
 .icon svg{width:16px;height:16px;fill:currentColor}
 
@@ -1281,8 +1282,8 @@ function renderTagbar(){
   if(!sel.hidden&&sel.dataset.n!==String(members.length)){const cur=sel.value;const aths=members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt'));
     sel.innerHTML='<option value="">Escolha o atleta</option>'+aths.map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');sel.value=cur;sel.dataset.n=String(members.length)}
   const {cats,descs}=tgButtons();
-  document.getElementById('tgCats').innerHTML=cats.map((c,i)=>`<button type="button" class="cat ${tgRec&&tgRec.i===i?'rec':''}" data-i="${i}" style="background:${esc(c.color||'#ddd')};color:${tgFg(c.color)}">${esc(c.name)}${tgRec&&tgRec.i===i?` <span class="st" style="color:inherit" data-el>0:00</span>`:''}</button>`).join('')||'<span class="st">Nenhum botão. Clique em "Editar botões".</span>';
-  document.getElementById('tgDescs').innerHTML=descs.map((d,i)=>`<button type="button" class="dsc ${tgDescOn.has(i)?'on':''}" data-i="${i}">${d.g?`<b>${esc(d.g)}</b>`:''}${esc(d.v)}</button>`).join('');
+  document.getElementById('tgCats').innerHTML=cats.map((c,i)=>`<button type="button" draggable="true" class="cat ${tgRec&&tgRec.i===i?'rec':''}" data-i="${i}" style="background:${esc(c.color||'#ddd')};color:${tgFg(c.color)}">${esc(c.name)}${tgRec&&tgRec.i===i?` <span class="st" style="color:inherit" data-el>0:00</span>`:''}</button>`).join('')||'<span class="st">Nenhum botão. Clique em "Editar botões".</span>';
+  document.getElementById('tgDescs').innerHTML=descs.map((d,i)=>`<button type="button" draggable="true" class="dsc ${tgDescOn.has(i)?'on':''}" data-i="${i}">${d.g?`<b>${esc(d.g)}</b>`:''}${esc(d.v)}</button>`).join('');
 }
 function tgFg(c){const m=String(c||'').match(/^#?([0-9a-f]{6})$/i);if(!m)return '#111';const n=parseInt(m[1],16);const r=n>>16,g=(n>>8)&255,b=n&255;return (0.2126*r+0.7152*g+0.0722*b)<140?'#fff':'#111'}
 function hexRgb(c){const m=String(c||'').match(/^#?([0-9a-f]{6})$/i);if(!m)return [200,200,200];const n=parseInt(m[1],16);return [n>>16,(n>>8)&255,n&255]}
@@ -1348,11 +1349,24 @@ async function markDelete(l){
   try{await db.collection('members').doc(me.id).collection('marks').doc(item.id).set({[key]:set},{merge:true});myMarks[item.id][key]=set;tgStatus('Marcação removida.','ok');tgReload(item,key)}
   catch(err){tgStatus('Não removeu: '+(err.code||err.message),'err')}
 }
+// arrastar os botões na própria barra para reordenar
+function tgDrag(boxId,sel,field){
+  const box=document.getElementById(boxId);let drag=null;
+  box.addEventListener('dragstart',e=>{const b=e.target.closest(sel);if(!b)return;drag=b;b.classList.add('dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain','')}catch(_){}});
+  box.addEventListener('dragover',e=>{if(!drag)return;e.preventDefault();const t=e.target.closest(sel);if(!t||t===drag)return;const r=t.getBoundingClientRect();(e.clientX>r.left+r.width/2)?t.after(drag):t.before(drag)});
+  box.addEventListener('dragend',async()=>{if(!drag)return;drag.classList.remove('dragging');drag=null;
+    const order=[...box.querySelectorAll(sel)].map(b=>+b.dataset.i);if(order.every((v,i)=>v===i))return;
+    const cur=tgButtons();const list=order.map(i=>cur[field][i]);const on=new Set([...tgDescOn].map(i=>field==='descs'?order.indexOf(i):i));
+    if(field==='descs')tgDescOn=on;tgStop(true);
+    const cfg={cats:field==='cats'?list:cur.cats,descs:field==='descs'?list:cur.descs};tgCfg=Object.assign({},tgCfg||{},cfg);renderTagbar();
+    try{await db.collection('settings').doc('tagging').set(Object.assign(cfg,{by:me.id,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}))}catch(err){tgStatus('Não salvou a ordem: '+(err.code||err.message),'err')}});
+}
+tgDrag('tgCats','button.cat','cats');tgDrag('tgDescs','button.dsc','descs');
 // editor dos botões
 const tgModal=document.getElementById('tgModal');
-function tgRow(kind,d){const tr=document.createElement('tr');tr.innerHTML=kind==='cat'?`<td><input type="text" placeholder="Nome da categoria" value="${esc(d.name||'')}"></td><td style="width:44px"><input type="color" value="${esc(d.color||'#dddddd')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`
-  :`<td style="width:38%"><input type="text" placeholder="Grupo (opcional)" value="${esc(d.g||'')}"></td><td><input type="text" placeholder="Texto" value="${esc(d.v||'')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`;
-  tr.querySelector('.x').onclick=()=>tr.remove();return tr}
+function tgRow(kind,d){const tr=document.createElement('tr');const mv=`<td style="width:52px;white-space:nowrap"><button type="button" class="mv" data-d="-1" title="Subir">↑</button><button type="button" class="mv" data-d="1" title="Descer">↓</button></td>`;tr.innerHTML=mv+(kind==='cat'?`<td><input type="text" placeholder="Nome da categoria" value="${esc(d.name||'')}"></td><td style="width:44px"><input type="color" value="${esc(d.color||'#dddddd')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`
+  :`<td style="width:38%"><input type="text" placeholder="Grupo (opcional)" value="${esc(d.g||'')}"></td><td><input type="text" placeholder="Texto" value="${esc(d.v||'')}"></td><td style="width:30px"><button type="button" class="x" title="Remover">×</button></td>`);
+  tr.querySelector('.x').onclick=()=>tr.remove();tr.querySelectorAll('.mv').forEach(b=>b.onclick=()=>{if(b.dataset.d==='-1'){if(tr.previousElementSibling)tr.previousElementSibling.before(tr)}else if(tr.nextElementSibling)tr.nextElementSibling.after(tr)});return tr}
 document.getElementById('tgEdit').onclick=()=>{const {cats,descs}=tgButtons();const cr=document.getElementById('tgCatRows'),dr=document.getElementById('tgDescRows');cr.innerHTML='';dr.innerHTML='';
   cats.forEach(c=>cr.appendChild(tgRow('cat',c)));descs.forEach(d=>dr.appendChild(tgRow('desc',d)));document.getElementById('tgErr').hidden=true;tgModal.hidden=false};
 document.getElementById('tgCatAdd').onclick=()=>{document.getElementById('tgCatRows').appendChild(tgRow('cat',{color:'#9b65c5'}))};
