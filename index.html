@@ -1444,7 +1444,7 @@ function xmlPlayers(set){
 ['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
 function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
 // Grupos automáticos por nível (não editáveis)
-const CATS=['Profissional','Sub-23','Sub-20','Sub-17','Sub-15','Sub-13','Feminino'];
+const CATS=['Profissional','Sub-23','Sub-20','Sub-17','Sub-15'];
 const AUTO_GROUPS=[{id:'auto:atletas',name:'Atletas',test:m=>m.role==='Atleta'},{id:'auto:comissao',name:'Comissão',test:m=>m.role==='Comissão'},{id:'auto:coordenacao',name:'Coordenação',test:m=>m.role==='Coordenação'},{id:'auto:diretoria',name:'Diretoria',test:m=>m.role==='Comissão'&&m.cargo==='Diretoria'},{id:'auto:convidados',name:'Convidados',test:m=>m.role==='Convidado'}];
 function inGroup(m,gid){const ag=AUTO_GROUPS.find(g=>g.id===gid);return ag?ag.test(m):(m.groups||[]).includes(gid)}
 function allGroups(){return [...AUTO_GROUPS.map(g=>({id:g.id,name:g.name,auto:true})),...groups]}
