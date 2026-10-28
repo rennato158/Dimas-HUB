@@ -630,8 +630,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <section class="panel">
     <div class="hd">
       <h2>Usuários</h2><span class="sub" id="mCount"></span>
-      <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button><button type="button" data-f="Coordenação">Coordenação</button><button type="button" data-f="Convidado">Convidados</button></div>
-      <button class="btn" type="button" id="wipeBtn" style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
+      <select id="mSeg" aria-label="Nível" style="width:auto;margin-left:auto"><option value="">Todos os níveis</option><option value="Atleta">Atletas</option><option value="Comissão">Comissão</option><option value="Coordenação">Coordenação</option><option value="Convidado">Convidados</option></select>
+      <button class="btn" type="button" id="wipeBtn" hidden style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
       <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
       <button class="btn" type="button" id="importBtn">Importar planilha</button>
       <button class="btn primary" type="button" id="addMember">+ Cadastrar</button>
@@ -1539,7 +1539,7 @@ function openAthlete(a,videoId){
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
-document.getElementById('mSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;document.querySelectorAll('#mSeg button').forEach(x=>x.classList.toggle('on',x===b));renderMembers()};
+document.getElementById('mSeg').onchange=e=>{filter=e.target.value;renderMembers()};
 
 function initials(n){return (n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
