@@ -1008,7 +1008,35 @@ function roundSort(a,b){const ra=roundRank(a),rb=roundRank(b);return ra[0]-rb[0]
 function isCupLike(ms){return ms.some(m=>{const ph=phaseOf(String(m.round??''));return ph&&ph[2]<60})}
 ['cSearch','cComp','cRound'].forEach(id=>document.getElementById(id).addEventListener(id==='cSearch'?'input':'change',renderComps));
 document.getElementById('cComp').addEventListener('change',()=>{document.getElementById('cRound').value=''});
+/* vídeo de jogo do Diretório -> jogo da competição (mesmo link) */
+function findMatchFor(v){
+  if(!v||!v.ytId||(v.type&&v.type!=='Jogo'&&v.type!=='Jogo Completo'))return null;
+  let home=v.home,away=v.away;
+  const t=String(v.title||'').replace(/^[^_]*_/,'');const tm=t.match(/^(.+?)\s*(\d+)?\s*[x×]\s*(\d+)?\s*(.+)$/i);
+  if((!home||!away)&&tm){home=home||tm[1].trim();away=away||tm[4].trim()}
+  if(!home||!away)return null;
+  const ht=teamOf(home),at=teamOf(away);const same=(a,b,tt)=>tt?teamOf(a)===tt:norm(a)===norm(b);
+  let c=matches.filter(m=>same(m.home,home,ht)&&same(m.away,away,at));if(!c.length)return null;
+  const rnd=(String(v.title||'').match(/^[A-Za-z]*?(\d+)_/)||[])[1];const hs=tm&&tm[2]!=null?+tm[2]:null,as=tm&&tm[3]!=null?+tm[3]:null;
+  const cn=norm(v.comp||'');
+  const score=m=>{let p=0;const lg=leagues.find(l=>l.id===m.compId);if(lg&&cn){const ln=norm(lg.name+' '+(lg.season||''));const toks=cn.split(' ').filter(w=>w.length>1);p+=toks.filter(w=>ln.includes(w)).length*2}
+    if(rnd&&String(m.round)===String(+rnd))p+=5;if(hs!=null&&m.hs===hs&&m.as===as)p+=3;if(m.ytId===v.ytId)p+=20;return p};
+  c=c.map(m=>({m,p:score(m)})).sort((a,b)=>b.p-a.p);
+  if(c.length>1&&c[0].p===c[1].p)return null;return c[0].m;
+}
+async function linkVideoMatch(v,force){
+  if(!me||me.func!=='Administrador')return false;const m=findMatchFor(v);if(!m)return false;
+  if(m.ytId===v.ytId&&!force)return false;if(m.ytId&&m.ytId!==v.ytId&&!force)return false;
+  const d={url:v.url||null,ytId:v.ytId,videoId:v.id||null};
+  if(v.lances&&!m.lances)d.lances=v.lances;if(v.lancesInd&&!m.lancesInd)d.lancesInd=v.lancesInd;if(v.sync&&!m.sync)d.sync=v.sync;
+  if(m.ytId===v.ytId&&!d.lances&&!d.lancesInd&&!d.sync&&m.videoId===v.id)return false;
+  await db.collection('matches').doc(m.id).update(d);Object.assign(m,d);return true;
+}
+let linkedOnce=false;
+function autoLinkAll(){if(linkedOnce||!me||me.func!=='Administrador'||!videos.length||!matches.length||!teams.length)return;linkedOnce=true;
+  videos.forEach(v=>{const m=findMatchFor(v);if(m&&!m.ytId)linkVideoMatch(v,false).catch(()=>{})})}
 function renderComps(){
+  setTimeout(autoLinkAll,0);
   const admin=me&&me.func==='Administrador';
   fillSelect(document.getElementById('cComp'),leagues.map(c=>({v:c.id,t:c.name+(c.season?' '+c.season:'')})),'Todas as competições',true);
   const q=norm(document.getElementById('cSearch').value),cf=document.getElementById('cComp').value;
@@ -1932,9 +1960,9 @@ vForm.onsubmit=async e=>{
   const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
-    if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true}
+    if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
     else{const ref=await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id,shareGroups:[],shareMembers:[],viewers:[]}));
-      vModal.hidden=true;openShare(Object.assign({id:ref.id},data,{shareGroups:[],shareMembers:[]}))}
+      vModal.hidden=true;linkVideoMatch(Object.assign({id:ref.id},data),true).catch(()=>{});openShare(Object.assign({id:ref.id},data,{shareGroups:[],shareMembers:[]}))}
   }catch(err){vErr.textContent='Não salvou: '+(err.code||err.message);vErr.hidden=false}
   b.disabled=false;
 };
