@@ -37,6 +37,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .brand{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.04em;line-height:1;text-transform:uppercase}
 .brand b{color:var(--accent)}
+.splash{position:fixed;inset:0;z-index:1000;background:radial-gradient(120% 90% at 50% 38%,#2a0f3d 0%,#0b0610 58%,#000 100%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;transition:opacity .6s ease,visibility .6s}
+.splash.out{opacity:0;visibility:hidden}
+.splash .sb{font-family:var(--display);font-weight:800;font-size:clamp(44px,11vw,88px);letter-spacing:.05em;line-height:1;text-transform:uppercase;animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}
+.splash .sb b{color:#b98ce0}
+.splash .st{font-family:var(--display);font-weight:600;font-size:clamp(15px,3.4vw,20px);letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.72);animation:spIn .9s .25s cubic-bezier(.2,.8,.2,1) both}
+.splash .bar{width:min(280px,70vw);height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:14px;animation:spIn .6s .4s both}
+.splash .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b65c5,#d6b4f2);border-radius:3px}
+.splash .pc{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;margin-top:-6px}
+@keyframes spIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spLoad{to{width:100%}}
+@media (prefers-reduced-motion:reduce){.splash .sb,.splash .st,.splash .bar{animation:none}}
 .match{display:flex;flex-direction:column;gap:2px;min-width:0}
 .match .title{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:.01em}
 .match .meta{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -388,6 +399,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </style>
 </head>
 <body>
+<div class="splash" id="splash" role="status" aria-label="Carregando Dimas HUB"><div class="sb">DIMAS <b>HUB</b></div><div class="st">Diretório de vídeos</div><div class="bar"><i></i></div><div class="pc" id="splashPc">0%</div></div>
+<script>(function(){const sp=document.getElementById('splash'),pc=document.getElementById('splashPc'),bi=sp.querySelector('.bar i'),t0=Date.now(),D=5000;
+  const tick=()=>{const k=Math.min(1,(Date.now()-t0)/D);const e=1-Math.pow(1-k,2.2);bi.style.width=(e*100)+'%';pc.textContent=Math.round(e*100)+'%';if(k<1)requestAnimationFrame(tick);else{sp.classList.add('out');setTimeout(()=>sp.remove(),700)}};requestAnimationFrame(tick)})();</script>
 
 <div class="gate" id="gate">
   <div class="card">
