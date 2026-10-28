@@ -1501,7 +1501,7 @@ function gname(id){const g=groups.find(x=>x.id===id);return g?g.name:null}
 function renderMembers(){
   const list=members.filter(m=>!filter||m.role===filter);
   const at=members.filter(m=>m.role==='Atleta').length, cv=members.filter(m=>m.role==='Convidado').length, cd=members.filter(m=>m.role==='Coordenação').length, co=members.length-at-cv-cd;
-  mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão · ${cd} coordenação · ${cv} convidado${cv!==1?'s':''}`;
+  mCount.textContent='';
   if(!list.length){mList.innerHTML='<div class="emptyl">Ninguém cadastrado'+(filter?' nesse nível':'')+' ainda. Clique em <strong>Cadastrar</strong>.</div>';return}
   mList.innerHTML=list.map(m=>`<div class="mrow" data-id="${esc(m.id)}">
     <div class="av">${m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(m.name)}</div>
