@@ -1287,7 +1287,7 @@ function openPlaylist(p,keep){
   document.getElementById('xmlSeg').hidden=true;
   P.setTitle(p.name,items.length+' lance'+(items.length!==1?'s':''));
   const rows=[];const seen=new Set();items.forEach(it=>{if(!seen.has(it.code)){seen.add(it.code);rows.push({code:it.code,rgb:[155,101,197],order:rows.length})}});
-  P.loadLances({instances:items.map((it,i)=>({id:i+1,start:it.start,end:it.end,code:it.code,note:it.note||undefined,tag:it.tag||'',ytId:it.ytId,key:it.key,vt:it.title})),rows},{playlist:true,src:{id:p.id,kind:'playlist',title:p.name},playlistTitles:true});
+  P.loadLances({instances:items.map((it,i)=>({id:i+1,start:it.start,end:it.end,code:it.code,note:it.note||undefined,tag:it.tag||'',ytId:it.ytId,key:it.key,vt:it.title})),rows},{playlist:true,src:{id:p.id,kind:'playlist',title:p.name},playlistTitles:true,keep:!!keep});
   if(items[0]&&items[0].ytId&&!keep)P.loadYT(items[0].ytId);
   show('lances',true);
 }
@@ -1393,7 +1393,7 @@ async function tgSave(cat,startV,endV){
     tgReload(item,key);
   }catch(err){tgStatus('Não gravou: '+(err.code||err.message),'err')}
 }
-function tgReload(item,key){if(xmlKind===key){const st=lancesFor(item);window.DimasPlayer.loadLances(applySync(st,item.sync),{individual:key==='lancesInd',src:srcOf(item)})}}
+function tgReload(item,key){if(xmlKind===key){const st=lancesFor(item);window.DimasPlayer.loadLances(applySync(st,item.sync),{individual:key==='lancesInd',src:srcOf(item),keep:true})}}
 const eModal=document.getElementById('eModal');let annL=null,annLabels=[];
 function annDraw(){document.getElementById('eLabels').innerHTML=annLabels.map((x,i)=>`<span class="chip2">${esc(x)}<button type="button" data-i="${i}" title="Remover">×</button></span>`).join('')||'<span class="pwnote">Nenhum rótulo adicional.</span>'}
 document.getElementById('eLabels').onclick=e=>{const b=e.target.closest('button');if(b){annLabels.splice(+b.dataset.i,1);annDraw()}};
@@ -2164,7 +2164,7 @@ function splitCode(code,labels){
   return {player:'',action:code};
 }
 function load(d,opts){
-  data=d;opts=opts||{};
+  data=d;opts=opts||{};const sc=document.querySelector('.list .scroll');const keep=opts.keep?{c:[...selectedCats],d:[...selectedDescs],q:search.value,cur:current&&current.id,top:sc?sc.scrollTop:0}:null;
   colors={};order={};
   d.rows.forEach(r=>{const a=splitCode(r.code).action;if(!colors[a]){colors[a]=`rgb(${r.rgb.join(',')})`;order[a]=r.order}});
   lances=d.instances.slice().sort((a,b)=>a.start-b.start).map((l,i)=>{const sc=splitCode(l.code,l.labels);
@@ -2175,7 +2175,8 @@ function load(d,opts){
   selectedDescs.clear();individualMode=!!opts.individual;hideCats=!!opts.hideCats;curSrc=opts.src||null;listMode=!!opts.playlist;
   lances.forEach(l=>{if(!colors[l.code])colors[l.code]=hashColor(l.code);});
   selectedCats.clear();search.value='';current=null;
-  renderCats();render();
+  if(keep){const codes=new Set(lances.map(l=>l.code));keep.c.forEach(c=>{if(codes.has(c))selectedCats.add(c)});keep.d.forEach(k=>selectedDescs.add(k));search.value=keep.q;current=lances.find(l=>l.id===keep.cur)||null}
+  renderCats();render();if(keep&&sc)sc.scrollTop=keep.top;
 }
 
 function renderCats(){
