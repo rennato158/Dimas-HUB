@@ -47,7 +47,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16p
 .splash .sb b{color:#b98ce0}
 .splash .lg{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:10px;animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}.splash .lg img{width:min(220px,52vw);height:auto;display:block}
 .splash .lg small{font-family:var(--body);font-weight:500;font-size:6px;letter-spacing:.06em;line-height:1;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
-.splash .st{font-family:var(--display);font-weight:600;font-size:clamp(15px,3.4vw,20px);letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.72);animation:spIn .9s .25s cubic-bezier(.2,.8,.2,1) both}
+.splash .st{font-family:var(--display);font-weight:600;font-size:clamp(13px,2.6vw,18px);letter-spacing:.2em;max-width:92vw;line-height:1.4;text-transform:uppercase;color:rgba(255,255,255,.72);animation:spIn .9s .25s cubic-bezier(.2,.8,.2,1) both}
 .splash .bar{width:min(280px,70vw);height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:14px;animation:spIn .6s .4s both}
 .splash .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9b65c5,#d6b4f2);border-radius:3px}
 .splash .pc{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.08em;margin-top:-6px}
@@ -405,7 +405,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </style>
 </head>
 <body>
-<div class="splash" id="splash" role="status" aria-label="Carregando Dimas HUB"><div class="lg"><img src="assets/logo-dimas-branco.png" alt="DIMAS"><small>Departamento Integrado de Mercado e Análise Sistemática</small></div><img class="sb" src="assets/logo-dimas-hub-texto.svg" alt="Dimas HUB"><div class="st">Diretório de vídeos</div><div class="bar"><i></i></div><div class="pc" id="splashPc">0%</div></div>
+<div class="splash" id="splash" role="status" aria-label="Carregando Dimas HUB"><div class="lg"><img src="assets/logo-dimas-branco.png" alt="DIMAS"><small>Departamento Integrado de Mercado e Análise Sistemática</small></div><img class="sb" src="assets/logo-dimas-hub-texto.svg" alt="Dimas HUB"><div class="st">Diretório de Vídeos do Ceará Sporting Club</div><div class="bar"><i></i></div><div class="pc" id="splashPc">0%</div></div>
 <script>(function(){const lg=document.querySelector('#splash .lg'),im=lg.querySelector('img'),tx=lg.querySelector('small');
   const fit=()=>{const w=im.getBoundingClientRect().width;if(!w)return;tx.style.fontSize='10px';const tw=tx.scrollWidth;if(tw)tx.style.fontSize=(10*w/tw*0.98)+'px'};im.complete?fit():im.addEventListener('load',fit);if(document.fonts)document.fonts.ready.then(fit);window.addEventListener('resize',fit)})();
 (function(){const sp=document.getElementById('splash'),pc=document.getElementById('splashPc'),bi=sp.querySelector('.bar i'),t0=Date.now(),D=5000;
