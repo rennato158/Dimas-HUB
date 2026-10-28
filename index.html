@@ -1505,7 +1505,7 @@ function renderMembers(){
   if(!list.length){mList.innerHTML='<div class="emptyl">Ninguém cadastrado'+(filter?' nesse nível':'')+' ainda. Clique em <strong>Cadastrar</strong>.</div>';return}
   mList.innerHTML=list.map(m=>`<div class="mrow" data-id="${esc(m.id)}">
     <div class="av">${m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(m.name)}</div>
-    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.role!=='Convidado'&&(m.cats||[]).length?m.cats.join(', '):null,m.role==='Atleta'?m.pos:(['Comissão','Coordenação'].includes(m.role)?m.cargo:[m.club,m.competition].filter(Boolean).join(' · ')),m.role==='Atleta'&&ageOf(m.birth)?ageOf(m.birth)+' anos':null,m.email||null].filter(Boolean).join(' · ')||'sem e-mail')}</div>
+    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.role!=='Convidado'&&(m.cats||[]).length?m.cats.join(', '):null,m.role==='Atleta'?m.pos:(['Comissão','Coordenação'].includes(m.role)?(m.cargo||'Função não definida'):[m.club,m.competition].filter(Boolean).join(' · ')),m.role==='Atleta'&&ageOf(m.birth)?ageOf(m.birth)+' anos':null].filter(Boolean).join(' · ')||'—')}</div>
       ${(m.groups||[]).length?`<div class="gchips">${(m.groups||[]).map(gname).filter(Boolean).map(n=>`<span class="gchip">${esc(n)}</span>`).join('')}</div>`:''}</div>
     <span class="num">${m.number??''}</span>
     <span class="pill ${['Comissão','Coordenação'].includes(m.role)?'comissao':'atleta'} ${m.active===false?'off':''}">${esc(m.role||'Atleta')}</span>
