@@ -274,6 +274,10 @@ td.act .star.on{color:var(--accent)}td.act .star.on svg{fill:currentColor}td.act
 .league{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow)}
 .league .band{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--fg);color:var(--bg)}
 .league .band img.clogo{width:34px;height:34px;object-fit:contain;flex:none;background:#fff;border-radius:6px;padding:3px}
+.cbgrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cbgprev{width:56px;height:56px;border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;background:#fff}
+.cbgprev img{width:44px;height:44px;object-fit:contain}.cbgsw{display:flex;gap:6px;flex-wrap:wrap}.cbgsw button{width:26px;height:26px;border-radius:50%;border:1px solid var(--line)}
+.cbgsw button.on{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent)}.cbgsw button.none{background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/10px 10px}
+.cbgpick{width:30px;height:30px;border-radius:50%;overflow:hidden;border:1px solid var(--line);position:relative;cursor:pointer;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}.cbgpick input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .league .band .season{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-fg);padding:3px 10px;border-radius:6px}
 .league .band .nm{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.03em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .league .band .cnt{font-family:var(--mono);font-size:11.5px;opacity:.7}
@@ -524,6 +528,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label for="cSeason">Temporada</label><input type="text" id="cSeason" maxlength="20" placeholder="2026"></div>
       </div>
       <div class="f"><label for="cLogo">Logo (link da imagem)</label><input type="url" id="cLogo" placeholder="https://…"></div>
+      <div class="f"><label>Fundo da logo</label>
+        <div class="cbgrow"><span class="cbgprev" id="cBgPrev"><img id="cBgImg" alt="" referrerpolicy="no-referrer"></span>
+          <div class="cbgsw" id="cBgSw"></div><label class="cbgpick" title="Escolher outra cor"><input type="color" id="cBgPick" value="#ffffff"></label></div></div>
       <span class="ferr" id="cErr" hidden></span>
       <div class="actions"><button type="button" class="del" id="cDel" hidden>Remover</button><button type="button" class="btn" id="cCancel">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
     </form>
@@ -1023,7 +1030,7 @@ function renderComps(){
         <span class="acts">${m.lances||m.lancesInd?`<button type="button" data-play="${esc(m.id)}" title="${[m.lances?'XML coletiva: '+m.lances.instances.length+' lances':null,m.lancesInd?'XML individual: '+m.lancesInd.instances.length+' lances':null].filter(Boolean).join(' · ')}"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l-5 5a1.5 1.5 0 0 0 2 2l5-5a3 3 0 0 0-4-4l-6 6a4.5 4.5 0 0 0 6 6l5-5-1-1-5 5a3 3 0 0 1-4-4l6-6a1.5 1.5 0 0 1 2 2l-5 5"/></svg></button>`:''}<button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
       </div>`).join('')}).join('');
     const lg=compLogo(c);
-    return `<section class="league"><div class="band">${lg?`<img class="clogo" src="${esc(lg)}" alt="" referrerpolicy="no-referrer">`:''}<span class="season">${esc(c.season||'—')}</span><span class="nm">${esc(c.name)}</span><span class="cnt">${ms.length} jogo${ms.length!==1?'s':''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
+    return `<section class="league"><div class="band">${lg?`<img class="clogo" src="${esc(lg)}" alt="" referrerpolicy="no-referrer"${c.logoBg?` style="background:${esc(c.logoBg)}"`:''}>`:''}<span class="season">${esc(c.season||'—')}</span><span class="nm">${esc(c.name)}</span><span class="cnt">${ms.length} jogo${ms.length!==1?'s':''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
   }).join('')||'<div class="emptyl">Nenhuma competição nesse filtro.</div>';
 }
 cList.addEventListener('click',e=>{
@@ -1042,11 +1049,18 @@ function playMatch(m){
   P.loadYT(m.ytId);show('lances');
 }
 // competição
-function openComp(c){cEditing=c||null;document.getElementById('cTitle').textContent=c?'Editar competição':'Nova competição';document.getElementById('cName').value=c?.name||'';document.getElementById('cSeason').value=c?.season||'';document.getElementById('cLogo').value=c?.logo||'';
+let cBg='#ffffff';const CBG=['#ffffff','#000000','#512465','#9b65c5','#1f2a44','#0b6b3a','#c8102e','#f2c200','#e8e8e8',null];
+function cBgDraw(){const prev=document.getElementById('cBgPrev'),img=document.getElementById('cBgImg');prev.style.background=cBg||'transparent';
+  const lg=document.getElementById('cLogo').value.trim()||(cEditing?compLogo(Object.assign({},cEditing,{logo:null})):'');img.src=lg;img.style.visibility=lg?'':'hidden';
+  document.getElementById('cBgSw').innerHTML=CBG.map(c=>`<button type="button" class="${c?'':'none'} ${c===cBg?'on':''}" data-c="${c||''}" title="${c||'Sem fundo'}" ${c?`style="background:${c}"`:''}></button>`).join('');
+  if(cBg)document.getElementById('cBgPick').value=cBg}
+document.getElementById('cBgSw').onclick=e=>{const b=e.target.closest('button');if(!b)return;cBg=b.dataset.c||null;cBgDraw()};
+document.getElementById('cBgPick').oninput=e=>{cBg=e.target.value;cBgDraw()};document.getElementById('cLogo').addEventListener('input',cBgDraw);
+function openComp(c){cEditing=c||null;document.getElementById('cTitle').textContent=c?'Editar competição':'Nova competição';document.getElementById('cName').value=c?.name||'';document.getElementById('cSeason').value=c?.season||'';document.getElementById('cLogo').value=c?.logo||'';cBg=c&&c.logoBg?(c.logoBg==='transparent'?null:c.logoBg):'#ffffff';cBgDraw();
   const d=document.getElementById('cDel');d.hidden=!c;d.textContent='Remover';d.dataset.confirm='';document.getElementById('cErr').hidden=true;cModal.hidden=false;document.getElementById('cName').focus()}
 document.getElementById('addComp').onclick=()=>openComp(null);
 document.getElementById('cCancel').onclick=()=>{cModal.hidden=true};cModal.addEventListener('click',e=>{if(e.target===cModal)cModal.hidden=true});
-document.getElementById('cForm').onsubmit=async e=>{e.preventDefault();const data={name:document.getElementById('cName').value.trim(),season:document.getElementById('cSeason').value.trim(),logo:document.getElementById('cLogo').value.trim()||null};
+document.getElementById('cForm').onsubmit=async e=>{e.preventDefault();const data={name:document.getElementById('cName').value.trim(),season:document.getElementById('cSeason').value.trim(),logo:document.getElementById('cLogo').value.trim()||null,logoBg:cBg||'transparent'};
   try{if(cEditing)await db.collection('competitions').doc(cEditing.id).update(data);else await db.collection('competitions').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));cModal.hidden=true}
   catch(err){const x=document.getElementById('cErr');x.textContent='Não salvou: '+(err.code||err.message);x.hidden=false}};
 document.getElementById('cDel').onclick=async function(){if(this.dataset.confirm!=='1'){this.dataset.confirm='1';this.textContent='Confirmar: remove a competição e seus jogos';return}
