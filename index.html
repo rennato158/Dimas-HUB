@@ -344,7 +344,7 @@ input[type=text],input[type=email],input[type=number],select{padding:8px 10px;bo
 .f label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .rolepick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.rolepick label{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--panel2);font-weight:500;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)}
+.rolepick label{display:flex;align-items:center;gap:8px;padding:9px 10px;min-width:0;white-space:nowrap;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--panel2);font-weight:500;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)}
 .rolepick label:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .rolepick small{display:block;color:var(--muted);font-weight:400;font-size:11.5px}
 .gpick{display:flex;flex-wrap:wrap;gap:6px}
@@ -810,7 +810,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <p class="pwnote">A pessoa entra com o e-mail e esta senha, e troca por uma senha própria no primeiro acesso. Deixe em branco para acesso só pela conta Google.</p>
       </div>
       <div class="f"><label>Nível</label>
-        <div class="rolepick" style="grid-template-columns:repeat(auto-fit,minmax(96px,1fr))">
+        <div class="rolepick">
           <label><input type="radio" name="role" value="Atleta" checked><span>Atleta</span></label>
           <label><input type="radio" name="role" value="Comissão"><span>Comissão</span></label>
           <label><input type="radio" name="role" value="Coordenação"><span>Coordenação</span></label>
