@@ -55,6 +55,8 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16p
 
 .player{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
 .stage{position:relative;aspect-ratio:16/9;max-width:100%;background:#000}
+.extnote{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;padding:16px;background:#111}.extnote .big{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.03em}.extnote p{margin:0;color:#bbb;font-size:13px}
+#extBtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .stage video,.stage #yt{width:100%;height:100%;display:block;background:#000}
 .stage #yt{position:absolute;inset:0}
 .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#c8ccd8;padding:20px}
@@ -442,6 +444,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="stage">
       <video id="video" playsinline controls preload="metadata"></video>
       <div id="yt" hidden></div>
+      <div class="extnote" id="extNote" hidden><div class="big">Vídeo aberto em outra janela</div><p>Clique nos lances aqui para controlar o vídeo de lá.</p><button type="button" class="btn" id="extBack">Trazer o vídeo de volta</button></div>
       <div class="empty" id="empty">
         <div class="big">Nenhum vídeo carregado</div>
         <p>Escolha um vídeo na aba <strong>Diretório</strong> para reproduzir os lances aqui.</p>
@@ -454,6 +457,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <label><input type="checkbox" id="stopAtEnd" checked> parar no fim</label>
         <label><input type="checkbox" id="autoNext"> seguir p/ próximo</label>
         <button class="icon" id="prevBtn" title="Lance anterior (K)" aria-label="Lance anterior"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM13 2v12L5 8z"/></svg></button>
+        <button class="icon" id="extBtn" title="Abrir o vídeo em outra janela" aria-label="Abrir em outra janela"><svg viewBox="0 0 16 16"><path d="M9 2h5v5h-1.5V4.6L7.6 9.5 6.5 8.4l4.9-4.9H9zM2 4h5v1.5H3.5v7h7V9H12v5H2z"/></svg></button>
         <button class="icon" id="replayBtn" title="Repetir lance (R)" aria-label="Repetir"><svg viewBox="0 0 16 16"><path d="M8 3V0L4 4l4 4V5a4 4 0 1 1-4 4H2a6 6 0 1 0 6-6z"/></svg></button>
         <button class="icon" id="nextBtn" title="Próximo lance (J)" aria-label="Próximo lance"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM3 2v12l8-6z"/></svg></button>
       </div>
@@ -2053,12 +2057,14 @@ let lances=[], colors={}, order={}, selectedCats=new Set(), selectedDescs=new Se
 const dkey=d=>d.g+'\u0000'+d.v;let individualMode=false,hideCats=false,curSrc=null,listMode=false,curYt=null,pendingSeek=null;
 const ytEl=document.getElementById('yt');
 let yt=null, ytReady=false, mode='html5', pollTimer=null;
+let ext=null;const extOn=()=>!!(ext&&ext.win&&!ext.win.closed);
+const py=()=>extOn()?ext.yt:yt;
 const P={
-  has(){return mode==='yt'?!!yt:!!video.src},
-  seek(t){mode==='yt'?(yt.seekTo(t,true),yt.playVideo()):(video.currentTime=t,video.play().catch(()=>{}))},
-  time(){return mode==='yt'?(yt&&yt.getCurrentTime?yt.getCurrentTime():0):video.currentTime},
-  pause(){mode==='yt'?yt.pauseVideo():video.pause()},
-  toggle(){if(mode==='yt'){yt.getPlayerState()===1?yt.pauseVideo():yt.playVideo()}else{video.paused?video.play():video.pause()}}
+  has(){return mode==='yt'?!!py():!!video.src},
+  seek(t){const p=py();mode==='yt'?(p&&(p.seekTo(t,true),p.playVideo())):(video.currentTime=t,video.play().catch(()=>{}))},
+  time(){const p=py();return mode==='yt'?(p&&p.getCurrentTime?p.getCurrentTime():0):video.currentTime},
+  pause(){const p=py();mode==='yt'?(p&&p.pauseVideo()):video.pause()},
+  toggle(){const p=py();if(mode==='yt'){if(p)p.getPlayerState()===1?p.pauseVideo():p.playVideo()}else{video.paused?video.play():video.pause()}}
 };
 function ytId(u){const m=u.match(/(?:youtu\.be\/|v=|\/shorts\/|\/live\/|embed\/)([\w-]{11})/);return m?m[1]:null}
 let ytApi=null;
@@ -2069,6 +2075,8 @@ function ensureYT(){
   return ytApi;
 }
 function loadYT(id){
+  if(extOn()){mode='yt';curYt=id;const p=ext.yt;if(p){if(pendingSeek!=null){p.loadVideoById({videoId:id,startSeconds:pendingSeek});pendingSeek=null}else p.cueVideoById(id)}else ext.id=id;
+    nowChip.hidden=true;nowTime.textContent='';clearInterval(pollTimer);pollTimer=setInterval(tick,250);return}
   mode='yt';video.pause();video.hidden=true;ytEl.hidden=false;empty.hidden=true;curYt=id;
   ensureYT().then(()=>{
     if(yt){if(pendingSeek!=null){yt.loadVideoById({videoId:id,startSeconds:pendingSeek});pendingSeek=null}else yt.cueVideoById(id);return}
@@ -2077,6 +2085,33 @@ function loadYT(id){
   nowChip.hidden=true;nowTime.textContent='';
   clearInterval(pollTimer);pollTimer=setInterval(tick,250);
 }
+// abrir o vídeo numa janela separada (a lista continua aqui e controla o vídeo de lá)
+const extNote=document.getElementById('extNote');
+function openExt(){
+  if(extOn()){ext.win.focus();return}
+  if(mode!=='yt'||!curYt){empty.hidden=false;empty.querySelector('.big').textContent='Abra um vídeo primeiro';return}
+  const t=yt&&yt.getCurrentTime?yt.getCurrentTime():0;const playing=!!(yt&&yt.getPlayerState&&yt.getPlayerState()===1);
+  const w=window.open('','dimasPlayer','width=1120,height=650');
+  if(!w){alert('O navegador bloqueou a nova janela. Permita pop-ups para este site e tente de novo.');return}
+  try{yt&&yt.pauseVideo()}catch(_){}
+  const d=w.document;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"><title>Dimas HUB · Vídeo</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#p{width:100%;height:100%}</style></head><body><div id="p"></div></body></html>');d.close();
+  ext={win:w,yt:null,id:curYt};const my=ext;
+  w.onYouTubeIframeAPIReady=()=>{if(ext!==my)return;my.yt=new w.YT.Player(d.getElementById('p'),{width:'100%',height:'100%',videoId:my.id,playerVars:{rel:0,modestbranding:1,playsinline:1,origin:location.origin},
+    events:{onReady:e=>{const st=pendingSeek!=null?pendingSeek:t;pendingSeek=null;e.target.seekTo(st,true);if(playing||st!==t)e.target.playVideo()}}})};
+  const sc=d.createElement('script');sc.src='https://www.youtube.com/iframe_api';d.head.appendChild(sc);
+  d.addEventListener('keydown',e=>{if(['j','J','k','K','r','R',' '].includes(e.key)){e.preventDefault();document.dispatchEvent(new KeyboardEvent('keydown',{key:e.key}))}});
+  extNote.hidden=false;document.getElementById('extBtn').classList.add('on');
+  my.poll=setInterval(()=>{if(my.win.closed)closeExt(my)},500);
+}
+function closeExt(my){
+  my=my||ext;if(!my)return;clearInterval(my.poll);let t=0;try{t=my.yt&&my.yt.getCurrentTime?my.yt.getCurrentTime():0}catch(_){}
+  try{if(!my.win.closed)my.win.close()}catch(_){}if(ext===my)ext=null;
+  extNote.hidden=true;document.getElementById('extBtn').classList.remove('on');
+  if(mode==='yt'&&curYt){ensureYT().then(()=>{if(yt){try{yt.cueVideoById({videoId:curYt,startSeconds:t})}catch(_){}}else{yt=new YT.Player('yt',{videoId:curYt,playerVars:{rel:0,modestbranding:1,playsinline:1,origin:location.origin,start:Math.floor(t)}})}})}
+}
+document.getElementById('extBtn').onclick=()=>extOn()?closeExt():openExt();
+document.getElementById('extBack').onclick=()=>closeExt();
+window.addEventListener('beforeunload',()=>{try{if(extOn())ext.win.close()}catch(_){}});
 // Lê a duração de um vídeo do YouTube com um player oculto.
 function ytDuration(id){
   return ensureYT().then(()=>new Promise(res=>{
