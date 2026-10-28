@@ -520,6 +520,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <div class="home" id="home">
   <div class="top"><h2>Vídeos</h2><span class="sub" id="vCount"></span>
+    <select id="hType" aria-label="Tipo" style="width:auto"><option value="">Todos os tipos</option></select>
     <select id="hComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
     <select id="hOpp" aria-label="Adversário" style="width:auto"><option value="">Todos os adversários</option></select>
     <select id="hGame" aria-label="Jogo" style="width:auto"><option value="">Todos os jogos</option></select>
@@ -668,7 +669,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <div class="box">
     <form id="vForm" autocomplete="off">
       <h3 id="vTitle">Adicionar vídeo</h3>
-      <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo</option><option>Análise</option><option>Treino</option></select></div>
+      <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo</option><option>Adversário</option><option>Análise</option><option>Treino</option></select></div>
       <div class="f" id="vSubRow" hidden><label for="vSub">Tipo de análise</label><select id="vSub"><option>Treino</option><option>Pós-jogo</option><option>Adversário</option><option>Individual</option></select></div>
       <div class="f" id="vAthRow" hidden><label for="vAth">Atleta</label><select id="vAth"><option value="">Escolha o atleta</option></select></div>
       <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
@@ -1762,14 +1763,15 @@ function fmtDate(ts){try{const d=ts&&ts.toDate?ts.toDate():null;return d?d.toLoc
 function comps(){return [...new Set(videos.map(v=>(v.comp||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'))}
 function fillSelect(sel,items,allLabel,keep){const cur=keep?sel.value:'';sel.innerHTML=`<option value="">${allLabel}</option>`+items.map(i=>`<option value="${esc(i.v)}">${esc(i.t)}</option>`).join('');sel.value=items.some(i=>i.v===cur)?cur:''}
 const hComp=document.getElementById('hComp'), hGame=document.getElementById('hGame'), hOpp=document.getElementById('hOpp');
-hComp.onchange=()=>{renderVideos()};hOpp.onchange=()=>{renderVideos()};
+hComp.onchange=()=>{renderVideos()};hOpp.onchange=()=>{renderVideos()};const hType=document.getElementById('hType');hType.onchange=()=>{renderVideos()};
+const vTypeOf=v=>v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
 // adversário do Ceará num vídeo (mandante ou visitante; se vazio, lê do título)
 function oppOf(v){let h=v.home,a=v.away;if(!h||!a){const t=String(v.title||'').replace(/^[^_]*_/,'');const m=t.match(/^(.+?)\s*\d*\s*[x×]\s*\d*\s*(.+)$/i);if(m){h=h||m[1].trim();a=a||m[2].trim()}}
   const isC=n=>/^ceara\b/.test(norm(n||''));if(h&&isC(h)&&a&&!isC(a))return a;if(a&&isC(a)&&h&&!isC(h))return h;return ''}hGame.onchange=()=>{renderVideos()};
 function typeLabel(v){const t=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');if(t!=='Análise'||!v.sub)return t;if(v.sub==='Individual'){const a=members.find(m=>m.id===v.athleteId);return 'Análise · '+(a?a.name:'Individual')}return 'Análise · '+v.sub}
 function coverHtml(v){
   const type=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
-  if(!v.thumb&&type==='Jogo'&&(v.home||v.away)){const h=teamOf(v.home||''),a=teamOf(v.away||'');
+  if(!v.thumb&&(type==='Jogo'||type==='Adversário')&&(v.home||v.away)){const h=teamOf(v.home||''),a=teamOf(v.away||'');
     return `<img src="assets/capa-jogo.jpg" alt="" loading="lazy"><span class="cover">${h&&h.logo?`<img src="${esc(h.logo)}" alt="" referrerpolicy="no-referrer">`:'<span></span>'}<span class="vs">${esc(v.home||'')}${v.home||v.away?' × ':''}${esc(v.away||'')}</span>${a&&a.logo?`<img src="${esc(a.logo)}" alt="" referrerpolicy="no-referrer">`:'<span></span>'}</span>`.replace(/<span class="vs">[^<]*<\/span>/,m=>(h&&h.logo&&a&&a.logo)?'<span class="vs">×</span>':m)}
   return `<img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy">`;
 }
@@ -1789,11 +1791,15 @@ vCards.addEventListener('drop',async e=>{if(!dragId)return;e.preventDefault();
   videos.sort(vSort);renderVideos();try{await batch.commit()}catch(err){alert('Não salvou a ordem: '+(err.code||err.message))}});
 function renderVideos(){
   const admin=me&&me.func==='Administrador';
-  fillSelect(hComp,comps().map(c=>({v:c,t:c})),'Todas as competições',true);
-  const byComp=videos.filter(canSee).filter(v=>!hComp.value||(v.comp||'')===hComp.value);
-  const oppKey=v=>{const o=oppOf(v);const t=o&&teamOf(o);return t?t.name:o};
-  fillSelect(hOpp,[...new Set(byComp.map(oppKey).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt')).map(o=>({v:o,t:o})),'Todos os adversários',true);
-  const byOpp=byComp.filter(v=>!hOpp.value||oppKey(v)===hOpp.value);
+  const TORD=['Jogo','Adversário','Análise','Treino'];const seenT=[...new Set(videos.filter(canSee).map(vTypeOf))].sort((a,b)=>(TORD.indexOf(a)+99*(TORD.indexOf(a)<0))-(TORD.indexOf(b)+99*(TORD.indexOf(b)<0)));
+  fillSelect(hType,seenT.map(t=>({v:t,t:t==='Adversário'?'Adversários':t==='Jogo'?'Jogos':t==='Análise'?'Análises':t==='Treino'?'Treinos':t})),'Todos os tipos',true);
+  const byType=videos.filter(canSee).filter(v=>!hType.value||vTypeOf(v)===hType.value);
+  fillSelect(hComp,[...new Set(byType.map(v=>(v.comp||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt')).map(c=>({v:c,t:c})),'Todas as competições',true);
+  const byComp=byType.filter(v=>!hComp.value||(v.comp||'')===hComp.value);
+  const tn=o=>{const t=o&&teamOf(o);return t?t.name:o};
+  const oppKeys=v=>{if(vTypeOf(v)==='Adversário'){let h=v.home,a=v.away;if(!h||!a){const t=String(v.title||'').replace(/^[^_]*_/,'');const m=t.match(/^(.+?)\s*\d*\s*[x×]\s*\d*\s*(.+)$/i);if(m){h=h||m[1].trim();a=a||m[2].trim()}}return [h,a].filter(Boolean).map(tn)}const o=oppOf(v);return o?[tn(o)]:[]};
+  fillSelect(hOpp,[...new Set(byComp.flatMap(oppKeys))].sort((a,b)=>a.localeCompare(b,'pt')).map(o=>({v:o,t:o})),'Todos os adversários',true);
+  const byOpp=byComp.filter(v=>!hOpp.value||oppKeys(v).includes(hOpp.value));
   fillSelect(hGame,byOpp.map(v=>({v:v.id,t:v.title+(v.comp&&!hComp.value?' · '+v.comp:'')})),'Todos os jogos',true);
   const shown=byOpp.filter(v=>!hGame.value||v.id===hGame.value);
   document.getElementById('vCount').textContent=videos.length?videos.length+' vídeo'+(videos.length>1?'s':''):'';
