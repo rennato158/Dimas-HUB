@@ -618,7 +618,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   <section class="panel">
     <div class="hd">
       <h2>Usuários</h2><span class="sub" id="mCount"></span>
-      <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button><button type="button" data-f="Convidado">Convidados</button></div>
+      <div class="seg" id="mSeg"><button type="button" class="on" data-f="">Todos</button><button type="button" data-f="Atleta">Atletas</button><button type="button" data-f="Comissão">Comissão</button><button type="button" data-f="Coordenação">Coordenação</button><button type="button" data-f="Convidado">Convidados</button></div>
       <button class="btn" type="button" id="wipeBtn" style="color:#e5533d" title="Remove todos os cadastros com nível Atleta">Apagar atletas</button>
       <button class="btn" type="button" id="exportBtn">Exportar planilha</button>
       <button class="btn" type="button" id="importBtn">Importar planilha</button>
@@ -810,12 +810,14 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <p class="pwnote">A pessoa entra com o e-mail e esta senha, e troca por uma senha própria no primeiro acesso. Deixe em branco para acesso só pela conta Google.</p>
       </div>
       <div class="f"><label>Nível</label>
-        <div class="rolepick" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="rolepick" style="grid-template-columns:repeat(auto-fit,minmax(96px,1fr))">
           <label><input type="radio" name="role" value="Atleta" checked><span>Atleta</span></label>
           <label><input type="radio" name="role" value="Comissão"><span>Comissão</span></label>
+          <label><input type="radio" name="role" value="Coordenação"><span>Coordenação</span></label>
           <label><input type="radio" name="role" value="Convidado"><span>Convidado</span></label>
         </div>
       </div>
+      <div class="f" id="secCat"><label>Categoria</label><div class="gpick" id="fCats"></div></div>
       <div id="secAtleta">
       <div class="f3">
         <div class="f"><label for="fNum">Número</label><input type="number" id="fNum" min="0" max="99" placeholder="—"></div>
@@ -919,7 +921,7 @@ function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
   navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
-  const staffNow=!!m&&(m.role==='Comissão'||m.func==='Administrador');const guest=!!m&&m.role==='Convidado'&&!staffNow;
+  const staffNow=!!m&&(['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador');const guest=!!m&&m.role==='Convidado'&&!staffNow;
   document.getElementById('navComps').hidden=!(staffNow||guest);
   nav.querySelector('[data-view=home]').hidden=guest;nav.querySelector('[data-view=indiv]').hidden=guest;nav.querySelector('[data-view=lances]').hidden=true;nav.querySelector('[data-view=plays]').hidden=guest||!m;document.getElementById('addPlay').hidden=!staffNow;document.getElementById('pHint').hidden=!staffNow;
   if(unsubP){unsubP();unsubP=null}playlist=null;
@@ -944,12 +946,12 @@ function setMe(m){
   }else{leagues=[];matches=[]}
   tgSub(m);
   if(unsubMk){unsubMk();unsubMk=null}myMarks={};
-  if(m&&(m.role==='Comissão'||m.func==='Administrador')){unsubMk=db.collection('members').doc(m.id).collection('marks').onSnapshot(sn=>{myMarks={};sn.docs.forEach(d=>myMarks[d.id]=d.data());renderAthletes()},()=>{})}
+  if(m&&(['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador')){unsubMk=db.collection('members').doc(m.id).collection('marks').onSnapshot(sn=>{myMarks={};sn.docs.forEach(d=>myMarks[d.id]=d.data());renderAthletes()},()=>{})}
   if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
   if(m){unsubN=db.collection('notifications').where('to','==',m.id).onSnapshot(sn=>{notifs=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));renderNotifs()},()=>{})}
   else{notifs=[];renderNotifs()}
   if(unsubV){unsubV();unsubV=null}
-  if(m){const staff=m.role==='Comissão'||m.func==='Administrador';
+  if(m){const staff=['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
     unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));videos.sort(vSort);renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
@@ -1241,11 +1243,11 @@ function openPlaylistEdit(p){
   kseg.onclick=e=>{const b=e.target.closest('button');if(b)setKind(b.dataset.k)};
   athSel.onchange=()=>{if(athSel.value&&!sm.has(athSel.value)){sm.add(athSel.value);draw();sum()}};
   openPlaylistEdit.kind=()=>({kind,athleteId:kind==='indiv'?(athSel.value||null):null});
-  const draw=()=>{const f=norm(q.value);const pool=members.filter(m=>(m.role==='Atleta'||m.role==='Comissão')&&m.active!==false&&m.id!==me.id).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')+' '+(a.cargo||'')).includes(f));
-    const ath=pool.filter(m=>m.role==='Atleta').sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')),stf=pool.filter(m=>m.role==='Comissão').sort((a,b)=>a.name.localeCompare(b.name,'pt'));
-    const row=a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role==='Comissão'&&a.cargo?' <span style="color:var(--muted)">· '+esc(a.cargo)+'</span>':''}</label></td></tr>`;
+  const draw=()=>{const f=norm(q.value);const pool=members.filter(m=>['Atleta','Comissão','Coordenação'].includes(m.role)&&m.active!==false&&m.id!==me.id).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')+' '+(a.cargo||'')).includes(f));
+    const ath=pool.filter(m=>m.role==='Atleta').sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')),stf=pool.filter(m=>m.role==='Comissão').sort((a,b)=>a.name.localeCompare(b.name,'pt')),crd=pool.filter(m=>m.role==='Coordenação').sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+    const row=a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role!=='Atleta'&&a.cargo?' <span style="color:var(--muted)">· '+esc(a.cargo)+'</span>':''}</label></td></tr>`;
     const hd=t=>`<tr><td style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:8px">${t}</td></tr>`;
-    list.innerHTML='<table><tbody>'+(ath.length?hd('Atletas')+ath.map(row).join(''):'')+(stf.length?hd('Comissão')+stf.map(row).join(''):'')+'</tbody></table>';
+    list.innerHTML='<table><tbody>'+(ath.length?hd('Atletas')+ath.map(row).join(''):'')+(stf.length?hd('Comissão')+stf.map(row).join(''):'')+(crd.length?hd('Coordenação')+crd.map(row).join(''):'')+'</tbody></table>';
     list.querySelectorAll('input').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
   const sum=()=>{document.getElementById('pSum').textContent=sm.size?`Compartilhada com ${sm.size} pessoa${sm.size>1?'s':''}.`:'Somente você vê esta playlist.'};
   q.oninput=draw;draw();sum();openPlaylistEdit.read=()=>[...sm];pModal.hidden=false;document.getElementById('pName').focus();
@@ -1442,7 +1444,8 @@ function xmlPlayers(set){
 ['aSearch','aPos','aGroup','aOnly'].forEach(id=>document.getElementById(id).addEventListener(id==='aSearch'?'input':'change',()=>renderAthletes()));
 function athletesAll(){return members.filter(m=>m.role==='Atleta'&&m.active!==false)}
 // Grupos automáticos por nível (não editáveis)
-const AUTO_GROUPS=[{id:'auto:atletas',name:'Atletas',test:m=>m.role==='Atleta'},{id:'auto:comissao',name:'Comissão',test:m=>m.role==='Comissão'},{id:'auto:diretoria',name:'Diretoria',test:m=>m.role==='Comissão'&&m.cargo==='Diretoria'},{id:'auto:convidados',name:'Convidados',test:m=>m.role==='Convidado'}];
+const CATS=['Profissional','Sub-23','Sub-20','Sub-17','Sub-15','Sub-13','Feminino'];
+const AUTO_GROUPS=[{id:'auto:atletas',name:'Atletas',test:m=>m.role==='Atleta'},{id:'auto:comissao',name:'Comissão',test:m=>m.role==='Comissão'},{id:'auto:coordenacao',name:'Coordenação',test:m=>m.role==='Coordenação'},{id:'auto:diretoria',name:'Diretoria',test:m=>m.role==='Comissão'&&m.cargo==='Diretoria'},{id:'auto:convidados',name:'Convidados',test:m=>m.role==='Convidado'}];
 function inGroup(m,gid){const ag=AUTO_GROUPS.find(g=>g.id===gid);return ag?ag.test(m):(m.groups||[]).includes(gid)}
 function allGroups(){return [...AUTO_GROUPS.map(g=>({id:g.id,name:g.name,auto:true})),...groups]}
 function renderAthletes(){
@@ -1497,15 +1500,15 @@ function gname(id){const g=groups.find(x=>x.id===id);return g?g.name:null}
 
 function renderMembers(){
   const list=members.filter(m=>!filter||m.role===filter);
-  const at=members.filter(m=>m.role==='Atleta').length, cv=members.filter(m=>m.role==='Convidado').length, co=members.length-at-cv;
-  mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão · ${cv} convidado${cv!==1?'s':''}`;
+  const at=members.filter(m=>m.role==='Atleta').length, cv=members.filter(m=>m.role==='Convidado').length, cd=members.filter(m=>m.role==='Coordenação').length, co=members.length-at-cv-cd;
+  mCount.textContent=`${at} atleta${at!==1?'s':''} · ${co} comissão · ${cd} coordenação · ${cv} convidado${cv!==1?'s':''}`;
   if(!list.length){mList.innerHTML='<div class="emptyl">Ninguém cadastrado'+(filter?' nesse nível':'')+' ainda. Clique em <strong>Cadastrar</strong>.</div>';return}
   mList.innerHTML=list.map(m=>`<div class="mrow" data-id="${esc(m.id)}">
     <div class="av">${m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(m.name)}</div>
-    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.role==='Atleta'?m.pos:(m.role==='Comissão'?m.cargo:[m.club,m.competition].filter(Boolean).join(' · ')),m.role==='Atleta'&&ageOf(m.birth)?ageOf(m.birth)+' anos':null,m.email||null].filter(Boolean).join(' · ')||'sem e-mail')}</div>
+    <div class="who"><div class="nm">${esc(m.name)}${m.func==='Administrador'?` <span class="em">· Administrador</span>`:''}</div><div class="em">${esc([m.role!=='Convidado'&&(m.cats||[]).length?m.cats.join(', '):null,m.role==='Atleta'?m.pos:(['Comissão','Coordenação'].includes(m.role)?m.cargo:[m.club,m.competition].filter(Boolean).join(' · ')),m.role==='Atleta'&&ageOf(m.birth)?ageOf(m.birth)+' anos':null,m.email||null].filter(Boolean).join(' · ')||'sem e-mail')}</div>
       ${(m.groups||[]).length?`<div class="gchips">${(m.groups||[]).map(gname).filter(Boolean).map(n=>`<span class="gchip">${esc(n)}</span>`).join('')}</div>`:''}</div>
     <span class="num">${m.number??''}</span>
-    <span class="pill ${m.role==='Comissão'?'comissao':'atleta'} ${m.active===false?'off':''}">${esc(m.role||'Atleta')}</span>
+    <span class="pill ${['Comissão','Coordenação'].includes(m.role)?'comissao':'atleta'} ${m.active===false?'off':''}">${esc(m.role||'Atleta')}</span>
   </div>`).join('');
 }
 mList.onclick=e=>{const r=e.target.closest('.mrow');if(!r)return;openForm(members.find(m=>m.id===r.dataset.id))};
@@ -1539,7 +1542,8 @@ function openForm(m){
   const em=document.getElementById('fEmail');em.value=m?.email||'';em.disabled=!!m&&m.id===me?.id;em.title=em.disabled?'Para trocar o seu próprio e-mail, peça a outro administrador.':'';
   document.getElementById('fPos').value=m?.pos||'';document.getElementById('fFoot').value=m?.foot||'';document.getElementById('fBirth').value=m?.birth||'';
   document.getElementById('fNat').value=m?.nat||'';document.getElementById('fHeight').value=m?.height??'';
-  form.role.value=['Atleta','Comissão','Convidado'].includes(m?.role)?m.role:'Atleta';document.getElementById('fTag').value=m?.tag||'';
+  form.role.value=['Atleta','Comissão','Coordenação','Convidado'].includes(m?.role)?m.role:'Atleta';
+  const cs=new Set(m?.cats||[]);document.getElementById('fCats').innerHTML=CATS.map(c=>`<label><input type="checkbox" name="fcat" value="${c}" ${cs.has(c)?'checked':''}>${c}</label>`).join('');document.getElementById('fTag').value=m?.tag||'';
   document.getElementById('fCargo').value=m?.cargo||'';document.getElementById('fClub').value=m?.club||'';document.getElementById('fCompet').value=m?.competition||'';
   document.getElementById('clubList').innerHTML=teams.map(t=>`<option value="${esc(t.name)}">`).join('');
   const sel=new Set(m?.comps||[]);document.getElementById('fComps').innerHTML=leagues.length?leagues.map(c=>`<label><input type="checkbox" name="fc" value="${esc(c.id)}" ${sel.has(c.id)?'checked':''}>${esc(c.name)}${c.season?' '+esc(c.season):''}</label>`).join(''):'<span style="color:var(--muted);font-size:12px">Nenhuma competição cadastrada (aba Competições).</span>';
@@ -1561,7 +1565,7 @@ form.onsubmit=async e=>{
   const email=document.getElementById('fEmail').value.trim().toLowerCase();
   const num=document.getElementById('fNum').value;
   const g=id=>document.getElementById(id).value;const h=g('fHeight');
-  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),comps:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.value),competition:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.parentElement.textContent.trim()).join(', '),
+  const data={name:g('fName').trim(),fullName:g('fFull').trim(),email,role:form.role.value,cats:form.role.value==='Convidado'?[]:[...document.querySelectorAll('#fCats input:checked')].map(i=>i.value),func:g('fFunc'),tag:g('fTag').trim(),cargo:g('fCargo'),club:g('fClub').trim(),comps:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.value),competition:[...document.querySelectorAll('#fComps input:checked')].map(i=>i.parentElement.textContent.trim()).join(', '),
     number:num===''?null:+num,pos:g('fPos'),foot:g('fFoot'),birth:g('fBirth')||null,nat:g('fNat').trim(),height:h===''?null:+h,
     groups:[...document.querySelectorAll('#fGroups input:checked')].map(i=>i.value),active:editing?editing.active!==false:true,photo:photo||null};
   if(editing&&editing.id===me.id&&data.func!=='Administrador'){fErr.textContent='Você não pode tirar a própria permissão de Administrador.';fErr.hidden=false;return}
@@ -1620,7 +1624,7 @@ document.getElementById('exportBtn').onclick=()=>{
   const gname=id=>{const g=groups.find(x=>x.id===id);return g?g.name:''};
   const list=members.filter(m=>!filter||m.role===filter);
   const rows=list.map(m=>({'Nome':m.name||'','Nome completo':m.fullName||'','Número':m.number??'','Posição':m.pos||'','Nascimento':m.birth?m.birth.split('-').reverse().join('/'):'','Idade':ageOf(m.birth)??'',
-    'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Função':m.cargo||'','Clube':m.club||'','Competição':m.competition||'','Permissão':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
+    'Nacionalidade':m.nat||'','Altura':m.height??'','Pé':m.foot||'','Nome na XML':m.tag||'','E-mail':m.email||'','Nível':m.role||'','Categoria':(m.cats||[]).join('; '),'Função':m.cargo||'','Clube':m.club||'','Competição':m.competition||'','Permissão':m.func||'','Grupos':(m.groups||[]).map(gname).filter(Boolean).join('; '),'Ativo':m.active===false?'Não':'Sim'}));
   const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=Object.keys(rows[0]||{Nome:1}).map(k=>({wch:Math.max(10,k.length+2)}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Usuários');
   XLSX.writeFile(wb,'usuarios-dimas-hub-'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -1640,7 +1644,7 @@ document.getElementById('iFile').onchange=e=>{
     iRows=rows.slice(hi+1).filter(rw=>rw.some(c=>String(c).trim()!=='')).map(rw=>{const o={};keys.forEach((k,i)=>{if(k)o[k]=rw[i]});
       const d={name:String(o.name||'').trim(),fullName:String(o.fullName||'').trim(),number:o.number!==''&&o.number!=null&&!isNaN(+o.number)?+o.number:null,pos:normPos(o.pos||''),birth:toDate(o.birth),nat:String(o.nat||'').trim(),
         height:o.height!==''&&o.height!=null&&!isNaN(parseFloat(o.height))?Math.round(parseFloat(o.height)<3?parseFloat(o.height)*100:parseFloat(o.height)):null,foot:normFoot(o.foot||''),tag:String(o.tag||'').trim(),
-        email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('com')?'Comissão':(norm(o.role||'').startsWith('conv')?'Convidado':'Atleta'),func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
+        email:String(o.email||'').trim().toLowerCase(),role:norm(o.role||'').startsWith('coord')?'Coordenação':norm(o.role||'').startsWith('com')?'Comissão':(norm(o.role||'').startsWith('conv')?'Convidado':'Atleta'),func:norm(o.func||'').startsWith('adm')?'Administrador':'Usuário',
         groupNames:String(o.groups||'').split(/[;,|]/).map(x=>x.trim()).filter(Boolean)};
       const ex=members.find(m=>(d.email&&m.id===d.email)||(norm(m.name)===norm(d.name)&&(d.number==null||m.number==null||m.number===d.number)));d.existing=ex?ex.id:null;d.ok=!!d.name&&(!d.email||/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email));return d});
     if(!iRows.length)throw new Error('A planilha não tem linhas com dados.');
@@ -1843,7 +1847,7 @@ function fillShare(v){
   const sg=new Set(v?.shareGroups||[]),sm=new Set(v?.shareMembers||[]);
   document.getElementById('vGroups').innerHTML=allGroups().map(g=>`<label><input type="checkbox" name="sg" value="${g.id}" ${sg.has(g.id)?'checked':''}>${esc(g.name)}</label>`).join('');
   const list=document.getElementById('vMembers'),q=document.getElementById('vMemSearch');
-  const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>m.role!=='Comissão'&&m.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='Atleta'?-1:1)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
+  const draw=()=>{const f=norm(q.value);const ath=members.filter(m=>!['Comissão','Coordenação'].includes(m.role)&&m.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='Atleta'?-1:1)||a.name.localeCompare(b.name,'pt')).filter(a=>!f||norm(a.name+' '+(a.fullName||'')+' '+(a.number??'')).includes(f));
     list.innerHTML='<table><tbody>'+ath.map(a=>`<tr><td><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="sm" value="${esc(a.id)}" ${sm.has(a.id)?'checked':''}>${esc(a.name)}${a.number!=null?' <span style="color:var(--muted)">#'+a.number+'</span>':''}${a.role==='Convidado'?' <span style="color:var(--muted)">· convidado'+(a.club?' · '+esc(a.club):'')+'</span>':''}</label></td></tr>`).join('')+'</tbody></table>';
     list.querySelectorAll('input[name=sm]').forEach(i=>i.onchange=()=>{i.checked?sm.add(i.value):sm.delete(i.value);sum()})};
   const sum=()=>{const g=[...document.querySelectorAll('#vGroups input:checked')].length;document.getElementById('vShareSum').textContent=(g||sm.size)?`Compartilhado com ${g} grupo${g!==1?'s':''} e ${sm.size} pessoa${sm.size!==1?'s':''}.`:'Somente a comissão vê este vídeo.'};
@@ -1851,10 +1855,10 @@ function fillShare(v){
   fillShare.read=()=>({shareGroups:[...document.querySelectorAll('#vGroups input:checked')].map(i=>i.value),shareMembers:[...sm]});
 }
 function canSee(v){
-  if(!me)return false;if(me.role==='Comissão'||me.func==='Administrador')return true;
+  if(!me)return false;if(['Comissão','Coordenação'].includes(me.role)||me.func==='Administrador')return true;
   return (v.viewers||[]).includes(me.id)||(v.shareMembers||[]).includes(me.id)||(v.shareGroups||[]).some(g=>inGroup(me,g));
 }
-function isStaff(){return !!me&&(me.role==='Comissão'||me.func==='Administrador')}
+function isStaff(){return !!me&&(['Comissão','Coordenação'].includes(me.role)||me.func==='Administrador')}
 function renderXmlPlayers(){
   const box=document.getElementById('xpBox'),list=document.getElementById('xpList');const set=vLancesI;
   if(!set){box.hidden=true;return}
@@ -1940,7 +1944,7 @@ function renderAv(){
   document.getElementById('fPhotoEdit').hidden=!srcImg;document.getElementById('fPhotoDel').hidden=!photo;
 }
 document.getElementById('fName').addEventListener('input',()=>{if(!photo)renderAv()});
-function roleSections(){const r=form.role.value;document.getElementById('secAtleta').hidden=r!=='Atleta';document.getElementById('secComissao').hidden=r!=='Comissão';document.getElementById('secConvidado').hidden=r!=='Convidado'}
+function roleSections(){const r=form.role.value;document.getElementById('secCat').hidden=r==='Convidado';document.getElementById('secAtleta').hidden=r!=='Atleta';document.getElementById('secComissao').hidden=!['Comissão','Coordenação'].includes(r);document.getElementById('secConvidado').hidden=r!=='Convidado'}
 form.querySelectorAll('input[name=role]').forEach(r=>r.addEventListener('change',roleSections));
 document.getElementById('fEmail').addEventListener('input',e=>{
   const v=e.target.value.trim().toLowerCase();const changed=!!v&&(!editing||v!==(editing.email||''));
