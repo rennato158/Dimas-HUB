@@ -1023,7 +1023,7 @@ function renderComps(){
     const ms=matches.filter(m=>m.compId===c.id&&(!rf||String(m.round??'')===rf)&&(!q||norm([m.home,m.away,venueOf(m),roundLabel(m.round),m.note].join(' ')).includes(q)));
     const rounds=[...new Set(ms.map(m=>m.round??''))].sort(roundSort);const cup=isCupLike(matches.filter(m=>m.compId===c.id));
     const body=rounds.map(r=>{const rm=ms.filter(m=>(m.round??'')===r).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||''));
-      return `<div class="round">${esc(roundLabel(r,cup))}<small>${rm.length} jogo${rm.length!==1?'s':''}</small></div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
+      return `<div class="round">${esc(roundLabel(r,cup))}</div>`+rm.map(m=>`<div class="mrow2" data-id="${esc(m.id)}">
         <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
         <span class="fx">${teamHtml(m.home,false)}<span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span>${teamHtml(m.away,true)}</span>
         <span class="ven" title="${esc(venueOf(m))}">${venueOf(m)?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(venueOf(m))}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
