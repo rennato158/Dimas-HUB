@@ -936,7 +936,7 @@ function setMe(m){
     const subs=[db.collection('playlists').where('shareMembers','array-contains',m.id).onSnapshot(sn=>{byQ.sh=sn.docs.map(d=>Object.assign({id:d.id},d.data()));apply()},onErr)];
     if(staffNow)subs.push(db.collection('playlists').where('by','==',m.id).onSnapshot(sn=>{byQ.own=sn.docs.map(d=>Object.assign({id:d.id},d.data()));apply()},onErr));
     unsubP=()=>subs.forEach(u=>u())}else{playlists=[];renderPlaylists()}
-  if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=!admin;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
+  if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=true;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
   if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps();renderVideos();renderPlaylists()},()=>{})}else teams=[];
   if(staffNow){
