@@ -51,6 +51,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16p
 .urlbox input{flex:1;min-width:0;padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit;font-size:13px}
 
 .app{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(360px,1fr);gap:14px;align-items:start}
+.app.solo{grid-template-columns:minmax(0,1fr)}.app.solo .list{display:none}.app.solo .player{max-width:1200px;width:100%;margin:0 auto}
 @media (max-width:900px){.app{grid-template-columns:1fr}}
 
 .player{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
@@ -588,11 +589,11 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label for="jUrl">Link do vídeo (YouTube)</label><input type="url" id="jUrl" placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="jNote">Observação</label><input type="text" id="jNote" maxlength="140"></div>
-      <div class="f2">
+      <div class="f2" hidden>
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="jXml">Anexar<input type="file" id="jXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="jXmlDel" hidden>×</button></div><span class="pwnote" id="jXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="jXmlI">Anexar<input type="file" id="jXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="jXmlIDel" hidden>×</button></div><span class="pwnote" id="jXmlINote">nenhuma</span></div>
       </div>
-      <div class="f"><label>Sincronização (apito inicial no vídeo)</label>
+      <div class="f" hidden><label>Sincronização (apito inicial no vídeo)</label>
         <div class="sync">
           <div class="row2"><span class="lb">1º tempo</span><input type="text" id="jS1" placeholder="mm:ss"><span></span></div>
           <div class="row2"><span class="lb">2º tempo</span><input type="text" id="jS2" placeholder="mm:ss"><span></span></div>
@@ -986,6 +987,7 @@ function show(v,keepAthlete){
   document.getElementById('ibar').hidden=!(v==='lances'&&athlete);
   document.getElementById('pbar').hidden=!(v==='lances'&&playlist);
   document.getElementById('cbar').hidden=!(v==='lances'&&currentItem&&currentItem.compId&&!playlist);
+  appEl.classList.toggle('solo',v==='lances'&&!!currentItem&&!!currentItem.compId&&!playlist&&!athlete);
   const homeV=v==='lances'&&!athlete&&!playlist&&currentItem&&!currentItem.compId;document.getElementById('hbar').hidden=!homeV;
   if(homeV){document.getElementById('hbarName').textContent=currentItem.title||'';document.getElementById('hbarSub').textContent=[currentItem.comp,currentItem.caption].filter(Boolean).join(' · ')}
   renderTagbar();
@@ -1033,8 +1035,7 @@ async function linkVideoMatch(v,force){
   if(!me||me.func!=='Administrador')return false;const m=findMatchFor(v);if(!m)return false;
   if(m.ytId===v.ytId&&!force)return false;if(m.ytId&&m.ytId!==v.ytId&&!force)return false;
   const d={url:v.url||null,ytId:v.ytId,videoId:v.id||null};
-  if(v.lances&&!m.lances)d.lances=v.lances;if(v.lancesInd&&!m.lancesInd)d.lancesInd=v.lancesInd;if(v.sync&&!m.sync)d.sync=v.sync;
-  if(m.ytId===v.ytId&&!d.lances&&!d.lancesInd&&!d.sync&&m.videoId===v.id)return false;
+  if(m.ytId===v.ytId&&m.videoId===v.id)return false;
   await db.collection('matches').doc(m.id).update(d);Object.assign(m,d);return true;
 }
 let linkedOnce=false;
@@ -1060,7 +1061,7 @@ function renderComps(){
         <span class="d">${fmtD(m.date)}</span><span class="t">${esc(m.time||'')}</span>
         <span class="fx">${teamHtml(m.home,false)}<span class="sc">${m.hs!=null&&m.as!=null?m.hs+' - '+m.as:'– : –'}</span>${teamHtml(m.away,true)}</span>
         <span class="ven" title="${esc(venueOf(m))}">${venueOf(m)?`<svg viewBox="0 0 16 16"><path d="M1 6l7-4 7 4v8H1zM4 9h8v3H4z"/></svg>${esc(venueOf(m))}`:''}${m.note?` · ${esc(m.note)}`:''}</span>
-        <span class="acts">${m.lances||m.lancesInd?`<button type="button" data-play="${esc(m.id)}" title="${[m.lances?'XML coletiva: '+m.lances.instances.length+' lances':null,m.lancesInd?'XML individual: '+m.lancesInd.instances.length+' lances':null].filter(Boolean).join(' · ')}"><svg viewBox="0 0 16 16"><path d="M10.5 3.5l-5 5a1.5 1.5 0 0 0 2 2l5-5a3 3 0 0 0-4-4l-6 6a4.5 4.5 0 0 0 6 6l5-5-1-1-5 5a3 3 0 0 1-4-4l6-6a1.5 1.5 0 0 1 2 2l-5 5"/></svg></button>`:''}<button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
+        <span class="acts"><button type="button" class="play2" data-play="${esc(m.id)}" title="${m.ytId?'Reproduzir':'Sem vídeo'}" ${m.ytId?'':'disabled'}><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>${admin?`<button type="button" data-edit="${esc(m.id)}" title="Editar jogo"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg></button>`:''}</span>
       </div>`).join('')}).join('');
     const lg=compLogo(c);
     return `<section class="league"><div class="band">${lg?`<img class="clogo" src="${esc(lg)}" alt="" referrerpolicy="no-referrer"${c.logoBg?` style="background:${esc(c.logoBg)}"`:''}>`:''}<span class="nm">${esc(c.name)}${c.season?' '+esc(c.season):''}</span>${admin?`<button type="button" data-cedit="${esc(c.id)}">Editar</button><button type="button" data-cadd="${esc(c.id)}">+ Jogo</button>`:''}</div>${body||'<div class="emptyl" style="padding:16px">Nenhum jogo'+(q?' nessa busca':'')+'.</div>'}</section>`;
@@ -1077,8 +1078,8 @@ function playMatch(m){
   if(!m||!m.ytId)return;currentVideo=null;currentItem=m;athlete=null;
   const P=window.DimasPlayer;setXmlSeg(m);const set=lancesFor(m);
   document.getElementById('cbarName').textContent=`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`;
-  P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date),set?set.instances.length+' lances':null].filter(Boolean).join(' · '));
-  if(set)P.loadLances(applySync(set,m.sync),{individual:xmlKind==='lancesInd',src:srcOf(m)});else P.loadLances({instances:[],rows:[]});
+  P.setTitle(`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`,[leagues.find(c=>c.id===m.compId)?.name,roundLabel(m.round),fmtD(m.date),null].filter(Boolean).join(' · '));
+  P.loadLances({instances:[],rows:[]});document.getElementById('xmlSeg').hidden=true;
   P.loadYT(m.ytId);show('lances');
 }
 // competição
@@ -1324,7 +1325,7 @@ function tgSub(m){if(unsubTg){unsubTg();unsubTg=null}tgCfg=null;if(!m)return;uns
 function tgButtons(){const c=tgCfg&&tgCfg.cats&&tgCfg.cats.length?tgCfg:DEF_TG;return {cats:c.cats||[],descs:c.descs||[]}}
 function tgCanTag(){return isStaff()&&currentItem&&!athlete&&!playlist&&window.DimasPlayer.hasVideo()}
 function renderTagbar(){
-  const bar=document.getElementById('tagbar');const ok=isStaff()&&!!currentItem&&!athlete&&!playlist;bar.hidden=!ok;if(!ok){tgStop(true);return}
+  const bar=document.getElementById('tagbar');const ok=isStaff()&&!!currentItem&&!currentItem.compId&&!athlete&&!playlist;bar.hidden=!ok;if(!ok){tgStop(true);return}
   document.querySelectorAll('#tgSet button').forEach(b=>b.classList.toggle('on',b.dataset.s===tgSetKey));
   document.querySelectorAll('#tgMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===tgMode));
   const sel=document.getElementById('tgAth');sel.hidden=tgSetKey!=='lancesInd';
