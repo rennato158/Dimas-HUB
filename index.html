@@ -41,10 +41,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .brand{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.04em;line-height:1;text-transform:uppercase}
 .brand b{color:var(--accent)}
-header .brand{display:flex;align-items:center;gap:10px}header .brand .appicon{width:36px;height:36px;flex:none;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .splash{position:fixed;inset:0;z-index:1000;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;transition:opacity .6s ease,visibility .6s}
 .splash.out{opacity:0;visibility:hidden}
-.splash .sb{width:clamp(120px,28vw,168px);height:auto;display:block;border-radius:22%;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 18px 50px rgba(155,101,197,.25);animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}
+.splash .sb{width:clamp(110px,24vw,150px);height:auto;display:block;margin:6px 0 2px;animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}
 .splash .sb b{color:#b98ce0}
 .splash .lg{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:10px;animation:spIn .9s cubic-bezier(.2,.8,.2,1) both}.splash .lg img{width:min(220px,52vw);height:auto;display:block}
 .splash .lg small{font-family:var(--body);font-weight:500;font-size:6px;letter-spacing:.06em;line-height:1;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap}
@@ -406,7 +405,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </style>
 </head>
 <body>
-<div class="splash" id="splash" role="status" aria-label="Carregando Dimas HUB"><div class="lg"><img src="assets/logo-dimas-branco.png" alt="DIMAS"><small>Departamento Integrado de Mercado e Análise Sistemática</small></div><img class="sb" src="assets/logo-dimas-hub.svg" alt="Dimas HUB"><div class="st">Diretório de vídeos</div><div class="bar"><i></i></div><div class="pc" id="splashPc">0%</div></div>
+<div class="splash" id="splash" role="status" aria-label="Carregando Dimas HUB"><div class="lg"><img src="assets/logo-dimas-branco.png" alt="DIMAS"><small>Departamento Integrado de Mercado e Análise Sistemática</small></div><img class="sb" src="assets/logo-dimas-hub-texto.svg" alt="Dimas HUB"><div class="st">Diretório de vídeos</div><div class="bar"><i></i></div><div class="pc" id="splashPc">0%</div></div>
 <script>(function(){const lg=document.querySelector('#splash .lg'),im=lg.querySelector('img'),tx=lg.querySelector('small');
   const fit=()=>{const w=im.getBoundingClientRect().width;if(!w)return;tx.style.fontSize='10px';const tw=tx.scrollWidth;if(tw)tx.style.fontSize=(10*w/tw*0.98)+'px'};im.complete?fit():im.addEventListener('load',fit);if(document.fonts)document.fonts.ready.then(fit);window.addEventListener('resize',fit)})();
 (function(){const sp=document.getElementById('splash'),pc=document.getElementById('splashPc'),bi=sp.querySelector('.bar i'),t0=Date.now(),D=5000;
@@ -414,7 +413,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 
 <div class="gate" id="gate">
   <div class="card">
-    <img src="assets/logo-dimas-hub.svg" alt="Dimas HUB" class="appicon" style="width:96px;height:96px;display:block;margin:0 auto 6px">
+    <div class="brand">DIMAS <b>HUB</b></div>
     <p id="gateMsg">Acesso restrito à equipe. Entre com sua conta Google.</p>
     <button class="gbtn" id="googleBtn" type="button"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.7-2.1 15.6-5.7l-7.5-5.8c-2.1 1.4-4.8 2.3-8.1 2.3-6.3 0-11.6-3.9-13.5-9.4l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Entrar com Google</button>
     <div class="or" id="gateOr">ou</div>
@@ -436,7 +435,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </div>
 <header>
-  <div class="brand"><img src="assets/logo-dimas-hub.svg" alt="" class="appicon">DIMAS <b>HUB</b></div>
+  <div class="brand">DIMAS <b>HUB</b></div>
   <div class="match" hidden>
     <div class="title" id="matchTitle">Ceará 2 x 2 Juventude</div>
     <div class="meta" id="matchMeta">Brasileiro Série B · Rodada 34 · 17/10/2026 · 117 lances</div>
