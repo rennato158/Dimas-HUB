@@ -502,6 +502,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 <div class="home" id="home">
   <div class="top"><h2>Vídeos</h2><span class="sub" id="vCount"></span>
     <select id="hComp" aria-label="Competição" style="width:auto"><option value="">Todas as competições</option></select>
+    <select id="hOpp" aria-label="Adversário" style="width:auto"><option value="">Todos os adversários</option></select>
     <select id="hGame" aria-label="Jogo" style="width:auto"><option value="">Todos os jogos</option></select>
     <span class="spacer"></span>
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
@@ -1741,8 +1742,11 @@ function ytThumb(id){return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'}
 function fmtDate(ts){try{const d=ts&&ts.toDate?ts.toDate():null;return d?d.toLocaleDateString('pt-BR'):''}catch(_){return ''}}
 function comps(){return [...new Set(videos.map(v=>(v.comp||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'))}
 function fillSelect(sel,items,allLabel,keep){const cur=keep?sel.value:'';sel.innerHTML=`<option value="">${allLabel}</option>`+items.map(i=>`<option value="${esc(i.v)}">${esc(i.t)}</option>`).join('');sel.value=items.some(i=>i.v===cur)?cur:''}
-const hComp=document.getElementById('hComp'), hGame=document.getElementById('hGame');
-hComp.onchange=()=>{renderVideos()};hGame.onchange=()=>{renderVideos()};
+const hComp=document.getElementById('hComp'), hGame=document.getElementById('hGame'), hOpp=document.getElementById('hOpp');
+hComp.onchange=()=>{renderVideos()};hOpp.onchange=()=>{renderVideos()};
+// adversário do Ceará num vídeo (mandante ou visitante; se vazio, lê do título)
+function oppOf(v){let h=v.home,a=v.away;if(!h||!a){const t=String(v.title||'').replace(/^[^_]*_/,'');const m=t.match(/^(.+?)\s*\d*\s*[x×]\s*\d*\s*(.+)$/i);if(m){h=h||m[1].trim();a=a||m[2].trim()}}
+  const isC=n=>/^ceara\b/.test(norm(n||''));if(h&&isC(h)&&a&&!isC(a))return a;if(a&&isC(a)&&h&&!isC(h))return h;return ''}hGame.onchange=()=>{renderVideos()};
 function typeLabel(v){const t=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');if(t!=='Análise'||!v.sub)return t;if(v.sub==='Individual'){const a=members.find(m=>m.id===v.athleteId);return 'Análise · '+(a?a.name:'Individual')}return 'Análise · '+v.sub}
 function coverHtml(v){
   const type=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
@@ -1768,8 +1772,11 @@ function renderVideos(){
   const admin=me&&me.func==='Administrador';
   fillSelect(hComp,comps().map(c=>({v:c,t:c})),'Todas as competições',true);
   const byComp=videos.filter(canSee).filter(v=>!hComp.value||(v.comp||'')===hComp.value);
-  fillSelect(hGame,byComp.map(v=>({v:v.id,t:v.title+(v.comp&&!hComp.value?' · '+v.comp:'')})),'Todos os jogos',true);
-  const shown=byComp.filter(v=>!hGame.value||v.id===hGame.value);
+  const oppKey=v=>{const o=oppOf(v);const t=o&&teamOf(o);return t?t.name:o};
+  fillSelect(hOpp,[...new Set(byComp.map(oppKey).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt')).map(o=>({v:o,t:o})),'Todos os adversários',true);
+  const byOpp=byComp.filter(v=>!hOpp.value||oppKey(v)===hOpp.value);
+  fillSelect(hGame,byOpp.map(v=>({v:v.id,t:v.title+(v.comp&&!hComp.value?' · '+v.comp:'')})),'Todos os jogos',true);
+  const shown=byOpp.filter(v=>!hGame.value||v.id===hGame.value);
   document.getElementById('vCount').textContent=videos.length?videos.length+' vídeo'+(videos.length>1?'s':''):'';
   if(members.length)renderAthletes();
   if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
