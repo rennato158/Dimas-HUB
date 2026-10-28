@@ -960,7 +960,7 @@ function setMe(m){
   if(unsubV){unsubV();unsubV=null}
   if(m){const staff=['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
-    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));videos.sort(vSort);renderVideos()},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
