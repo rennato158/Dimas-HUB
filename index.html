@@ -1347,7 +1347,7 @@ function renderChats(){
   if(!chats.length){box.innerHTML='<div class="emptyl">'+(isStaff()?'Nenhuma conversa ainda. Clique em <strong>+ Nova</strong>.':'Nenhuma conversa com você ainda.')+'</div>';return}
   box.innerHTML=chats.map(c=>{const u=chatUnread(c);const n=(c.members||[]).length;
     const others=(c.members||[]).filter(id=>id!==me.id).map(id=>members.find(x=>x.id===id)).filter(Boolean);const r=others.find(o=>o.photo)||others[0];
-    const d=c.lastAt&&c.lastAt.toDate?c.lastAt.toDate():null;const when=d?d.toLocaleDateString('pt-BR')+' · '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    const d=c.lastAt&&c.lastAt.toDate?c.lastAt.toDate():null;const nm=others.length?(others[0].name+(others.length>1?' +'+(others.length-1):'')):'';const when=[nm,d?d.toLocaleDateString('pt-BR'):null,d?d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):null].filter(Boolean).join(' - ');
     return `<div class="crow ${c.id===chatId?'on':''}" data-id="${esc(c.id)}"><div class="av" title="${esc(others.map(o=>o.name).join(', '))}">${r&&r.photo?`<img src="${esc(r.photo)}" alt="">`:initials(r?r.name:c.title)}${others.length>1?`<span class="more">+${others.length-1}</span>`:''}</div><div class="tx"><div class="t1">${esc(c.title)}${u?'<span class="un">novo</span>':''}</div><div class="t2">${when}</div></div></div>`}).join('');
 }
 document.getElementById('cRows').addEventListener('click',e=>{const r=e.target.closest('.crow');if(r)openChat(r.dataset.id)});
