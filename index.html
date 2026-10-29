@@ -1367,7 +1367,7 @@ function openChat(id){
 }
 async function chatMarkRead(){const c=chats.find(x=>x.id===chatId);if(!c||!me||chatEl.hidden)return;if(!chatUnread(c))return;
   try{await db.collection('chats').doc(c.id).update({['reads.'+me.id]:firebase.firestore.FieldValue.serverTimestamp()})}catch(_){}}
-function roleOf(id){const m=members.find(x=>x.id===id);if(!m)return '';return m.func==='Administrador'?'Administrador':(m.role==='Atleta'?'Atleta':(m.cargo||m.role||''))}
+function roleOf(id){const m=members.find(x=>x.id===id);if(!m)return '';if(m.role==='Atleta')return m.pos||'Atleta';if(m.role==='Convidado')return m.club?'Convidado · '+m.club:'Convidado';return m.cargo||m.role||''}
 function fmtMsg(t){return esc(t).replace(/(^|\s)@([\p{L}\p{N}_.-]+)/gu,(m,sp,n)=>sp+'<span class="mention">@'+n+'</span>')}
 function renderMsgs(){
   const box=document.getElementById('msgs');const c=chats.find(x=>x.id===chatId);
