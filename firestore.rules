@@ -25,7 +25,7 @@ service cloud.firestore {
     }
     match /notifications/{id} {
       allow read: if isMember() && resource.data.to == email();
-      allow create: if isStaff();
+      allow create: if isMember();
       allow update: if isMember() && resource.data.to == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if isAdmin() || (isMember() && resource.data.to == email());
     }
@@ -48,6 +48,19 @@ service cloud.firestore {
     match /playlists/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.get('shareMembers', []));
       allow create, update, delete: if isStaff();
+    }
+    match /chats/{id} {
+      function inChat() { return isMember() && email() in resource.data.members; }
+      allow read: if inChat();
+      allow create: if isStaff() && request.resource.data.by == email() && email() in request.resource.data.members;
+      allow update: if inChat() && (isStaff() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'lastText', 'lastBy', 'lastByName', 'lastAt']));
+      allow delete: if isAdmin() || (inChat() && resource.data.by == email());
+      match /messages/{mid} {
+        function inParent() { return isMember() && email() in get(/databases/$(database)/documents/chats/$(id)).data.members; }
+        allow read: if inParent();
+        allow create: if inParent() && request.resource.data.by == email();
+        allow delete: if isAdmin() || (inParent() && resource.data.by == email());
+      }
     }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
