@@ -1482,15 +1482,16 @@ function fmtT(s){s=Math.max(0,s||0);const m=Math.floor(s/60),r=Math.floor(s%60);
 function favItem(src,l){let aid=src.athleteId||(l.ath&&l.ath.id)||null;if(!aid){const ids=[l.raw||l.code,...(l.labels||[])].flatMap(t=>resolveText(t));aid=ids[0]||null}return {key:itemKey(src,l),srcId:src.id,kind:src.kind,title:src.title,ytId:src.ytId,lanceId:l.id,start:l.start,end:l.end,code:l.code,player:l.player||'',note:l.note||'',labels:l.labels||[],athleteId:aid}}
 function drawPick(){
   const box=document.getElementById('fPick');if(!curFav)return;const k=itemKey(curFav.src,curFav.l);
-  const mine=playlists.filter(p=>p.by===me.id||me.func==='Administrador');
+  const mine=playlists.filter((p,i,a)=>(p.by===me.id||me.func==='Administrador')&&a.findIndex(x=>x.id===p.id)===i);
   box.innerHTML=mine.length?mine.map(p=>`<label><input type="checkbox" data-id="${esc(p.id)}" ${(p.items||[]).some(it=>it.key===k)?'checked':''}>${esc(p.name)}<small>${(p.items||[]).length} lance${(p.items||[]).length!==1?'s':''}</small></label>`).join(''):'<div class="emptyl" style="padding:10px">Você ainda não tem playlist. Crie uma abaixo.</div>';
   box.querySelectorAll('input').forEach(i=>i.onchange=async()=>{const p=playlists.find(x=>x.id===i.dataset.id);if(!p)return;let items=(p.items||[]).filter(it=>it.key!==k);if(i.checked)items=items.concat([favItem(curFav.src,curFav.l)]);
     try{await savePlaylist(p.id,{items});p.items=items;window.DimasPlayer.refresh()}catch(e){const x=document.getElementById('fPErr');x.textContent='Não salvou: '+(e.code||e.message);x.hidden=false;i.checked=!i.checked}});
 }
-document.getElementById('fNewBtn').onclick=async()=>{const n=document.getElementById('fNew').value.trim();if(!n||!curFav)return;
+document.getElementById('fNewBtn').onclick=async()=>{const bt=document.getElementById('fNewBtn');if(bt.disabled)return;const n=document.getElementById('fNew').value.trim();if(!n||!curFav)return;bt.disabled=true;
   try{const ref=await db.collection('playlists').add({name:n,by:me.id,byName:me.name||'',shareMembers:[],items:[favItem(curFav.src,curFav.l)],createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-    playlists.unshift({id:ref.id,name:n,by:me.id,shareMembers:[],items:[favItem(curFav.src,curFav.l)]});document.getElementById('fNew').value='';drawPick();renderPlaylists();window.DimasPlayer.refresh()}
-  catch(e){const x=document.getElementById('fPErr');x.textContent='Não criou: '+(e.code||e.message);x.hidden=false}};
+    if(!playlists.some(p=>p.id===ref.id))playlists.unshift({id:ref.id,name:n,by:me.id,shareMembers:[],items:[favItem(curFav.src,curFav.l)]});document.getElementById('fNew').value='';drawPick();renderPlaylists();window.DimasPlayer.refresh()}
+  catch(e){const x=document.getElementById('fPErr');x.textContent='Não criou: '+(e.code||e.message);x.hidden=false}
+  bt.disabled=false};
 document.getElementById('fForm').onsubmit=e=>{e.preventDefault();document.getElementById('fNewBtn').click()};
 document.getElementById('fClose').onclick=()=>{fModal.hidden=true};fModal.addEventListener('click',e=>{if(e.target===fModal)fModal.hidden=true});
 function savePlaylist(id,data){return db.collection('playlists').doc(id).update(Object.assign({},data,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}))}
