@@ -215,6 +215,8 @@ td.act .star.on{color:var(--accent)}td.act .star.on svg{fill:currentColor}td.act
 .card .mt span{display:inline-flex;align-items:center;gap:4px}
 .card .mt svg{width:13px;height:13px;fill:currentColor;flex:none}
 .card .mt .xml{color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:11px}
+.card .mt .xml.drv1{display:inline-flex;align-items:center;gap:4px;color:var(--accent-dark);border-color:var(--accent);background:rgba(155,101,197,.1)}.card .mt .xml.drv1 svg{width:13px;height:13px}
+#driveLink svg,#vDriveNote svg{width:15px;height:15px;vertical-align:-3px}
 .card .mt.xmls{margin-top:2px}
 .card .cact{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin-top:auto}
 .card .cact button{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;font-size:12.5px;font-weight:500;color:var(--muted)}
@@ -576,7 +578,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <select id="hGame" aria-label="Jogo" style="width:auto"><option value="">Todos os jogos</option></select>
     <span class="spacer"></span>
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
-    <button class="btn" type="button" id="driveLink" hidden title="Liga cada vídeo ao arquivo MP4 correspondente na pasta do Drive">Vincular Drive</button>
+    <button class="btn" type="button" id="driveLink" hidden title="Liga cada vídeo ao arquivo MP4 correspondente na pasta do Drive"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 13A3.5 3.5 0 0 1 4 6.03 4.5 4.5 0 0 1 12.7 6.6 3.2 3.2 0 0 1 12 13z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.6l1.5 1.5 2.8-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vincular Drive</button>
     <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
 </div>
@@ -1400,14 +1402,14 @@ document.getElementById('vDriveFind').onclick=async()=>{const note=document.getE
   }catch(e){note.textContent=e.message}};
 document.getElementById('vDrivePick').onclick=e=>{const d=e.target.closest('div[data-id]');if(!d)return;vDrivePicked={id:d.dataset.id,name:d.dataset.n};document.getElementById('vDrive').value='https://drive.google.com/file/d/'+d.dataset.id+'/view';document.getElementById('vDriveNote').textContent='Vinculado: '+d.dataset.n;document.getElementById('vDrivePick').hidden=true};
 // vincular em lote
-document.getElementById('driveLink').onclick=async()=>{const b=document.getElementById('driveLink');const old=b.textContent;
+document.getElementById('driveLink').onclick=async()=>{const b=document.getElementById('driveLink');const old=b.innerHTML;
   try{if(!driveTok()){await loadGis();await driveConnect()}b.disabled=true;b.textContent='Lendo o Drive…';
     const files=await driveList(DRIVE_FOLDER);let ok=0,miss=[];const batch=db.batch();
     videos.filter(v=>!v.driveId&&(v.type||'Jogo')!=='Treino').forEach(v=>{const sc=files.map(f=>({f,p:driveScore(v,f)})).sort((a,b)=>b.p-a.p);
       if(sc[0]&&sc[0].p>=15&&(!sc[1]||sc[1].p<sc[0].p)){batch.update(db.collection('videos').doc(v.id),{driveId:sc[0].f.id,driveName:sc[0].f.name});ok++}else miss.push(v.title)});
     if(ok)await batch.commit();
     alert(`${ok} vídeo${ok!==1?'s':''} vinculado${ok!==1?'s':''} ao Drive.`+(miss.length?`\n\nSem correspondência segura (${miss.length}): vincule pelo "Editar" do vídeo, em "Arquivo no Drive".\n• `+miss.slice(0,15).join('\n• ')+(miss.length>15?'\n…':''):''));
-  }catch(e){alert(e.message)}b.disabled=false;b.textContent=old};
+  }catch(e){alert(e.message)}b.disabled=false;b.innerHTML=old};
 // ---- janela de cortes ----
 const dlModal=document.getElementById('dlModal');let dlItems=[],dlName='cortes',dlBusy=false;
 function srcVideo(kind,id){if(kind==='match'){const m=matches.find(x=>x.id===id);if(!m)return null;if(m.driveId)return {id:m.id,driveId:m.driveId,title:m.home+' x '+m.away};return videos.find(v=>v.id===m.videoId)||null}return videos.find(v=>v.id===id)||null}
@@ -2171,7 +2173,7 @@ function renderVideos(){
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
-      ${v.lances||v.lancesInd?`<div class="mt xmls">${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col)</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind)</span>`:''}</div>`:''}</div>
+      ${v.lances||v.lancesInd||v.driveId?`<div class="mt xmls">${v.driveId?`<span class="xml drv1" title="Vinculado ao Drive${v.driveName?': '+esc(v.driveName):''} · cortes disponíveis para download"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 13A3.5 3.5 0 0 1 4 6.03 4.5 4.5 0 0 1 12.7 6.6 3.2 3.2 0 0 1 12 13z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.6l1.5 1.5 2.8-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Drive</span>`:''}${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col)</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind)</span>`:''}</div>`:''}</div>
     ${admin?`<div class="cact"><button type="button" data-edit="${esc(v.id)}"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg>Editar</button><button type="button" data-share="${esc(v.id)}" title="${esc(shareSummary(v))}"><svg viewBox="0 0 16 16"><circle cx="12.5" cy="3" r="2"/><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="13" r="2"/><path d="M5 7l6-3 .6 1.2-6 3zM5 9l6 3 .6-1.2-6-3z"/></svg>Compartilhar</button></div>`:''}
   </div>`).join('');
 }
