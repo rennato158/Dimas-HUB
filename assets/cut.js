@@ -90,6 +90,7 @@
     }
     const video = tracks.find(t => t.kind === 'video'); const audio = tracks.find(t => t.kind === 'audio');
     if (!video) throw new Error('O arquivo não tem faixa de vídeo.');
+    if (!video.n) throw new Error('Este MP4 é do tipo fragmentado (gravado em partes), que o recorte ainda não lê. Exporte o jogo como MP4 comum.');
     return { mvTs, video, audio };
   }
   async function open(read, size) {
