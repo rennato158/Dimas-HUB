@@ -275,6 +275,12 @@ td.act .star.on{color:var(--accent)}td.act .star.on svg{fill:currentColor}td.act
 .bell svg{width:17px;height:17px;fill:currentColor}
 .bell .n{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5533d;color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
 .notifs{display:flex;flex-direction:column;gap:14px;max-width:760px}
+.dlseg{display:flex;flex-direction:column;gap:6px}.dlseg label{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--panel2);text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)}
+.dlseg label:has(input:checked){border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.dlseg small{display:block;color:var(--muted);font-size:11.5px}
+.dprog{height:8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}.dprog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.drv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}.drv b{color:var(--fg);font-weight:600}
+.dpick{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:6px}.dpick div{padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12.5px;display:flex;gap:8px}.dpick div:hover{background:var(--panel2)}.dpick small{color:var(--muted);margin-left:auto;white-space:nowrap}
+.dlbtn{font-size:12.5px;color:var(--accent);font-weight:500;margin-left:10px}
 /* chat */
 .chat{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;align-items:stretch;height:calc(100vh - 140px);min-height:480px}
 .chat .side,.chat .main{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -495,7 +501,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </header>
 
 <div class="ibar" id="hbar" hidden><button type="button" class="back" id="hbarBack">← Diretório</button><span class="nm" id="hbarName"></span><span id="hbarSub" style="font-size:12.5px;color:var(--muted)"></span></div>
-<div class="ibar" id="pbar" hidden><button type="button" class="back" id="pbarBack">← Playlists</button><span class="nm" id="pbarName"></span><span id="pbarSub" style="font-size:12.5px;color:var(--muted)"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn" id="pbarShare" hidden>Compartilhar</button><button type="button" class="btn" id="pbarEdit" hidden>Editar</button></div>
+<div class="ibar" id="pbar" hidden><button type="button" class="back" id="pbarBack">← Playlists</button><span class="nm" id="pbarName"></span><span id="pbarSub" style="font-size:12.5px;color:var(--muted)"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn" id="pbarDl" hidden>⬇ Baixar cortes</button><button type="button" class="btn" id="pbarShare" hidden>Compartilhar</button><button type="button" class="btn" id="pbarEdit" hidden>Editar</button></div>
 <div class="ibar" id="cbar" hidden><button type="button" class="back" id="cbarBack">← Competições</button><span class="nm" id="cbarName"></span></div>
 <div class="ibar" id="ibar" hidden>
   <button type="button" class="back" id="ibarBack">← Individuais</button>
@@ -550,7 +556,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <button class="ddbtn" type="button" id="dd2Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd2Lbl">Todos os descritores</span><span class="n" id="dd2N"></span></button>
         <div class="ddmenu" id="descsMenu" hidden></div>
       </div>
-      <div class="count"><span id="countLbl"></span><button id="clearBtn" hidden>limpar filtros</button></div>
+      <div class="count"><span id="countLbl"></span><button type="button" class="dlbtn" id="listDl" hidden>⬇ Baixar cortes</button><button id="clearBtn" hidden>limpar filtros</button></div>
     </div>
     <div class="scroll">
       <table>
@@ -570,6 +576,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <select id="hGame" aria-label="Jogo" style="width:auto"><option value="">Todos os jogos</option></select>
     <span class="spacer"></span>
     <div class="vtoggle" role="group" aria-label="Modo de exibição"><button type="button" class="on" data-mode="grid" title="Caixas" aria-label="Caixas"><svg viewBox="0 0 16 16"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg></button><button type="button" data-mode="list" title="Lista" aria-label="Lista"><svg viewBox="0 0 16 16"><path d="M1 2h14v3H1zM1 6.5h14v3H1zM1 11h14v3H1z"/></svg></button></div>
+    <button class="btn" type="button" id="driveLink" hidden title="Liga cada vídeo ao arquivo MP4 correspondente na pasta do Drive">Vincular Drive</button>
     <button class="btn primary" type="button" id="addVideo" hidden>+ Adicionar vídeo</button></div>
   <div class="cards" id="vCards"><div class="emptyl">Carregando…</div></div>
 </div>
@@ -785,6 +792,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f2">
         <div class="f"><label for="vDur">Duração</label><input type="text" id="vDur" placeholder="auto" pattern="^(\d{1,2}:)?\d{1,2}:\d{2}$" title="h:mm:ss ou mm:ss"></div>
       </div>
+      <div class="f"><label for="vDrive">Arquivo no Drive (MP4, para baixar cortes)</label><div class="pwbox"><input type="text" id="vDrive" placeholder="cole o link do arquivo no Drive" style="font-family:var(--body)"><button type="button" class="btn" id="vDriveFind">Procurar na pasta</button></div>
+        <span class="pwnote" id="vDriveNote"></span><div class="dpick" id="vDrivePick" hidden></div></div>
       <div class="f2">
         <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
         <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
@@ -889,6 +898,24 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </div>
 
+<div class="modal" id="dlModal" hidden>
+  <div class="box">
+    <form id="dlForm">
+      <h3>Baixar cortes</h3>
+      <p class="pwnote" id="dlWhat" style="margin:0"></p>
+      <div class="f"><label>Formato</label><div class="dlseg">
+        <label><input type="radio" name="dlfmt" value="sep" checked><span>Arquivos separados<small>Um MP4 por lance, começando e terminando no tempo exato, dentro de um .zip.</small></span></label>
+        <label><input type="radio" name="dlfmt" value="one"><span>Vídeo único<small>Todos os lances em sequência num MP4. Cada corte começa no quadro-chave anterior ao lance (1–2 s a mais).</small></span></label>
+      </div></div>
+      <div class="f2"><div class="f"><label for="dlPre">Segundos antes</label><input type="number" id="dlPre" min="0" max="30" value="0"></div><div class="f"><label for="dlPos">Segundos depois</label><input type="number" id="dlPos" min="0" max="30" value="0"></div></div>
+      <div class="drv" id="dlDrive"></div>
+      <div class="dprog" id="dlProgBox" hidden><i id="dlProg"></i></div><span class="pwnote" id="dlStatus"></span>
+      <span class="ferr" id="dlErr" hidden></span>
+      <div class="actions"><button type="button" class="btn" id="dlCancel">Fechar</button><button type="submit" class="btn primary" id="dlGo">Gerar e baixar</button></div>
+    </form>
+  </div>
+</div>
+
 <div class="modal" id="pModal" hidden>
   <div class="box">
     <form id="pForm">
@@ -976,6 +1003,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
   </div>
 </div>
 
+<script src="assets/cut.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -1048,7 +1076,7 @@ const vCards=document.getElementById('vCards');
 
 function setMe(m){
   me=m;const admin=!!m&&m.func==='Administrador';
-  navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;
+  navElenco.hidden=!admin;document.getElementById('addVideo').hidden=!admin;document.getElementById('driveLink').hidden=!admin;
   if(unsubC){unsubC();unsubC=null}if(unsubJ){unsubJ();unsubJ=null}
   const staffNow=!!m&&(['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador');const guest=!!m&&m.role==='Convidado'&&!staffNow;
   document.getElementById('navComps').hidden=!(staffNow||guest);
@@ -1075,6 +1103,7 @@ function setMe(m){
   }else{leagues=[];matches=[]}
   tgSub(m);
   chatSub(m);
+  if(m&&(['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador'))setTimeout(()=>loadGis().catch(()=>{}),1500);
   if(unsubMk){unsubMk();unsubMk=null}myMarks={};
   if(m&&(['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador')){unsubMk=db.collection('members').doc(m.id).collection('marks').onSnapshot(sn=>{myMarks={};sn.docs.forEach(d=>myMarks[d.id]=d.data());renderAthletes()},()=>{})}
   if(unsubN){unsubN();unsubN=null}document.getElementById('bell').hidden=!m;
@@ -1332,6 +1361,100 @@ async function notifyNewViewers(v,oldViewers,newViewers){
   const batch=db.batch();added.forEach(id=>batch.set(db.collection('notifications').doc(),{to:id,type:'share',videoId:v.id,title:v.title,text:[v.comp,v.caption].filter(Boolean).join(' · ')||'Novo vídeo compartilhado com você',thumb:v.thumb||ytThumb(v.ytId),by:me.id,read:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
   await batch.commit();
 }
+/* ---- Google Drive + cortes ---- */
+const DRIVE_CLIENT='636892555630-307ib6g1ilu6nllvg0t53gnun4tja2oh.apps.googleusercontent.com',DRIVE_FOLDER='1kLksJMze_0fvM2OTSbOaLtiiTUs0xE5b';
+let gisP=null,tokClient=null,tokWait=null,vDrivePicked=null;
+function loadGis(){if(window.google&&google.accounts&&google.accounts.oauth2)return Promise.resolve();if(gisP)return gisP;gisP=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=res;sc.onerror=()=>{gisP=null;rej(new Error('Não carregou o login do Google.'))};document.head.appendChild(sc)});return gisP}
+function driveTok(){try{const t=JSON.parse(sessionStorage.getItem('dimas-drive')||'null');if(t&&t.exp>Date.now()+60000)return t}catch(_){}return null}
+function driveConnect(){ // precisa ser chamado num clique
+  if(!(window.google&&google.accounts&&google.accounts.oauth2))return Promise.reject(new Error('Aguarde um instante e clique de novo.'));
+  return new Promise((res,rej)=>{
+    if(!tokClient)tokClient=google.accounts.oauth2.initTokenClient({client_id:DRIVE_CLIENT,scope:'https://www.googleapis.com/auth/drive.readonly',callback:r=>{const w=tokWait;tokWait=null;if(!w)return;if(r.error){w.rej(new Error(r.error_description||r.error));return}
+      const t={tok:r.access_token,exp:Date.now()+(+r.expires_in||3600)*1000};fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',{headers:{Authorization:'Bearer '+t.tok}}).then(x=>x.json()).then(j=>{t.email=j.user&&j.user.emailAddress;try{sessionStorage.setItem('dimas-drive',JSON.stringify(t))}catch(_){}w.res(t)}).catch(()=>{try{sessionStorage.setItem('dimas-drive',JSON.stringify(t))}catch(_){}w.res(t)})},
+      error_callback:e=>{const w=tokWait;tokWait=null;if(w)w.rej(new Error(e&&e.type==='popup_closed'?'Janela do Google fechada antes de concluir.':'O navegador bloqueou a janela do Google. Permita pop-ups e tente de novo.'))}});
+    tokWait={res,rej};tokClient.requestAccessToken({prompt:driveTok()?'':'select_account'});
+  });
+}
+async function dget(url,opt){const t=driveTok();if(!t)throw new Error('Conecte o Google Drive.');const r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:'Bearer '+t.tok},(opt&&opt.headers)||{})}));
+  if(r.status===401){try{sessionStorage.removeItem('dimas-drive')}catch(_){}throw new Error('A conexão com o Drive expirou. Clique em "Conectar Google Drive" de novo.')}
+  if(r.status===403||r.status===404){throw new Error('Sem acesso ao arquivo no Drive com a conta conectada ('+(t.email||'?')+').')}
+  if(!r.ok&&r.status!==206)throw new Error('Drive respondeu '+r.status);return r}
+function driveIdOf(v){v=String(v||'').trim();if(!v)return '';const m=v.match(/\/d\/([\w-]{20,})/)||v.match(/[?&]id=([\w-]{20,})/);if(m)return m[1];return /^[\w-]{20,}$/.test(v)?v:''}
+async function driveList(folder){const out=[];let queue=[folder],depth=0;
+  while(queue.length&&depth<5){const next=[];for(const f of queue){let pt='';do{const u='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:`'${f}' in parents and trashed=false`,fields:'nextPageToken,files(id,name,mimeType,size)',pageSize:'1000',supportsAllDrives:'true',includeItemsFromAllDrives:'true',pageToken:pt});
+      const j=await (await dget(u)).json();(j.files||[]).forEach(x=>{if(x.mimeType==='application/vnd.google-apps.folder')next.push(x.id);else if(/^video\//.test(x.mimeType||''))out.push(x)});pt=j.nextPageToken||''}while(pt)}queue=next;depth++}
+  return out}
+// pontuação de correspondência entre vídeo do Hub e arquivo do Drive
+function driveScore(v,f){const N=String(f.name||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');const T=String(v.title||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');let p=0;
+  const rc=(T.match(/^([A-Z]{2,4})(\d{1,2})_/)||[]);if(rc[1]&&new RegExp('(^|[^A-Z])'+rc[1]+'0?'+(+rc[2])+'([^0-9]|$)').test(N))p+=10;
+  const sc=T.match(/(\d+)\s*[X×]\s*(\d+)/);if(sc&&new RegExp(sc[1]+'X'+sc[2]).test(N))p+=4;
+  if(/(^|[^A-Z])JOGO([^A-Z]|$)/.test(N))p+=3;if(+f.size>3e8)p+=5;if(f.mimeType==='video/mp4')p+=1;
+  const tk=norm([v.home,v.away].filter(Boolean).join(' ')).split(' ').filter(w=>w.length>3);tk.forEach(w=>{if(N.includes(w.toUpperCase().slice(0,3)))p+=1});
+  return p}
+function fmtSize(b){b=+b||0;return b>1e9?(b/1e9).toFixed(1)+' GB':(b/1e6).toFixed(0)+' MB'}
+document.getElementById('vDriveFind').onclick=async()=>{const note=document.getElementById('vDriveNote'),pick=document.getElementById('vDrivePick');
+  try{if(!driveTok()){await loadGis();await driveConnect()}note.textContent='Lendo a pasta do Drive…';
+    const files=await driveList(DRIVE_FOLDER);const v={title:document.getElementById('vName').value,home:document.getElementById('vHome').value,away:document.getElementById('vAway').value};
+    files.sort((a,b)=>driveScore(v,b)-driveScore(v,a));note.textContent=files.length?'Escolha o arquivo do jogo:':'Nenhum vídeo encontrado na pasta.';
+    pick.innerHTML=files.slice(0,60).map(f=>`<div data-id="${esc(f.id)}" data-n="${esc(f.name)}">${esc(f.name)}<small>${fmtSize(f.size)}</small></div>`).join('');pick.hidden=!files.length;
+  }catch(e){note.textContent=e.message}};
+document.getElementById('vDrivePick').onclick=e=>{const d=e.target.closest('div[data-id]');if(!d)return;vDrivePicked={id:d.dataset.id,name:d.dataset.n};document.getElementById('vDrive').value='https://drive.google.com/file/d/'+d.dataset.id+'/view';document.getElementById('vDriveNote').textContent='Vinculado: '+d.dataset.n;document.getElementById('vDrivePick').hidden=true};
+// vincular em lote
+document.getElementById('driveLink').onclick=async()=>{const b=document.getElementById('driveLink');const old=b.textContent;
+  try{if(!driveTok()){await loadGis();await driveConnect()}b.disabled=true;b.textContent='Lendo o Drive…';
+    const files=await driveList(DRIVE_FOLDER);let ok=0,miss=[];const batch=db.batch();
+    videos.filter(v=>!v.driveId&&(v.type||'Jogo')!=='Treino').forEach(v=>{const sc=files.map(f=>({f,p:driveScore(v,f)})).sort((a,b)=>b.p-a.p);
+      if(sc[0]&&sc[0].p>=15&&(!sc[1]||sc[1].p<sc[0].p)){batch.update(db.collection('videos').doc(v.id),{driveId:sc[0].f.id,driveName:sc[0].f.name});ok++}else miss.push(v.title)});
+    if(ok)await batch.commit();
+    alert(`${ok} vídeo${ok!==1?'s':''} vinculado${ok!==1?'s':''} ao Drive.`+(miss.length?`\n\nSem correspondência segura (${miss.length}): vincule pelo "Editar" do vídeo, em "Arquivo no Drive".\n• `+miss.slice(0,15).join('\n• ')+(miss.length>15?'\n…':''):''));
+  }catch(e){alert(e.message)}b.disabled=false;b.textContent=old};
+// ---- janela de cortes ----
+const dlModal=document.getElementById('dlModal');let dlItems=[],dlName='cortes',dlBusy=false;
+function srcVideo(kind,id){if(kind==='match'){const m=matches.find(x=>x.id===id);if(!m)return null;if(m.driveId)return {id:m.id,driveId:m.driveId,title:m.home+' x '+m.away};return videos.find(v=>v.id===m.videoId)||null}return videos.find(v=>v.id===id)||null}
+const safeName=t=>String(t||'').replace(/[\\/:*?"<>|\n\r]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90);
+function dlLabel(i,l){const who=(l.ath&&l.ath.name)||l.playerName||l.player||'';const t=Math.floor(l.start);return safeName(`${String(i+1).padStart(2,'0')} - ${who?who+' - ':''}${l.code||'lance'} - ${Math.floor(t/60)}m${String(t%60).padStart(2,'0')}s`)+'.mp4'}
+function openDl(items,name){dlItems=items;dlName=safeName(name)||'cortes';const nv=new Set(items.map(x=>x.video&&x.video.id)).size;const miss=items.filter(x=>!x.video||!x.video.driveId).length;
+  document.getElementById('dlWhat').textContent=`${items.length} lance${items.length!==1?'s':''} de ${nv} vídeo${nv!==1?'s':''}`+(miss?` · ${miss} sem arquivo no Drive (serão ignorados)`:'');
+  document.getElementById('dlErr').hidden=true;document.getElementById('dlStatus').textContent='';document.getElementById('dlProgBox').hidden=true;drawDrive();dlModal.hidden=false;loadGis().catch(()=>{})}
+function drawDrive(){const t=driveTok();const box=document.getElementById('dlDrive');box.innerHTML=t?`Drive conectado: <b>${esc(t.email||'conta Google')}</b> <button type="button" class="dlbtn" id="dlSwap">trocar conta</button>`:`<button type="button" class="btn" id="dlConn">Conectar Google Drive</button><span>Use a conta que tem os vídeos (ex.: analise.tatica@cearasc.com).</span>`;
+  const c=document.getElementById('dlConn')||document.getElementById('dlSwap');c.onclick=async()=>{try{if(document.getElementById('dlSwap'))try{sessionStorage.removeItem('dimas-drive')}catch(_){}await loadGis();await driveConnect();drawDrive()}catch(e){const x=document.getElementById('dlErr');x.textContent=e.message;x.hidden=false}}}
+document.getElementById('dlCancel').onclick=()=>{if(!dlBusy)dlModal.hidden=true};dlModal.addEventListener('click',e=>{if(e.target===dlModal&&!dlBusy)dlModal.hidden=true});
+function saveBlob(parts,name,type){const url=URL.createObjectURL(new Blob(parts,{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+document.getElementById('dlForm').onsubmit=async e=>{
+  e.preventDefault();if(dlBusy)return;const err=document.getElementById('dlErr'),st=document.getElementById('dlStatus'),bar=document.getElementById('dlProg');err.hidden=true;
+  if(!driveTok()){err.textContent='Conecte o Google Drive primeiro.';err.hidden=false;return}
+  const fmt=document.querySelector('input[name=dlfmt]:checked').value;const pre=Math.max(0,+document.getElementById('dlPre').value||0),pos=Math.max(0,+document.getElementById('dlPos').value||0);
+  const items=dlItems.filter(x=>x.video&&x.video.driveId);if(!items.length){err.textContent='Nenhum lance tem vídeo vinculado ao Drive. Vincule em "Editar" do vídeo → "Arquivo no Drive".';err.hidden=false;return}
+  dlBusy=true;document.getElementById('dlGo').disabled=true;document.getElementById('dlProgBox').hidden=false;bar.style.width='0%';
+  try{
+    const C=window.DimasCut;const infos={};
+    for(const it of items){const id=it.video.driveId;if(infos[id])continue;st.textContent='Lendo o índice de '+(it.video.title||'vídeo')+'…';
+      const meta=await (await dget('https://www.googleapis.com/drive/v3/files/'+id+'?fields=size,name,mimeType&supportsAllDrives=true')).json();
+      const url='https://www.googleapis.com/drive/v3/files/'+id+'?alt=media&supportsAllDrives=true';
+      const read=async(a,b)=>{const r=await dget(url,{headers:{Range:'bytes='+a+'-'+b}});return new Uint8Array(await r.arrayBuffer())};
+      infos[id]=await C.open(read,+meta.size);infos[id].name=meta.name}
+    const plans=items.map(it=>{const info=infos[it.video.driveId];const sg=C.plan(info,Math.max(0,it.l.start-pre),it.l.end+pos);sg.info=info;return {it,sg}});
+    const total=plans.reduce((t,p)=>t+p.sg.bytes,0)||1;let got=0;
+    for(let i=0;i<plans.length;i++){st.textContent=`Baixando corte ${i+1} de ${plans.length}…`;await C.fetchSeg(plans[i].sg.info,plans[i].sg,b=>{got+=b;bar.style.width=Math.min(99,got/total*100).toFixed(1)+'%'})}
+    st.textContent='Montando os arquivos…';
+    if(fmt==='sep'){const files=plans.map((p,i)=>{const o=C.build(p.sg.info,[p.sg],true);return {name:dlLabel(i,p.it.l),parts:o.parts,size:o.size}});
+      if(files.length===1)saveBlob(files[0].parts,files[0].name,'video/mp4');else saveBlob(C.zip(files),dlName+'.zip','application/zip')}
+    else{const groups=[];for(const p of plans){const k=C.codecKey(p.sg.info);let g=groups.find(x=>x.k===k);if(!g)groups.push(g={k,list:[]});g.list.push(p)}
+      const files=groups.map((g,i)=>{const o=C.build(g.list[0].sg.info,g.list.map(p=>p.sg),false);return {name:safeName(dlName+(groups.length>1?' - parte '+(i+1):''))+'.mp4',parts:o.parts,size:o.size}});
+      if(files.length===1)saveBlob(files[0].parts,files[0].name,'video/mp4');else saveBlob(C.zip(files),dlName+'.zip','application/zip');
+      if(groups.length>1)st.textContent='Os vídeos de origem têm formatos diferentes, então saíram '+groups.length+' arquivos dentro do .zip.'}
+    bar.style.width='100%';if(!/formatos diferentes/.test(st.textContent))st.textContent='Pronto! O download começou.';
+    plans.forEach(p=>{p.sg.buf=null});
+  }catch(e2){err.textContent='Não foi possível gerar: '+(e2.message||e2);err.hidden=false;st.textContent=''}
+  dlBusy=false;document.getElementById('dlGo').disabled=false;
+};
+function canDl(){return isStaff()}
+function dlFromList(){const P=window.DimasPlayer;const vis=P.visible();const item=currentItem;if(!item)return;const v=item.compId?srcVideo('match',item.id):videos.find(x=>x.id===item.id);
+  openDl(vis.map(l=>({l,video:v})),item.title||((item.home||'')+' x '+(item.away||'')))}
+function dlFromPlaylist(){if(!playlist)return;const P=window.DimasPlayer;const vis=P.visible();
+  openDl(vis.map(l=>{const it=(playlist.items||[]).find(x=>x.key===l.key)||{};const pm=it.athleteId&&members.find(m=>m.id===it.athleteId);return {l:Object.assign({},l,{playerName:(pm&&pm.name)||it.player||''}),video:srcVideo(it.kind,it.srcId)}}),playlist.name)}
+document.getElementById('listDl').onclick=()=>{if(playlist)dlFromPlaylist();else dlFromList()};
+document.getElementById('pbarDl').onclick=dlFromPlaylist;
 /* ---- chat ---- */
 const chatEl=document.getElementById('chat');
 function chatSub(m){
@@ -1521,7 +1644,7 @@ function openPlaylist(p,keep){
   if(!p)return;playlist=p;athlete=null;currentItem=null;
   const items=p.items||[];const P=window.DimasPlayer;
   document.getElementById('pbarName').textContent=p.name;document.getElementById('pbarSub').textContent=items.length+' lance'+(items.length!==1?'s':'')+(p.byName?' · por '+p.byName:'');
-  document.getElementById('pbarShare').hidden=document.getElementById('pbarEdit').hidden=!isStaff();document.getElementById('pbarEdit').hidden=true;
+  document.getElementById('pbarShare').hidden=document.getElementById('pbarEdit').hidden=!isStaff();document.getElementById('pbarEdit').hidden=true;document.getElementById('pbarDl').hidden=!isStaff();
   document.getElementById('xmlSeg').hidden=true;
   P.setTitle(p.name,items.length+' lance'+(items.length!==1?'s':''));
   const rows=[];const seen=new Set();items.forEach(it=>{if(!seen.has(it.code)){seen.add(it.code);rows.push({code:it.code,rgb:[155,101,197],order:rows.length})}});
@@ -2108,7 +2231,7 @@ function openVideo(v){
   const vAth=document.getElementById('vAth');vAth.innerHTML='<option value="">Escolha o atleta</option>'+members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')).map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');vAth.value=v?.athleteId||'';vSubUpd();
   document.getElementById('vHome').value=v?.home||'';document.getElementById('vAway').value=v?.away||'';document.getElementById('clubList2').innerHTML=teams.map(t=>`<option value="${esc(t.name)}">`).join('');document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
-  document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';
+  document.getElementById('vDur').value=v?.duration?fmtDur(v.duration):'';document.getElementById('vDrive').value=v?.driveId?'https://drive.google.com/file/d/'+v.driveId+'/view':'';vDrivePicked=null;document.getElementById('vDriveNote').textContent=v?.driveName?'Vinculado: '+v.driveName:'';document.getElementById('vDrivePick').hidden=true;
   xmlNotes();fillSync(v?.sync||null);
   document.getElementById('vShareRow').hidden=!v;if(v){document.getElementById('vShareSumForm').textContent=shareSummary(v);document.getElementById('vShareOpen').onclick=()=>{vModal.hidden=true;openShare(v)}}
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
@@ -2230,7 +2353,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync()};
+  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
@@ -2309,7 +2432,7 @@ document.getElementById('cropOk').onclick=()=>{
   photo=out.toDataURL('image/jpeg',0.85);cropBox.hidden=true;renderAv();
 };
 show('home');
-return {setMe,favHas,favClick,noteClick,annClick,markDelete,canFav:()=>isStaff()};
+return {setMe,favHas,favClick,noteClick,annClick,markDelete,canFav:()=>isStaff(),canDl:()=>isStaff()};
 })();
 </script>
 <script id="data" type="application/json">{"instances": [{"id": 2, "start": 7.36667, "end": 17.3667, "code": "SINC. TEMPO"}, {"id": 3, "start": 19.2667, "end": 25.2667, "code": "TRANSICAO DEF"}, {"id": 4, "start": 49.4667, "end": 58.9667, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 5, "start": 84.7333, "end": 90.7333, "code": "BLOCO MEDIO"}, {"id": 6, "start": 123.5, "end": 129.5, "code": "TRANSICAO OFE"}, {"id": 7, "start": 206.333, "end": 212.333, "code": "LATERAL OFENSIVO"}, {"id": 9, "start": 265.8, "end": 275.167, "code": "LANCE CEARA"}, {"id": 8, "start": 270.9, "end": 276.9, "code": "ESCANTEIO OFENSIVO"}, {"id": 10, "start": 296.067, "end": 302.067, "code": "ESCANTEIO OFENSIVO"}, {"id": 11, "start": 344.9, "end": 350.9, "code": "BLOCO BAIXO"}, {"id": 12, "start": 408.8, "end": 435.067, "code": "LANCE CEARA"}, {"id": 13, "start": 479.4, "end": 491.0, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 14, "start": 688.5, "end": 694.5, "code": "BLOCO MEDIO"}, {"id": 15, "start": 724.5, "end": 737.833, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 17, "start": 738.967, "end": 771.1, "code": "LANCE CEARA"}, {"id": 16, "start": 750.7, "end": 766.7, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 18, "start": 793.367, "end": 819.0, "code": "MARCACAO DE TIRO DE META"}, {"id": 48, "start": 806.333, "end": 816.167, "code": "LANCE PARA REVISAO"}, {"id": 19, "start": 876.1, "end": 882.1, "code": "ESCANTEIO DEFENSIVO"}, {"id": 20, "start": 922.0, "end": 928.0, "code": "TRANSICAO OFE"}, {"id": 21, "start": 981.9, "end": 987.9, "code": "BLOCO MEDIO"}, {"id": 49, "start": 977.0, "end": 993.733, "code": "LANCE PARA REVISAO"}, {"id": 22, "start": 1077.83, "end": 1090.2, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 23, "start": 1072.8, "end": 1084.8, "code": "LANCE PARA REVISAO"}, {"id": 24, "start": 1141.27, "end": 1147.27, "code": "FALTA DEFENSIVA"}, {"id": 25, "start": 1344.07, "end": 1350.07, "code": "BLOCO BAIXO"}, {"id": 26, "start": 1494.37, "end": 1500.37, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 27, "start": 1533.3, "end": 1539.3, "code": "BLOCO MEDIO"}, {"id": 28, "start": 1577.23, "end": 1583.23, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 30, "start": 1592.27, "end": 1612.3, "code": "LANCE PARA REVISAO"}, {"id": 29, "start": 1639.67, "end": 1645.67, "code": "ESCANTEIO OFENSIVO"}, {"id": 31, "start": 1894.6, "end": 1900.6, "code": "BLOCO MEDIO"}, {"id": 32, "start": 1925.77, "end": 1931.77, "code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)"}, {"id": 33, "start": 1946.47, "end": 1967.63, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 34, "start": 1996.7, "end": 2002.7, "code": "BLOCO MEDIO"}, {"id": 35, "start": 2051.97, "end": 2057.97, "code": "FALTA OFENSIVA"}, {"id": 36, "start": 2086.5, "end": 2092.5, "code": "BLOCO BAIXO"}, {"id": 37, "start": 2124.8, "end": 2130.8, "code": "ESCANTEIO DEFENSIVO"}, {"id": 39, "start": 2123.37, "end": 2152.73, "code": "LANCE CEARA"}, {"id": 38, "start": 2139.0, "end": 2145.0, "code": "TRANSICAO OFE"}, {"id": 41, "start": 2181.63, "end": 2192.37, "code": "LANCE CEARA"}, {"id": 40, "start": 2186.77, "end": 2192.77, "code": "ESCANTEIO OFENSIVO"}, {"id": 42, "start": 2268.23, "end": 2274.23, "code": "BLOCO MEDIO"}, {"id": 43, "start": 2289.47, "end": 2295.47, "code": "BLOCO BAIXO"}, {"id": 44, "start": 2290.47, "end": 2318.0, "code": "LANCE CEARA"}, {"id": 46, "start": 2340.53, "end": 2350.43, "code": "LANCE PARA REVISAO"}, {"id": 45, "start": 2342.63, "end": 2364.43, "code": "BLOCO MEDIO"}, {"id": 47, "start": 2569.47, "end": 2575.47, "code": "BLOCO MEDIO"}, {"id": 51, "start": 2652.47, "end": 2658.47, "code": "FALTA DEFENSIVA"}, {"id": 50, "start": 2841.5, "end": 2847.5, "code": "FALTA DEFENSIVA"}, {"id": 52, "start": 2871.2, "end": 2877.2, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 53, "start": 2920.6, "end": 2947.4, "code": "MARCACAO DE TIRO DE META"}, {"id": 54, "start": 2983.8, "end": 2989.8, "code": "BLOCO MEDIO"}, {"id": 55, "start": 3011.87, "end": 3030.63, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 56, "start": 3123.2, "end": 3129.2, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 57, "start": 3141.03, "end": 3151.03, "code": "SINC. TEMPO"}, {"id": 59, "start": 3180.63, "end": 3186.63, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 58, "start": 3169.37, "end": 3191.0, "code": "LANCE CEARA"}, {"id": 60, "start": 3206.17, "end": 3222.53, "code": "MARCACAO DE TIRO DE META"}, {"id": 61, "start": 3237.27, "end": 3243.27, "code": "BLOCO BAIXO"}, {"id": 63, "start": 3273.1, "end": 3296.53, "code": "LANCE ADV"}, {"id": 62, "start": 3290.17, "end": 3296.17, "code": "BLOCO BAIXO"}, {"id": 64, "start": 3340.1, "end": 3346.1, "code": "ESCANTEIO DEFENSIVO"}, {"id": 65, "start": 3365.47, "end": 3371.47, "code": "ESCANTEIO DEFENSIVO"}, {"id": 66, "start": 3411.17, "end": 3417.17, "code": "1ª FASE DE CONSTRUÇÃO (SAÍDA DE JOGO)"}, {"id": 67, "start": 3447.93, "end": 3453.93, "code": "BLOCO MEDIO"}, {"id": 68, "start": 3500.03, "end": 3512.5, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 69, "start": 3525.43, "end": 3531.43, "code": "BLOCO MEDIO"}, {"id": 70, "start": 3551.27, "end": 3557.27, "code": "BLOCO MEDIO"}, {"id": 71, "start": 3575.3, "end": 3581.3, "code": "BLOCO BAIXO"}, {"id": 72, "start": 3603.97, "end": 3617.33, "code": "BLOCO MEDIO"}, {"id": 73, "start": 3643.57, "end": 3667.57, "code": "LANCE ADV"}, {"id": 74, "start": 3854.27, "end": 3860.27, "code": "1ª FASE DE CONSTRUÇÃO (SAÍDA DE JOGO)"}, {"id": 75, "start": 3877.63, "end": 3892.23, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 76, "start": 3970.37, "end": 3976.37, "code": "FALTA OFENSIVA"}, {"id": 77, "start": 3998.13, "end": 4004.13, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 78, "start": 4043.73, "end": 4049.73, "code": "FALTA OFENSIVA"}, {"id": 79, "start": 4125.43, "end": 4131.43, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 80, "start": 4149.27, "end": 4155.27, "code": "TRANSICAO OFE"}, {"id": 81, "start": 4222.67, "end": 4228.67, "code": "BLOCO BAIXO"}, {"id": 83, "start": 4310.7, "end": 4329.63, "code": "LANCE ADV"}, {"id": 82, "start": 4314.07, "end": 4320.07, "code": "LATERAL DEFENSIVO"}, {"id": 84, "start": 4504.57, "end": 4517.7, "code": "OPORTUNIDADE DE GOL ADV"}, {"id": 85, "start": 4513.47, "end": 4519.8, "code": "GOL SOFRIDO"}, {"id": 86, "start": 4582.0, "end": 4599.6, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 87, "start": 4603.8, "end": 4629.3, "code": "OPORTUNIDADE DE GOL"}, {"id": 88, "start": 4607.67, "end": 4630.0, "code": "GOL MARCADO"}, {"id": 89, "start": 4781.93, "end": 4787.93, "code": "BLOCO MEDIO"}, {"id": 90, "start": 4874.87, "end": 4880.87, "code": "BLOCO MEDIO"}, {"id": 91, "start": 4928.43, "end": 4934.43, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 92, "start": 4975.43, "end": 5009.03, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 93, "start": 5002.57, "end": 5016.83, "code": "TRANSICAO DEF"}, {"id": 94, "start": 5017.97, "end": 5023.97, "code": "TRANSICAO OFE"}, {"id": 95, "start": 5040.03, "end": 5046.03, "code": "BLOCO BAIXO"}, {"id": 97, "start": 5092.67, "end": 5100.87, "code": "OPORTUNIDADE DE GOL ADV"}, {"id": 96, "start": 5096.2, "end": 5102.2, "code": "ESCANTEIO DEFENSIVO"}, {"id": 98, "start": 5097.03, "end": 5101.97, "code": "GOL SOFRIDO"}, {"id": 99, "start": 5347.93, "end": 5353.93, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 100, "start": 5422.83, "end": 5432.27, "code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)"}, {"id": 101, "start": 5471.6, "end": 5487.8, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 102, "start": 5492.67, "end": 5513.9, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 103, "start": 5534.5, "end": 5540.5, "code": "ESCANTEIO OFENSIVO"}, {"id": 104, "start": 5635.83, "end": 5641.83, "code": "ESCANTEIO OFENSIVO"}, {"id": 105, "start": 5668.93, "end": 5690.1, "code": "TRANSICAO DEF"}, {"id": 106, "start": 5701.0, "end": 5707.0, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 107, "start": 5741.03, "end": 5809.87, "code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)"}, {"id": 108, "start": 5898.63, "end": 5904.63, "code": "BLOCO MEDIO"}, {"id": 109, "start": 5931.6, "end": 5937.6, "code": "2ª FASE DE CONSTRUÇÃO"}, {"id": 110, "start": 5976.17, "end": 5982.17, "code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)"}, {"id": 112, "start": 5987.6, "end": 6033.43, "code": "LANCE ADV"}, {"id": 111, "start": 6022.57, "end": 6028.57, "code": "TRANSICAO DEF"}, {"id": 113, "start": 6057.13, "end": 6063.13, "code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)"}, {"id": 114, "start": 6059.63, "end": 6076.1, "code": "LANCE CEARA"}, {"id": 115, "start": 6142.7, "end": 6161.8, "code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)"}, {"id": 116, "start": 6420.03, "end": 6433.0, "code": "REVISAO VAR", "note": "POSSIVEL PENALTI - CONCEDIDO"}, {"id": 117, "start": 6736.37, "end": 6752.47, "code": "OPORTUNIDADE DE GOL"}, {"id": 118, "start": 6747.13, "end": 6754.57, "code": "GOL MARCADO"}], "rows": [{"code": "1ª FASE DE CONSTRUÇÃO (TIRO DE META)", "rgb": [199, 229, 201], "order": 1}, {"code": "1ª FASE DE CONSTRUÇÃO (SAÍDA DE JOGO)", "rgb": [199, 229, 201], "order": 2}, {"code": "2ª FASE DE CONSTRUÇÃO", "rgb": [199, 229, 201], "order": 3}, {"code": "2ª FASE DE CONSTRUÇÃO (ULTIMO TERCO)", "rgb": [199, 229, 201], "order": 4}, {"code": "TRANSICAO DEF", "rgb": [254, 223, 177], "order": 5}, {"code": "ESCANTEIO OFENSIVO", "rgb": [254, 249, 194], "order": 6}, {"code": "FALTA OFENSIVA", "rgb": [254, 249, 194], "order": 7}, {"code": "LATERAL OFENSIVO", "rgb": [254, 249, 194], "order": 9}, {"code": "ESCANTEIO DEFENSIVO", "rgb": [254, 192, 172], "order": 10}, {"code": "FALTA DEFENSIVA", "rgb": [254, 192, 172], "order": 11}, {"code": "LATERAL DEFENSIVO", "rgb": [254, 192, 172], "order": 13}, {"code": "MARCACAO DE TIRO DE META", "rgb": [209, 35, 44], "order": 14}, {"code": "BLOCO MEDIO", "rgb": [209, 35, 44], "order": 16}, {"code": "BLOCO BAIXO", "rgb": [209, 35, 44], "order": 17}, {"code": "TRANSICAO OFE", "rgb": [177, 222, 219], "order": 18}, {"code": "LANCE ADV", "rgb": [225, 225, 225], "order": 21}, {"code": "OPORTUNIDADE DE GOL", "rgb": [178, 228, 251], "order": 22}, {"code": "GOL MARCADO", "rgb": [199, 229, 201], "order": 23}, {"code": "OPORTUNIDADE DE GOL ADV", "rgb": [254, 223, 177], "order": 24}, {"code": "GOL SOFRIDO", "rgb": [254, 190, 0], "order": 25}, {"code": "REVISAO VAR", "rgb": [213, 0, 213], "order": 35}, {"code": "SINC. TEMPO", "rgb": [141, 141, 141], "order": 105}, {"code": "LANCE CEARA", "rgb": [225, 225, 225], "order": 108}, {"code": "LANCE PARA REVISAO", "rgb": [254, 254, 0], "order": 111}]}</script>
@@ -2488,6 +2611,7 @@ function render(){
   const filtered=visible.length!==lances.length;
   countLbl.textContent=filtered?`${visible.length} de ${lances.length} lances`:`${lances.length} lances`;
   clearBtn.hidden=!filtered;
+  const dl=document.getElementById('listDl');if(dl)dl.hidden=!(window.DimasHub&&window.DimasHub.canDl&&window.DimasHub.canDl())||!visible.length||listMode;
 }
 clearBtn.onclick=()=>{selectedCats.clear();selectedDescs.clear();search.value='';renderCats();render()};
 search.oninput=render;
@@ -2567,7 +2691,7 @@ document.getElementById('xmlFile').onchange=e=>{
 };
 
 load(data);
-window.DimasPlayer={loadYT,loadLances:load,ytId,parseXml,ytDuration,time:()=>P.time(),hasVideo:()=>P.has(),refresh:()=>render(),current:()=>curSrc,
+window.DimasPlayer={loadYT,loadLances:load,ytId,parseXml,ytDuration,time:()=>P.time(),hasVideo:()=>P.has(),refresh:()=>render(),current:()=>curSrc,visible:()=>visible.slice(),isList:()=>listMode,
   setTitle(t,m){document.getElementById('matchTitle').textContent=t;document.getElementById('matchMeta').textContent=m}};
 })();
 </script>
