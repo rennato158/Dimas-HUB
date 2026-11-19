@@ -572,6 +572,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="tools">
       <div class="seg" id="xmlSeg" style="margin-left:0" hidden><button type="button" data-x="lances">Coletiva</button><button type="button" data-x="lancesInd">Individual</button></div>
       <input type="search" id="search" placeholder="Buscar ação, jogador ou observação…" aria-label="Buscar">
+      <div class="dd" id="dd3" hidden>
+        <button class="ddbtn" type="button" id="dd3Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd3Lbl">Todos os jogadores</span><span class="n" id="dd3N"></span></button>
+        <div class="ddmenu" id="plMenu" hidden></div>
+      </div>
       <div class="dd" id="dd">
         <button class="ddbtn" type="button" id="ddBtn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="ddLbl">Todas as categorias</span><span class="n" id="ddN"></span></button>
         <div class="ddmenu" id="cats" hidden></div>
@@ -579,10 +583,6 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="dd" id="dd2" hidden>
         <button class="ddbtn" type="button" id="dd2Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd2Lbl">Todos os descritores</span><span class="n" id="dd2N"></span></button>
         <div class="ddmenu" id="descsMenu" hidden></div>
-      </div>
-      <div class="dd" id="dd3" hidden>
-        <button class="ddbtn" type="button" id="dd3Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd3Lbl">Todos os jogadores</span><span class="n" id="dd3N"></span></button>
-        <div class="ddmenu" id="plMenu" hidden></div>
       </div>
       <div class="count"><span id="countLbl"></span><button type="button" class="dlbtn" id="listDl" hidden>⬇ Baixar cortes</button><button id="clearBtn" hidden>limpar filtros</button></div>
     </div>
