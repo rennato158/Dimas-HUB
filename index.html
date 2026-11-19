@@ -580,6 +580,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <button class="ddbtn" type="button" id="dd2Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd2Lbl">Todos os descritores</span><span class="n" id="dd2N"></span></button>
         <div class="ddmenu" id="descsMenu" hidden></div>
       </div>
+      <div class="dd" id="dd3" hidden>
+        <button class="ddbtn" type="button" id="dd3Btn" aria-haspopup="listbox" aria-expanded="false"><span class="lbl" id="dd3Lbl">Todos os jogadores</span><span class="n" id="dd3N"></span></button>
+        <div class="ddmenu" id="plMenu" hidden></div>
+      </div>
       <div class="count"><span id="countLbl"></span><button type="button" class="dlbtn" id="listDl" hidden>⬇ Baixar cortes</button><button id="clearBtn" hidden>limpar filtros</button></div>
     </div>
     <div class="scroll">
@@ -2588,10 +2592,25 @@ function hashColor(str){let h=0;for(const c of str)h=(h*31+c.charCodeAt(0))&0xff
 // "77. Lenny Lobato (852921) - Passes imprecisos" -> {player:"77. Lenny Lobato", action:"Passes imprecisos"}
 const norm0=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const escH=t=>String(t??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+function playerInfo(l){const a=l.ath||(l.player&&window.DimasHub&&window.DimasHub.athleteFor?window.DimasHub.athleteFor(l.player):null);
+  const name=a?a.name:String(l.player||'').replace(/^\d+\.?\s*/,'').trim();const num=a?(a.num??a.number):((String(l.player||'').match(/^(\d+)\./)||[])[1]);
+  return {a,name,num,key:a?'id:'+a.id:(name?'n:'+norm0(name):'')}}
+const selPlayers=new Set();
+function renderPlayers(){const box=document.getElementById('dd3'),menu=document.getElementById('plMenu');
+  if(!individualMode||hideCats){box.hidden=true;selPlayers.clear();return}const m=new Map();lances.forEach(l=>{const p=playerInfo(l);if(!p.key)return;const o=m.get(p.key)||{p,c:0};o.c++;m.set(p.key,o)});
+  if(!m.size){box.hidden=true;return}box.hidden=false;[...selPlayers].forEach(k=>{if(!m.has(k))selPlayers.delete(k)});
+  menu.innerHTML='';const all=document.createElement('label');all.className='all';all.innerHTML=`<input type="checkbox" ${selPlayers.size?'':'checked'}> Todos os jogadores`;
+  all.querySelector('input').onchange=()=>{selPlayers.clear();renderPlayers();render()};menu.appendChild(all);
+  [...m.entries()].sort((x,y)=>(+(x[1].p.num??999))-(+(y[1].p.num??999))||x[1].p.name.localeCompare(y[1].p.name,'pt')).forEach(([k,o])=>{const l=document.createElement('label');l.className='sub';
+    l.innerHTML=`<input type="checkbox" ${selPlayers.has(k)?'checked':''}>${o.p.num!=null&&o.p.num!==''?'#'+escH(o.p.num)+' · ':''}${escH(o.p.name)}<small>${o.c}</small>`;
+    l.querySelector('input').onchange=e=>{e.target.checked?selPlayers.add(k):selPlayers.delete(k);renderPlayers();render()};menu.appendChild(l)});
+  const lbl=document.getElementById('dd3Lbl'),n=document.getElementById('dd3N');
+  if(!selPlayers.size){lbl.textContent='Todos os jogadores';n.textContent=''}else{const names=[...selPlayers].map(k=>m.get(k).p.name);lbl.textContent=names.join(', ');n.textContent=names.length>1?names.length+' sel.':''}}
+(function(){const dd=document.getElementById('dd3'),b=document.getElementById('dd3Btn'),m=document.getElementById('plMenu');
+  const t=o=>{const open=o??m.hidden;m.hidden=!open;dd.classList.toggle('open',open);b.setAttribute('aria-expanded',open)};
+  b.onclick=()=>t();document.addEventListener('click',e=>{if(!dd.contains(e.target))t(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')t(false)})})();
 function playerCell(l){
-  const a=l.ath||(l.player&&window.DimasHub&&window.DimasHub.athleteFor?window.DimasHub.athleteFor(l.player):null);
-  const name=a?a.name:String(l.player||'').replace(/^\d+\.?\s*/,'');if(!name)return '<span class="pnone">—</span>';
-  const num=a?(a.num??a.number):((String(l.player||'').match(/^(\d+)\./)||[])[1]);
+  const {a,name,num}=playerInfo(l);if(!name)return '<span class="pnone">—</span>';
   const ini=name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   return `<span class="pwho"><span class="lav">${a&&a.photo?`<img src="${escH(a.photo)}" alt="">`:escH(ini)}</span><span class="pn">${escH(name)}${num!=null&&num!==''?`<small>#${escH(num)}</small>`:''}</span></span>`;
 }
@@ -2612,7 +2631,7 @@ function load(d,opts){
     // descritores: "1 - Type: Interception" -> {g:"Type", v:"Interception"}; sem grupo -> {g:"", v:texto}
     const descs=labels.map(x=>{const t=x.replace(/^\d+\s*-\s*/,'').trim();const m=t.match(/^([^:]{1,40}):\s*(.+)$/);return m?{g:m[1].trim(),v:m[2].trim()}:{g:'',v:t}}).filter(d=>d.v);
     return Object.assign({n:i+1},l,{code:sc.action,player:opts.hidePlayer?'':sc.player,labels:labels.length?labels:undefined,descs,raw:l.code})});
-  selectedDescs.clear();individualMode=!!opts.individual;document.getElementById('thPlayer').hidden=!individualMode;hideCats=!!opts.hideCats;curSrc=opts.src||null;listMode=!!opts.playlist;
+  if(!opts.keep)selPlayers.clear();selectedDescs.clear();individualMode=!!opts.individual;document.getElementById('thPlayer').hidden=!individualMode;hideCats=!!opts.hideCats;curSrc=opts.src||null;listMode=!!opts.playlist;
   lances.forEach(l=>{if(!colors[l.code])colors[l.code]=hashColor(l.code);});
   selectedCats.clear();search.value='';current=null;
   if(keep){const codes=new Set(lances.map(l=>l.code));keep.c.forEach(c=>{if(codes.has(c))selectedCats.add(c)});keep.d.forEach(k=>selectedDescs.add(k));search.value=keep.q;current=lances.find(l=>l.id===keep.cur)||null}
@@ -2673,7 +2692,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleDD(false)});
 
 function render(){
   const q=search.value.trim().toLowerCase();
-  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&descMatch(l)&&(!q||l.code.toLowerCase().includes(q)||(l.player||'').toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)||(l.descs||[]).some(d=>(d.g+' '+d.v).toLowerCase().includes(q))));
+  if(document.getElementById('plMenu').hidden)renderPlayers();
+  visible=lances.filter(l=>(!selectedCats.size||selectedCats.has(l.code))&&descMatch(l)&&(!selPlayers.size||!individualMode||selPlayers.has(playerInfo(l).key))&&(!q||l.code.toLowerCase().includes(q)||(l.player||'').toLowerCase().includes(q)||(l.note||'').toLowerCase().includes(q)||(l.descs||[]).some(d=>(d.g+' '+d.v).toLowerCase().includes(q))));
   rowsEl.innerHTML='';
   visible.forEach(l=>{
     const tr=document.createElement('tr');tr.dataset.id=l.id;if(current&&current.id===l.id)tr.classList.add('active');
@@ -2683,12 +2703,12 @@ function render(){
     tr.onclick=e=>{const dl=e.target.closest('.del');if(dl){e.stopPropagation();window.DimasHub.markDelete(l);return}const pn=e.target.closest('.pen');if(pn){e.stopPropagation();listMode?window.DimasHub.noteClick(l):window.DimasHub.annClick(l);return}const st=e.target.closest('.star');if(st){e.stopPropagation();window.DimasHub.favClick(curSrc,l,listMode);return}const c=e.target.closest('.desc');if(c){e.stopPropagation();const k=dkey({g:c.dataset.g,v:c.dataset.v});selectedDescs.has(k)?selectedDescs.delete(k):selectedDescs.add(k);renderDescs();render();return}play(l)};
     rowsEl.appendChild(tr);
   });
-  const filtered=visible.length!==lances.length;
+  const filtered=visible.length!==lances.length||(individualMode&&selPlayers.size>0);
   countLbl.textContent=filtered?`${visible.length} de ${lances.length} lances`:`${lances.length} lances`;
   clearBtn.hidden=!filtered;
   const dl=document.getElementById('listDl');if(dl)dl.hidden=!(window.DimasHub&&window.DimasHub.canDl&&window.DimasHub.canDl())||!visible.length||listMode;
 }
-clearBtn.onclick=()=>{selectedCats.clear();selectedDescs.clear();search.value='';renderCats();render()};
+clearBtn.onclick=()=>{selectedCats.clear();selectedDescs.clear();selPlayers.clear();search.value='';renderCats();render()};
 search.oninput=render;
 
 let trimL=null;
