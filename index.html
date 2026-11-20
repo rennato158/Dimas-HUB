@@ -835,7 +835,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="sync">
           <div class="row2"><span class="lb">Apito inicial 1º tempo</span><input type="text" id="sH1v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
           <div class="row2"><span class="lb">Apito inicial 2º tempo</span><input type="text" id="sH2v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH2v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <p class="pwnote">Momento do vídeo em que cada tempo começa. Em branco = nenhum ajuste.</p>
+          <p class="pwnote">Momento do vídeo em que cada tempo começa. Em branco = nenhum ajuste. Só é aplicado à XML que tem a marcação de sincronização (ex.: "SINC. TEMPO"); XML sem essa marcação é usada no tempo em que foi exportada.</p><p class="pwnote" id="vSyncWho"></p>
         </div>
       </div>
       <span class="ferr" id="vErr" hidden></span>
@@ -1761,7 +1761,7 @@ function tgStatus(t,cls){const s=document.getElementById('tgStatus');s.textConte
 function tgStop(silent){clearInterval(tgTimer);tgTimer=null;tgRec=null;if(!silent)renderTagbar()}
 // tempo do vídeo -> tempo da XML (desfaz a sincronização)
 function toRaw(set,sync,T){
-  if(!set||!sync||(sync.v1==null&&sync.v2==null))return T;const {x1,x2}=xmlKicks(set);
+  if(!set||!sync||(sync.v1==null&&sync.v2==null))return T;const {x1,x2,has}=xmlKicks(set);if(!has)return T;
   const o1=sync.v1!=null?sync.v1-x1:null,o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
   if(o2!=null&&T-o2>=x2)return T-o2;return T-((o1??o2)||0);
 }
@@ -2384,6 +2384,8 @@ function xmlNotes(){
   renderXmlPlayers();
   document.getElementById('vXmlNote').textContent=vLances?vLances.instances.length+' lances':'nenhuma';document.getElementById('vXmlDel').hidden=!vLances;
   document.getElementById('vXmlINote').textContent=vLancesI?vLancesI.instances.length+' lances':'nenhuma';document.getElementById('vXmlIDel').hidden=!vLancesI;
+  const w=(n,x)=>x?n+': '+(xmlKicks(x).has?'sincronizada pela marcação':'sem marcação, usada como exportada'):null;
+  document.getElementById('vSyncWho').textContent=[w('Coletiva',vLances),w('Individual',vLancesI)].filter(Boolean).join(' · ');
 }
 function fillSync(sync){document.getElementById('sH1v').value=sync?.v1!=null?fmtDur(sync.v1):'';document.getElementById('sH2v').value=sync?.v2!=null?fmtDur(sync.v2):''}
 function readSync(){
@@ -2391,10 +2393,13 @@ function readSync(){
   if(!a&&!b)return null;return {v1:a?parseDur(a):null,v2:b?parseDur(b):null};
 }
 // Na XML, o apito de cada tempo vem dos marcadores "SINC. TEMPO" (1º = primeiro marcador ou 0:00; 2º = segundo marcador).
-function xmlKicks(set){const m=set.instances.filter(l=>/sinc|sync|apito|kick/i.test(l.code)).map(l=>l.start).sort((a,b)=>a-b);return {x1:m[0]??0,x2:m[1]??null}}
+// marcações de sincronização dentro da XML (ex.: categoria "SINC. TEMPO")
+function xmlKicks(set){const m=set.instances.filter(l=>/sinc|sync|apito|kick.?off/i.test(l.code)).map(l=>l.start).sort((a,b)=>a-b);return {x1:m[0]??0,x2:m[1]??null,has:m.length>0}}
 function applySync(set,sync){
   if(!set||!sync||(sync.v1==null&&sync.v2==null))return set;
-  const {x1,x2}=xmlKicks(set);
+  const {x1,x2,has}=xmlKicks(set);
+  // XML sem marcação de sincronização já vem no tempo do vídeo (ex.: exportada com o início do vídeo): não desloca
+  if(!has)return set;
   const o1=sync.v1!=null?sync.v1-x1:null;
   const o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
   const cut=x2!=null?x2:Infinity;
