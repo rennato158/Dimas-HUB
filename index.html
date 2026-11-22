@@ -1124,9 +1124,9 @@ function setMe(m){
     unsubP=()=>subs.forEach(u=>u())}else{playlists=[];renderPlaylists()}
   if(guest)setTimeout(()=>show('comps'),0);document.getElementById('addComp').hidden=!admin;document.getElementById('addMatch').hidden=true;document.getElementById('impMatches').hidden=!admin;document.getElementById('impClubs').hidden=!admin;
   if(unsubT){unsubT();unsubT=null}
-  if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps();renderVideos();renderPlaylists()},()=>{})}else teams=[];
+  if(m){unsubT=db.collection('teams').onSnapshot(sn=>{teams=sn.docs.map(d=>fixLogo(Object.assign({id:d.id},d.data())));renderComps();renderVideos();renderPlaylists()},()=>{})}else teams=[];
   if(staffNow){
-    unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
+    unsubC=db.collection('competitions').onSnapshot(sn=>{leagues=sn.docs.map(d=>fixLogo(Object.assign({id:d.id},d.data()))).sort((a,b)=>(b.season||'').localeCompare(a.season||'')||a.name.localeCompare(b.name,'pt'));renderComps()},()=>{});
     unsubJ=db.collection('matches').onSnapshot(sn=>{matches=sn.docs.map(d=>Object.assign({id:d.id},d.data()));renderComps()},e=>{document.getElementById('cList').innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
   }else if(guest){
     const ids=(m.comps||[]).slice(0,30);leagues=[];matches=[];const subs=[];const byC={},byM={};
@@ -1184,9 +1184,11 @@ function jPick(id,set){document.getElementById(id).onchange=e=>{const f=e.target
 jPick('jXml',d=>{jL=d});jPick('jXmlI',d=>{jLI=d});
 document.getElementById('jXmlDel').onclick=()=>{jL=null;jNotes()};document.getElementById('jXmlIDel').onclick=()=>{jLI=null;jNotes()};
 function fmtD(d){if(!d)return '';const [y,m,dd]=d.split('-');return `${dd}-${m}-${y}`}
+// o Sofascore deixou de servir imagens em api.sofascore.app para outros sites; img.sofascore.com funciona (sem referer)
+function fixLogo(o){if(o&&typeof o.logo==='string')o.logo=o.logo.replace(/^https?:\/\/api\.sofascore\.(app|com)\//,'https://img.sofascore.com/');return o}
 function teamOf(name){const n=norm(name);return teams.find(t=>norm(t.name)===n)||teams.find(t=>norm(t.name).startsWith(n)||n.startsWith(norm(t.name)))||null}
 function teamHtml(name,away){const t=teamOf(name);return `<span class="tm${away?' a':''}">${t&&t.logo?`<img src="${esc(t.logo)}" alt="" referrerpolicy="no-referrer" loading="lazy">`:''}<span>${esc(name)}</span></span>`}
-const COMP_LOGOS=[[/serie b|série b/,'https://api.sofascore.app/api/v1/unique-tournament/390/image'],[/serie a|série a|brasileir[aã]o$/,'https://api.sofascore.app/api/v1/unique-tournament/325/image'],[/nordeste/,'https://api.sofascore.app/api/v1/unique-tournament/1596/image'],[/cearense/,'https://api.sofascore.app/api/v1/unique-tournament/378/image'],[/copa do brasil/,'https://api.sofascore.app/api/v1/unique-tournament/373/image']];
+const COMP_LOGOS=[[/serie b|série b/,'https://img.sofascore.com/api/v1/unique-tournament/390/image'],[/serie a|série a|brasileir[aã]o$/,'https://img.sofascore.com/api/v1/unique-tournament/325/image'],[/nordeste/,'https://img.sofascore.com/api/v1/unique-tournament/1596/image'],[/cearense/,'https://img.sofascore.com/api/v1/unique-tournament/378/image'],[/copa do brasil/,'https://img.sofascore.com/api/v1/unique-tournament/373/image']];
 function compLogo(c){if(c.logo)return c.logo;const n=norm(c.name);const f=COMP_LOGOS.find(([re])=>re.test(n));return f?f[1]:''}
 function venueOf(m){return m.venue||(teamOf(m.home)?.venue)||''}
 const PHASES=[[/oitavas|round of 16/,'Oitavas de final',10],[/quartas|quarter/,'Quartas de final',20],[/semi/,'Semifinal',30],[/3[ºo°]? ?lugar|terceiro/,'3º lugar',40],[/5[ºo°]? ?lugar|quinto/,'5º lugar',41],[/^final|final$/,'Final',50],[/rebaix|relegat/,null,60]];
@@ -1549,7 +1551,7 @@ document.getElementById('msgs').addEventListener('click',async e=>{
 // compose
 let cAttV=null,cAttP=null;
 function plImg(p){const items=p.items||[];const ids=[...new Set(items.map(it=>it.athleteId).filter(Boolean))];const aid=p.kind==='indiv'&&p.athleteId?p.athleteId:(p.kind!=='team'&&items.length&&ids.length===1&&items.every(it=>it.athleteId===ids[0])?ids[0]:null);
-  const a=aid&&members.find(m=>m.id===aid);if(a&&a.photo)return {src:a.photo,logo:false};const t=teamOf('Ceará');return {src:t&&t.logo?t.logo:'https://api.sofascore.app/api/v1/team/2001/image',logo:true}}
+  const a=aid&&members.find(m=>m.id===aid);if(a&&a.photo)return {src:a.photo,logo:false};const t=teamOf('Ceará');return {src:t&&t.logo?t.logo:'https://img.sofascore.com/api/v1/team/2001/image',logo:true}}
 function setAtt(v){cAttV=v||null;if(v)cAttP=null;const a=document.getElementById('cAtt');a.hidden=!v;if(v){document.getElementById('cAttImg').src=v.thumb||ytThumb(v.ytId);document.getElementById('cAttTitle').textContent=v.title}}
 function setAttP(p){cAttP=p||null;if(p)cAttV=null;const a=document.getElementById('cAtt');a.hidden=!p;if(p){document.getElementById('cAttImg').src=plImg(p).src;document.getElementById('cAttTitle').textContent='★ '+p.name+' · '+(p.items||[]).length+' lances'}}
 document.getElementById('cAttDel').onclick=()=>{setAtt(null);setAttP(null)};
@@ -1661,7 +1663,7 @@ function playlistIcon(p){
   const items=p.items||[];const ids=[...new Set(items.map(it=>it.athleteId).filter(Boolean))];
   if(p.kind==='indiv'&&p.athleteId){const a=members.find(m=>m.id===p.athleteId);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
   if(p.kind!=='team'&&items.length&&ids.length===1&&items.every(it=>it.athleteId===ids[0])){const a=members.find(m=>m.id===ids[0]);if(a)return `<div class="ic">${a.photo?`<img src="${esc(a.photo)}" alt="">`:initials(a.name)}</div>`}
-  const t=teamOf('Ceará');const logo=t&&t.logo?t.logo:'https://api.sofascore.app/api/v1/team/2001/image';
+  const t=teamOf('Ceará');const logo=t&&t.logo?t.logo:'https://img.sofascore.com/api/v1/team/2001/image';
   return `<div class="ic logo"><img src="${esc(logo)}" alt="" referrerpolicy="no-referrer"></div>`;
 }
 function renderPlaylists(){
