@@ -807,7 +807,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f" id="vAthRow" hidden><label for="vAth">Atleta</label><select id="vAth"><option value="">Escolha o atleta</option></select></div>
       <div class="f2" id="vTrRow" hidden>
         <div class="f"><label for="vMd">MD</label><select id="vMd"><option value="">—</option><option>MD-6</option><option>MD-5</option><option>MD-4</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option><option>MD+1</option><option>MD+2</option><option>MD+3</option></select></div>
-        <div class="f"><label for="vTipo">Tipologia</label><select id="vTipo"><option value="">—</option><option>Exercício</option><option>Pequenos jogos</option><option>Médios Jogos</option><option>Grande Jogos</option><option>Rondo</option><option>Tático Estratégico</option><option>Tático Coletivo</option><option>Bolas Paradas</option></select></div>
+        <div class="f"><label for="vTipo">Tipologia</label><select id="vTipo"><option value="">—</option><option>Exercícios</option><option>Rondos</option><option>Pequenos Jogos</option><option>Médios Jogos</option><option>Grandes Jogos</option><option>Tático Estratégico</option><option>Tático Coletivo</option><option>Bolas Paradas</option></select></div>
       </div>
       <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="vName">Título</label><input type="text" id="vName" required maxlength="80" placeholder="Ex.: Ceará 2 x 2 Juventude"></div>
@@ -1153,7 +1153,7 @@ function setMe(m){
   if(unsubV){unsubV();unsubV=null}
   if(m){const staff=['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
-    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>normVideo(Object.assign({id:d.id},d.data())));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0);setTimeout(fillYtDates,800)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>normVideo(fixTipo(Object.assign({id:d.id},d.data()))));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0);setTimeout(fillYtDates,800)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
@@ -1937,6 +1937,8 @@ function lanceMatches(l,a){
 // XML única (treinos): separa em coletiva e individual; as marcações de sincronização valem para as duas
 function hasPlayerL(l){if((l.labels||[]).some(x=>/^(jogador|player|atleta)\s*:/i.test(x)))return true;const c=String(l.code||'');if(SYNC_RE.test(c))return false;if(/^\d+\.\s*\S/.test(c))return true;
   const left=c.split(' - ')[0];return athletesAll().some(a=>nameScore(left,athleteKeys(a))>=2)}
+const TIPO_OLD={'Exercício':'Exercícios','Rondo':'Rondos','Pequenos jogos':'Pequenos Jogos','Grande Jogos':'Grandes Jogos'};
+function fixTipo(v){if(v&&TIPO_OLD[v.tipologia])v.tipologia=TIPO_OLD[v.tipologia];return v}
 function normVideo(v){if(!v||!v.xmlSingle)return v;if(!v.xmlAll)v.xmlAll=v.lances;const all=v.xmlAll;if(!all||!all.instances){v.lances=null;v.lancesInd=null;return v}
   const kicks=all.instances.filter(l=>SYNC_RE.test(l.code)).map(l=>l.start);const ind=[],col=[];all.instances.forEach(l=>(hasPlayerL(l)?ind:col).push(l));
   const rowsFor=list=>{const codes=new Set(list.map(l=>l.code));return (all.rows||[]).filter(r=>codes.has(r.code))};
