@@ -391,6 +391,7 @@ td.pcol{white-space:nowrap;max-width:170px}.pwho{display:inline-flex;align-items
 .elenco .utabs{grid-column:1/-1;margin-left:0;justify-self:start}.elenco .vwpanel{grid-column:1/-1}.elenco.vw>section:not(.vwpanel){display:none}
 .vwgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:18px;padding:14px}
 @media (max-width:820px){.vwgrid{grid-template-columns:1fr}}
+.vwdemo{margin:12px 14px 0;padding:9px 12px;border-radius:8px;background:rgba(155,101,197,.12);border:1px solid var(--accent);font-size:12.5px;color:var(--fg)}
 .vwh{margin:0 0 10px;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .vwr{display:grid;grid-template-columns:minmax(110px,190px) minmax(0,1fr) 92px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);cursor:default}
 .vwr.u{cursor:pointer}.vwr.u:hover{background:var(--panel2)}.vwr .nm{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600;font-size:13px}.vwr .nm span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -795,8 +796,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     <div class="hd"><h2>Visualizações</h2><span class="sub" id="vwSum"></span>
       <select id="vwPer" aria-label="Período" style="width:auto;margin-left:auto"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="0">Todo o período</option></select>
       <select id="vwType" aria-label="Tipo de vídeo" style="width:auto"><option value="">Todos os tipos</option></select>
+      <button type="button" class="btn" id="vwDemo" title="Mostra dados simulados, sem gravar nada">Ver exemplo</button>
       <select id="vwRole" aria-label="Nível" style="width:auto"><option value="">Todos os níveis</option><option value="Atleta">Atletas</option><option value="Comissão">Comissão</option><option value="Coordenação">Coordenação</option><option value="Convidado">Convidados</option></select>
     </div>
+    <div class="vwdemo" id="vwDemoNote" hidden>Exemplo com dados simulados a partir dos seus usuários e vídeos. Nada foi gravado. Clique em <b>Sair do exemplo</b> para voltar aos dados reais.</div>
     <div class="vwgrid">
       <div><h3 class="vwh">Por tipo de vídeo</h3><div id="vwTypes"></div></div>
       <div><h3 class="vwh">Por usuário</h3><div id="vwUsers"><div class="emptyl">Carregando…</div></div></div>
@@ -1670,7 +1673,17 @@ let vwData=null,vwOpen=null;
 document.getElementById('uTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#uTabs button').forEach(x=>x.classList.toggle('on',x===b));const vw=b.dataset.u==='vw';
   document.getElementById('elenco').classList.toggle('vw',vw);document.getElementById('vwPanel').hidden=!vw;if(vw)loadViews()};
 ['vwPer','vwType','vwRole'].forEach(id=>document.getElementById(id).onchange=()=>id==='vwPer'?loadViews():renderViews());
-async function loadViews(){const box=document.getElementById('vwUsers');box.innerHTML='<div class="emptyl">Carregando…</div>';
+let vwDemo=false;
+document.getElementById('vwDemo').onclick=()=>{vwDemo=!vwDemo;document.getElementById('vwDemo').textContent=vwDemo?'Sair do exemplo':'Ver exemplo';document.getElementById('vwDemoNote').hidden=!vwDemo;vwOpen=null;loadViews()};
+function demoViews(days){
+  // dados simulados (não são gravados): usuários e vídeos reais, quantidades aleatórias
+  let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;const pick=a=>a[Math.floor(rnd()*a.length)];
+  const us=members.filter(m=>m.active!==false&&m.role!=='Convidado');const vs=videos.length?videos:[{id:'x',title:'Vídeo',type:'Jogo'}];const span=days||60;const out=[];
+  us.forEach((u,i)=>{const act=u.role==='Atleta'?rnd()*1.2:0.6+rnd();const nv=Math.round(act*8);for(let k=0;k<nv;k++){const v=pick(vs);const d=new Date(Date.now()-Math.floor(rnd()*span)*864e5);
+    out.push({uid:u.id,kind:'video',vid:v.id,type:vTypeOf(v),title:v.title,day:d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'),count:1+Math.floor(rnd()*3)})}
+    if(rnd()<.35)out.push({uid:u.id,kind:'playlist',vid:'demo',type:'Playlist',title:'Ajustes Individuais',day:'20261120',count:1+Math.floor(rnd()*2)})});
+  return out}
+async function loadViews(){if(vwDemo){vwData=demoViews(+document.getElementById('vwPer').value);renderViews();return}const box=document.getElementById('vwUsers');box.innerHTML='<div class="emptyl">Carregando…</div>';
   try{const days=+document.getElementById('vwPer').value;let q=db.collection('views');if(days){const d=new Date(Date.now()-(days-1)*864e5);q=q.where('day','>=',d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'))}
     const sn=await q.get();vwData=sn.docs.map(x=>x.data());renderViews()}catch(e){box.innerHTML='<div class="emptyl">Não carregou: '+esc(e.code||e.message)+'</div>'}}
 function vwBar(label,n,tot,max,extra){const pct=tot?n/tot*100:0;return `<div class="vwbar" title="${esc(label)}: ${n} (${pct.toFixed(1)}%)"><i style="width:${max?(n/max*100).toFixed(1):0}%"></i></div><span class="n"><b>${n}</b><small>${pct.toFixed(pct<10?1:0)}%</small>${extra||''}</span>`}
