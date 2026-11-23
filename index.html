@@ -801,7 +801,7 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
     </div>
     <div class="vwdemo" id="vwDemoNote" hidden>Exemplo com dados simulados a partir dos seus usuários e vídeos. Nada foi gravado. Clique em <b>Sair do exemplo</b> para voltar aos dados reais.</div>
     <div class="vwgrid">
-      <div><h3 class="vwh">Por tipo de vídeo</h3><div id="vwTypes"></div></div>
+      <div><h3 class="vwh">Por tipo de vídeo</h3><div id="vwTypes"></div><h3 class="vwh" style="margin-top:22px">Por arquivo</h3><div id="vwFiles"></div></div>
       <div><h3 class="vwh">Por usuário</h3><div id="vwUsers"><div class="emptyl">Carregando…</div></div></div>
     </div>
   </section>
@@ -1696,6 +1696,11 @@ function renderViews(){
   // por tipo
   const byT={};base.forEach(v=>{const t=v.type||'Outros';byT[t]=(byT[t]||0)+(v.count||1)});const totT=Object.values(byT).reduce((a,b)=>a+b,0);const maxT=Math.max(0,...Object.values(byT));
   document.getElementById('vwTypes').innerHTML=Object.keys(byT).length?Object.entries(byT).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<div class="vwr"><div class="nm"><span class="t">${esc(t)}</span></div>${vwBar(t,n,totT,maxT)}</div>`).join(''):'<div class="emptyl">Nenhuma visualização no período.</div>';
+  // por arquivo (vídeo, jogo ou playlist)
+  const listF=base.filter(v=>!tSel.value||(v.type||'Outros')===tSel.value);const byF={};
+  listF.forEach(v=>{const k=v.kind+':'+v.vid;const f=byF[k]=byF[k]||{title:v.title||'—',type:v.type||'',n:0,users:new Set()};f.n+=v.count||1;f.users.add(v.uid)});
+  const totF=Object.values(byF).reduce((a,f)=>a+f.n,0);const maxF=Math.max(0,...Object.values(byF).map(f=>f.n));
+  document.getElementById('vwFiles').innerHTML=Object.keys(byF).length?Object.values(byF).sort((a,b)=>b.n-a.n).map(f=>`<div class="vwr"><div class="nm"><span class="t">${esc(f.title)}<small>${esc([f.type,f.users.size+' usuário'+(f.users.size>1?'s':'')].filter(Boolean).join(' · '))}</small></span></div>${vwBar(f.title,f.n,totF,maxF)}</div>`).join(''):'<div class="emptyl">Nenhuma visualização no período.</div>';
   // por usuário
   const list=base.filter(v=>!tSel.value||(v.type||'Outros')===tSel.value);const byU={};
   list.forEach(v=>{const u=byU[v.uid]=byU[v.uid]||{n:0,items:{}};u.n+=v.count||1;const k=v.kind+':'+v.vid;const it=u.items[k]=u.items[k]||{title:v.title,type:v.type,n:0,last:''};it.n+=v.count||1;if(v.day>it.last)it.last=v.day});
