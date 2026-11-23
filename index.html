@@ -2225,7 +2225,8 @@ const dateKey=v=>v.ytDate||(v.createdAt&&v.createdAt.toDate?v.createdAt.toDate()
 function vSort(a,b){const x=dateKey(a),y=dateKey(b);if(x!==y)return x<y?1:-1;return String(a.title||'').localeCompare(String(b.title||''),'pt',{numeric:true})}
 let ytFilling=false;
 async function fillYtDates(){if(ytFilling||!me||me.func!=='Administrador')return;ytFilling=true;
-  try{for(const v of videos.filter(v=>v.ytId&&!v.ytChecked)){try{const d=await ytInfo(v.ytId);Object.assign(d,{ytChecked:true});await db.collection('videos').doc(v.id).update(d)}catch(_){}}}finally{ytFilling=false}}
+  try{const CUT=Date.parse('2026-11-23T14:30:00Z')/1000; // só vídeos cadastrados antes desta data recebem a data do título do YouTube
+  for(const v of videos.filter(v=>v.ytId&&!v.ytChecked&&(v.createdAt?.seconds||0)<CUT)){try{const d=await ytInfo(v.ytId);Object.assign(d,{ytChecked:true});await db.collection('videos').doc(v.id).update(d)}catch(_){}}}finally{ytFilling=false}}
 function fmtYmd(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:''}
 // arrastar cartões para reordenar (administrador)
 let dragId=null;
@@ -2460,7 +2461,7 @@ vForm.onsubmit=async e=>{
   const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const isTr=vt==='Treino';const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:isTr?'':document.getElementById('vHome').value.trim(),away:isTr?'':document.getElementById('vAway').value.trim(),md:isTr?(document.getElementById('vMd').value||null):null,tipologia:isTr?(document.getElementById('vTipo').value||null):null,xmlSingle:isTr,title:document.getElementById('vName').value.trim(),comp:isTr?'':document.getElementById('vComp').value.trim(),caption:isTr?'':document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:isTr?null:(vLancesI||null),sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
-    if(!vEditing||vEditing.ytId!==ytId||!vEditing.ytChecked){try{Object.assign(data,await ytInfo(ytId),{ytChecked:true})}catch(_){}}
+    if(!vEditing)data.ytChecked=true; // vídeos novos usam a data de cadastro
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
     else{const ref=await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id,shareGroups:[],shareMembers:[],viewers:[]}));
       vModal.hidden=true;linkVideoMatch(Object.assign({id:ref.id},data),true).catch(()=>{});openShare(Object.assign({id:ref.id},data,{shareGroups:[],shareMembers:[]}))}
