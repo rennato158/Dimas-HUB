@@ -247,12 +247,13 @@ td.pcol{white-space:nowrap;max-width:170px}.pwho{display:inline-flex;align-items
 .vtoggle button.on{background:var(--panel);color:var(--fg)}
 .vtoggle svg{width:15px;height:15px;fill:currentColor}
 .sync{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.sync .row2{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.sync .row2{display:grid;grid-template-columns:150px 1fr auto auto;gap:8px;align-items:center}
 .sync .lb{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.03em;min-width:150px}
 .sync input{font-family:var(--mono);font-size:13px}
 .sync .hd2{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .sync .hd2 span:first-child{min-width:64px}
 .sync .grab{font-size:11px;padding:5px 7px;white-space:nowrap}
+.sync .row2 .x{color:#e5533d;font-size:17px;line-height:1;padding:0 6px}
 .thprev{aspect-ratio:16/9;max-width:100%;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
 .thprev img{width:100%;height:100%;object-fit:cover;display:block}
 .inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
@@ -804,6 +805,10 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f"><label for="vType">Tipo</label><select id="vType"><option>Jogo</option><option>Adversário</option><option>Análise</option><option>Treino</option></select></div>
       <div class="f" id="vSubRow" hidden><label for="vSub">Tipo de análise</label><select id="vSub"><option>Treino</option><option>Pós-jogo</option><option>Adversário</option><option>Individual</option></select></div>
       <div class="f" id="vAthRow" hidden><label for="vAth">Atleta</label><select id="vAth"><option value="">Escolha o atleta</option></select></div>
+      <div class="f2" id="vTrRow" hidden>
+        <div class="f"><label for="vMd">MD</label><select id="vMd"><option value="">—</option><option>MD-6</option><option>MD-5</option><option>MD-4</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option><option>MD+1</option><option>MD+2</option><option>MD+3</option></select></div>
+        <div class="f"><label for="vTipo">Tipologia</label><select id="vTipo"><option value="">—</option><option>Exercício</option><option>Pequenos jogos</option><option>Médios Jogos</option><option>Grande Jogos</option><option>Rondo</option><option>Tático Estratégico</option><option>Tático Coletivo</option><option>Bolas Paradas</option></select></div>
+      </div>
       <div class="f"><label for="vUrl">Link do YouTube</label><input type="url" id="vUrl" required placeholder="https://youtu.be/…"></div>
       <div class="f"><label for="vName">Título</label><input type="text" id="vName" required maxlength="80" placeholder="Ex.: Ceará 2 x 2 Juventude"></div>
       <div class="f2" id="vTeamsRow">
@@ -823,8 +828,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       <div class="f"><label for="vDrive">Arquivo no Drive (MP4, para baixar cortes)</label><div class="pwbox"><input type="text" id="vDrive" placeholder="cole o link do arquivo no Drive" style="font-family:var(--body)"><button type="button" class="btn" id="vDriveFind">Procurar na pasta</button></div>
         <span class="pwnote" id="vDriveNote"></span><div class="dpick" id="vDrivePick" hidden></div></div>
       <div class="f2">
-        <div class="f"><label>XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
-        <div class="f"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
+        <div class="f"><label id="vXmlLbl">XML coletiva</label><div class="inline"><label class="btn" for="vXml">Anexar<input type="file" id="vXml" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlDel" hidden>×</button></div><span class="pwnote" id="vXmlNote">nenhuma</span></div>
+        <div class="f" id="vXmlIRow"><label>XML individual</label><div class="inline"><label class="btn" for="vXmlI">Anexar<input type="file" id="vXmlI" accept=".xml,text/xml" style="display:none"></label><button type="button" class="btn" id="vXmlIDel" hidden>×</button></div><span class="pwnote" id="vXmlINote">nenhuma</span></div>
       </div>
       <div class="f" id="vShareRow" hidden><label>Compartilhamento</label><div class="inline"><span class="pwnote" id="vShareSumForm"></span><button type="button" class="btn" id="vShareOpen">Compartilhar…</button></div></div>
       <div class="f" id="xpBox" hidden><label>Jogadores na XML individual</label>
@@ -833,9 +838,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
       </div>
       <div class="f"><label>Sincronização do tempo (XML × vídeo)</label>
         <div class="sync">
-          <div class="row2"><span class="lb">Apito inicial 1º tempo</span><input type="text" id="sH1v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH1v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <div class="row2"><span class="lb">Apito inicial 2º tempo</span><input type="text" id="sH2v" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" data-t="sH2v" title="Usar o tempo atual do player">⏱ player</button></div>
-          <p class="pwnote">Momento do vídeo em que cada tempo começa. Em branco = nenhum ajuste. Só é aplicado à XML que tem a marcação de sincronização (ex.: "SINC. TEMPO"); XML sem essa marcação é usada no tempo em que foi exportada.</p><p class="pwnote" id="vSyncWho"></p>
+          <div id="syncRows"></div>
+          <button type="button" class="btn" id="syncAdd" style="align-self:flex-start">+ Adicionar sincronização</button>
+          <p class="pwnote">Cada sincronização liga um momento do vídeo à marcação de mesma ordem na XML (1ª marcação "SINC. TEMPO" ↔ 1ª sincronização, 2ª ↔ 2ª…). Em jogos, normalmente: apito do 1º e do 2º tempo. Em treinos, uma por exercício ou bloco. Em branco = sem ajuste. XML sem marcação de sincronização é usada no tempo em que foi exportada.</p><p class="pwnote" id="vSyncWho"></p>
         </div>
       </div>
       <span class="ferr" id="vErr" hidden></span>
@@ -1148,11 +1153,11 @@ function setMe(m){
   if(unsubV){unsubV();unsubV=null}
   if(m){const staff=['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
-    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>normVideo(Object.assign({id:d.id},d.data())));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
-    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderMembers();renderGroups();renderAthletes();renderPlaylists();renderChats();renderMsgs()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
+    unsubM=db.collection('members').orderBy('name').onSnapshot(s=>{members=s.docs.map(d=>Object.assign({id:d.id},d.data()));videos.forEach(v=>{if(v.xmlSingle)normVideo(v)});renderMembers();renderGroups();renderAthletes();renderPlaylists();renderChats();renderMsgs()},e=>{mList.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'});
     unsubG=db.collection('groups').orderBy('name').onSnapshot(s=>{groups=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderGroups();renderMembers()});
   }else{members=[];groups=[]}
   if(!admin&&!elencoEl.hidden)show('home');
@@ -1763,9 +1768,8 @@ function tgStatus(t,cls){const s=document.getElementById('tgStatus');s.textConte
 function tgStop(silent){clearInterval(tgTimer);tgTimer=null;tgRec=null;if(!silent)renderTagbar()}
 // tempo do vídeo -> tempo da XML (desfaz a sincronização)
 function toRaw(set,sync,T){
-  if(!set||!sync||(sync.v1==null&&sync.v2==null))return T;const {x1,x2,has}=xmlKicks(set);if(!has)return T;
-  const o1=sync.v1!=null?sync.v1-x1:null,o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
-  if(o2!=null&&T-o2>=x2)return T-o2;return T-((o1??o2)||0);
+  if(!set||!sync||!syncPts(sync).some(x=>x!=null))return T;if(!xmlKicks(set).has)return T;const S=syncOffsets(set,sync);if(!S)return T;
+  for(let k=S.m.length-1;k>=0;k--){if(T-S.o[k]>=S.m[k])return T-S.o[k]}return T-S.o[0];
 }
 document.getElementById('tgCats').onclick=e=>{
   const b=e.target.closest('button.cat');if(!b)return;const i=+b.dataset.i;const P=window.DimasPlayer;
@@ -1930,6 +1934,13 @@ function lanceMatches(l,a){
   const texts=[...(l.labels||[]),l.code,l.note||''].filter(Boolean);
   return texts.some(t=>resolveText(t).includes(a.id));
 }
+// XML única (treinos): separa em coletiva e individual; as marcações de sincronização valem para as duas
+function hasPlayerL(l){if((l.labels||[]).some(x=>/^(jogador|player|atleta)\s*:/i.test(x)))return true;const c=String(l.code||'');if(SYNC_RE.test(c))return false;if(/^\d+\.\s*\S/.test(c))return true;
+  const left=c.split(' - ')[0];return athletesAll().some(a=>nameScore(left,athleteKeys(a))>=2)}
+function normVideo(v){if(!v||!v.xmlSingle)return v;if(!v.xmlAll)v.xmlAll=v.lances;const all=v.xmlAll;if(!all||!all.instances){v.lances=null;v.lancesInd=null;return v}
+  const kicks=all.instances.filter(l=>SYNC_RE.test(l.code)).map(l=>l.start);const ind=[],col=[];all.instances.forEach(l=>(hasPlayerL(l)?ind:col).push(l));
+  const rowsFor=list=>{const codes=new Set(list.map(l=>l.code));return (all.rows||[]).filter(r=>codes.has(r.code))};
+  v.lances=col.length?{rows:rowsFor(col),instances:col,kicks}:null;v.lancesInd=ind.length?{rows:rowsFor(ind),instances:ind,kicks}:null;return v}
 function athleteSet(v){return withMine(v,'lancesInd')||withMine(v,'lances')||null}
 function athleteLances(a,v){const set=athleteSet(v);if(!set)return [];return set.instances.filter(l=>lanceMatches(l,a))}
 // Nomes de jogador presentes numa XML (códigos e labels), com o atleta reconhecido para cada um
@@ -1985,7 +1996,7 @@ function openAthlete(a,videoId){
   if(pick){currentVideo=pick.v.id;renderVideos();
     P.setTitle(a.name,pick.v.title+' · '+pick.ls.length+' lance'+(pick.ls.length>1?'s':''));
     document.getElementById('xmlSeg').hidden=true;
-    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows},pick.v.sync),{hidePlayer:true,individual:true,hideCats:true,src:Object.assign(srcOf(pick.v),{athleteId:a.id})});P.loadYT(pick.v.ytId);
+    P.loadLances(applySync({instances:pick.ls,rows:athleteSet(pick.v).rows,kicks:athleteSet(pick.v).kicks},pick.v.sync),{hidePlayer:true,individual:true,hideCats:true,src:Object.assign(srcOf(pick.v),{athleteId:a.id})});P.loadYT(pick.v.ytId);
   }else{P.setTitle(a.name,'sem lances encontrados');P.loadLances({instances:[],rows:[]})}
   show('lances',true);
 }
@@ -2198,7 +2209,7 @@ const vTypeOf=v=>v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
 // adversário do Ceará num vídeo (mandante ou visitante; se vazio, lê do título)
 function oppOf(v){let h=v.home,a=v.away;if(!h||!a){const t=String(v.title||'').replace(/^[^_]*_/,'');const m=t.match(/^(.+?)\s*\d*\s*[x×]\s*\d*\s*(.+)$/i);if(m){h=h||m[1].trim();a=a||m[2].trim()}}
   const isC=n=>/^ceara\b/.test(norm(n||''));if(h&&isC(h)&&a&&!isC(a))return a;if(a&&isC(a)&&h&&!isC(h))return h;return ''}hGame.onchange=()=>{renderVideos()};
-function typeLabel(v){const t=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');if(t!=='Análise'||!v.sub)return t;if(v.sub==='Individual'){const a=members.find(m=>m.id===v.athleteId);return 'Análise · '+(a?a.name:'Individual')}return 'Análise · '+v.sub}
+function typeLabel(v){const t=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');if(t==='Treino')return 'Treino'+(v.md?' · '+v.md:'');if(t!=='Análise'||!v.sub)return t;if(v.sub==='Individual'){const a=members.find(m=>m.id===v.athleteId);return 'Análise · '+(a?a.name:'Individual')}return 'Análise · '+v.sub}
 function coverHtml(v){
   const type=v.type==='Jogo Completo'?'Jogo':(v.type||'Jogo');
   if(!v.thumb&&(type==='Jogo'||type==='Adversário')&&(v.home||v.away)){const h=teamOf(v.home||''),a=teamOf(v.away||'');
@@ -2238,7 +2249,7 @@ function renderVideos(){
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
   vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0" ${admin?'draggable="true" title="Arraste para reordenar"':''}>
     <div class="th">${coverHtml(v)}<span class="badge tp">${esc(typeLabel(v))}</span></div>
-    <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption?`<div class="cap">${esc([v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
+    <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption||v.tipologia?`<div class="cap">${esc([v.tipologia,v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
       ${v.lances||v.lancesInd||v.driveId?`<div class="mt xmls">${v.driveId?`<span class="xml drv1" title="Vinculado ao Drive${v.driveName?': '+esc(v.driveName):''} · cortes disponíveis para download"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 13A3.5 3.5 0 0 1 4 6.03 4.5 4.5 0 0 1 12.7 6.6 3.2 3.2 0 0 1 12 13z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.6l1.5 1.5 2.8-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`:''}${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col)</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind)</span>`:''}</div>`:''}</div>
@@ -2277,11 +2288,11 @@ function withMine(v,key){
   if(Object.keys(ann).length)inst=inst.map(l=>{const a=ann[annKey(l)];if(!a||(!(a.labels||[]).length&&!a.athleteId&&a.note==null&&!a.ds&&!a.de))return l;const o=Object.assign({},l);if(a.ds||a.de){o.ds=a.ds||0;o.de=a.de||0;o.start=Math.max(0,l.start+o.ds);o.end=Math.max(o.start+0.5,l.end+o.de);o.adj=true}if(a.note!=null){o.xn=true;o.note=a.note||undefined}
     if((a.labels||[]).length){o.xl=a.labels.slice();o.labels=(l.labels||[]).concat(a.labels)}
     if(a.athleteId){const m=members.find(x=>x.id===a.athleteId);if(m)o.ath={id:m.id,name:m.name,photo:m.photo||'',num:m.number}}return o});
-  return {rows,instances:inst};
+  return {rows,instances:inst,kicks:base&&base.kicks};
 }
 function lancesFor(v){
   let set=withMine(v,xmlKind);
-  if(set&&xmlKind==='lancesInd'&&!isStaff()){const self=members.find(x=>x.id===me.id);set=self?{rows:set.rows,instances:set.instances.filter(l=>lanceMatches(l,self))}:{rows:set.rows,instances:[]}}
+  if(set&&xmlKind==='lancesInd'&&!isStaff()){const self=members.find(x=>x.id===me.id);set=self?{rows:set.rows,kicks:set.kicks,instances:set.instances.filter(l=>lanceMatches(l,self))}:{rows:set.rows,kicks:set.kicks,instances:[]}}
   return set;
 }
 function playVideo(v){
@@ -2297,7 +2308,8 @@ let vEditing=null, vThumb=null, vLances=null, vLancesI=null, vDurAuto=0;
 function openVideo(v){
   vEditing=v||null;vThumb=v?.thumb||null;vLances=v?.lances||null;vLancesI=v?.lancesInd||null;vDurAuto=0;vErr.hidden=true;
   document.getElementById('vTitle').textContent=v?'Editar vídeo':'Adicionar vídeo';
-  document.getElementById('vType').value=(v?.type==='Jogo Completo'?'Jogo':v?.type)||'Jogo';document.getElementById('vSub').value=v?.sub||'Treino';
+  document.getElementById('vType').value=(v?.type==='Jogo Completo'?'Jogo':v?.type)||'Jogo';document.getElementById('vSub').value=v?.sub||'Treino';document.getElementById('vMd').value=v?.md||'';document.getElementById('vTipo').value=v?.tipologia||'';
+  if(v&&v.xmlSingle){vLances=v.xmlAll||v.lances||null;vLancesI=null}
   const vAth=document.getElementById('vAth');vAth.innerHTML='<option value="">Escolha o atleta</option>'+members.filter(m=>m.role==='Atleta'&&m.active!==false).sort((a,b)=>(a.number??999)-(b.number??999)||a.name.localeCompare(b.name,'pt')).map(a=>`<option value="${esc(a.id)}">${a.number!=null?'#'+a.number+' · ':''}${esc(a.name)}</option>`).join('');vAth.value=v?.athleteId||'';vSubUpd();
   document.getElementById('vHome').value=v?.home||'';document.getElementById('vAway').value=v?.away||'';document.getElementById('clubList2').innerHTML=teams.map(t=>`<option value="${esc(t.name)}">`).join('');document.getElementById('vUrl').value=v?.url||'';document.getElementById('vName').value=v?.title||'';document.getElementById('vComp').value=v?.comp||'';
   document.getElementById('compList').innerHTML=comps().map(c=>`<option value="${esc(c)}">`).join('');document.getElementById('vCap').value=v?.caption||'';
@@ -2307,7 +2319,8 @@ function openVideo(v){
   document.getElementById('vDel').hidden=!v;document.getElementById('vDel').textContent='Remover';document.getElementById('vDel').dataset.confirm='';
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
-function vSubUpd(){const t=document.getElementById('vType').value,sb=document.getElementById('vSub').value;document.getElementById('vSubRow').hidden=t!=='Análise';document.getElementById('vAthRow').hidden=!(t==='Análise'&&sb==='Individual')}
+function vSubUpd(){const t=document.getElementById('vType').value,sb=document.getElementById('vSub').value;document.getElementById('vSubRow').hidden=t!=='Análise';document.getElementById('vAthRow').hidden=!(t==='Análise'&&sb==='Individual');
+  const tr=t==='Treino';document.getElementById('vTrRow').hidden=!tr;document.getElementById('vTeamsRow').hidden=tr;document.getElementById('vXmlIRow').hidden=tr;document.getElementById('vXmlLbl').textContent=tr?'XML do treino (coletiva e individual)':'XML coletiva';syncLabels()}
 document.getElementById('vType').onchange=vSubUpd;document.getElementById('vSub').onchange=vSubUpd;
 function updThumb(){
   const id=window.DimasPlayer.ytId(document.getElementById('vUrl').value.trim());
@@ -2389,29 +2402,36 @@ function xmlNotes(){
   const w=(n,x)=>x?n+': '+(xmlKicks(x).has?'sincronizada pela marcação':'sem marcação, usada como exportada'):null;
   document.getElementById('vSyncWho').textContent=[w('Coletiva',vLances),w('Individual',vLancesI)].filter(Boolean).join(' · ');
 }
-function fillSync(sync){document.getElementById('sH1v').value=sync?.v1!=null?fmtDur(sync.v1):'';document.getElementById('sH2v').value=sync?.v2!=null?fmtDur(sync.v2):''}
-function readSync(){
-  const a=document.getElementById('sH1v').value.trim(),b=document.getElementById('sH2v').value.trim();
-  if(!a&&!b)return null;return {v1:a?parseDur(a):null,v2:b?parseDur(b):null};
-}
+function syncPts(sync){if(!sync)return [];if(Array.isArray(sync.points))return sync.points.slice();const p=[sync.v1??null,sync.v2??null];while(p.length&&p[p.length-1]==null)p.pop();return p}
+function syncRow(val){const r=document.createElement('div');r.className='row2';r.innerHTML=`<span class="lb"></span><input type="text" placeholder="mm:ss no vídeo"><button type="button" class="btn grab" title="Usar o tempo atual do player">⏱ player</button><button type="button" class="x" title="Remover">×</button>`;
+  r.querySelector('input').value=val!=null?fmtDur(val):'';document.getElementById('syncRows').appendChild(r);return r}
+function syncLabels(){const t=document.getElementById('vType').value;const rows=[...document.querySelectorAll('#syncRows .row2')];
+  rows.forEach((r,i)=>{r.querySelector('.lb').textContent=t==='Jogo'||t==='Adversário'?(i===0?'Apito inicial 1º tempo':i===1?'Apito inicial 2º tempo':'Sincronização '+(i+1)):'Sincronização '+(i+1)})}
+function fillSync(sync){const box=document.getElementById('syncRows');box.innerHTML='';const p=syncPts(sync);const t=document.getElementById('vType').value;
+  const n=Math.max(p.length,t==='Jogo'||t==='Adversário'?2:1);for(let i=0;i<n;i++)syncRow(p[i]??null);syncLabels()}
+function readSync(){const p=[...document.querySelectorAll('#syncRows .row2 input')].map(i=>i.value.trim()).map(v=>v?parseDur(v):null);
+  while(p.length&&p[p.length-1]==null)p.pop();if(!p.some(x=>x!=null))return null;return {points:p,v1:p[0]??null,v2:p[1]??null}}
+document.getElementById('syncAdd').onclick=()=>{syncRow(null).querySelector('input').focus();syncLabels()};
+document.getElementById('syncRows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const r=b.closest('.row2');
+  if(b.classList.contains('x')){r.remove();syncLabels();return}
+  if(b.classList.contains('grab')){const P=window.DimasPlayer;const id=P.ytId(document.getElementById('vUrl').value.trim());
+    if(!P.hasVideo()||!currentVideo||videos.find(x=>x.id===currentVideo)?.ytId!==id){vErr.textContent='Para capturar o tempo, abra este vídeo, pause no momento certo e volte aqui pelo "Editar".';vErr.hidden=false;return}
+    vErr.hidden=true;r.querySelector('input').value=fmtDur(P.time())}});
 // Na XML, o apito de cada tempo vem dos marcadores "SINC. TEMPO" (1º = primeiro marcador ou 0:00; 2º = segundo marcador).
 // marcações de sincronização dentro da XML (ex.: categoria "SINC. TEMPO")
-function xmlKicks(set){const m=set.instances.filter(l=>/sinc|sync|apito|kick.?off/i.test(l.code)).map(l=>l.start).sort((a,b)=>a-b);return {x1:m[0]??0,x2:m[1]??null,has:m.length>0}}
+const SYNC_RE=/sinc|sync|apito|kick.?off/i;
+function xmlKicks(set){const m=(set.kicks||set.instances.filter(l=>SYNC_RE.test(l.code)).map(l=>l.start)).slice().sort((a,b)=>a-b);return {x1:m[0]??0,x2:m[1]??null,has:m.length>0,m}}
+// deslocamento (s) de cada trecho: ponto k do vídeo − marcação k da XML
+function syncOffsets(set,sync){const pts=syncPts(sync);const {m}=xmlKicks(set);const o=m.map((x,k)=>pts[k]!=null?pts[k]-x:null);
+  const first=o.find(x=>x!=null);if(first==null)return null;let last=first;return {m,o:o.map(x=>{if(x!=null)last=x;return x!=null?x:last})}}
+function offsetAt(S,t){let k=0;for(let i=0;i<S.m.length;i++)if(S.m[i]<=t)k=i;return S.o[k]}
 function applySync(set,sync){
-  if(!set||!sync||(sync.v1==null&&sync.v2==null))return set;
-  const {x1,x2,has}=xmlKicks(set);
+  if(!set||!sync||!syncPts(sync).some(x=>x!=null))return set;
   // XML sem marcação de sincronização já vem no tempo do vídeo (ex.: exportada com o início do vídeo): não desloca
-  if(!has)return set;
-  const o1=sync.v1!=null?sync.v1-x1:null;
-  const o2=(sync.v2!=null&&x2!=null)?sync.v2-x2:null;
-  const cut=x2!=null?x2:Infinity;
-  return {rows:set.rows,instances:set.instances.map(l=>{const o=(l.start>=cut?(o2??o1):(o1??o2))||0;return Object.assign({},l,{start:Math.max(0,l.start+o),end:Math.max(0,l.end+o)})})};
+  if(!xmlKicks(set).has)return set;
+  const S=syncOffsets(set,sync);if(!S)return set;
+  return {rows:set.rows,kicks:set.kicks,instances:set.instances.map(l=>{const o=offsetAt(S,l.start)||0;return Object.assign({},l,{start:Math.max(0,l.start+o),end:Math.max(0,l.end+o)})})};
 }
-document.querySelectorAll('.sync .grab').forEach(b=>b.onclick=()=>{
-  const P=window.DimasPlayer;const id=P.ytId(document.getElementById('vUrl').value.trim());
-  if(!P.hasVideo()||!currentVideo||videos.find(x=>x.id===currentVideo)?.ytId!==id){vErr.textContent='Para capturar o tempo, abra este vídeo na aba Lances, pause no momento certo e volte aqui pelo "editar".';vErr.hidden=false;return}
-  vErr.hidden=true;document.getElementById(b.dataset.t).value=fmtDur(P.time());
-});
 function xmlPick(inputId,setter){document.getElementById(inputId).onchange=e=>{
   const f=e.target.files[0];if(!f)return;f.text().then(t=>{const d=window.DimasPlayer.parseXml(t);
     if(!d){vErr.textContent='Esse XML não tem lances no formato esperado.';vErr.hidden=false;return}
@@ -2428,7 +2448,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:document.getElementById('vHome').value.trim(),away:document.getElementById('vAway').value.trim(),title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:vLancesI||null,sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
+  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const isTr=vt==='Treino';const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:isTr?'':document.getElementById('vHome').value.trim(),away:isTr?'':document.getElementById('vAway').value.trim(),md:isTr?(document.getElementById('vMd').value||null):null,tipologia:isTr?(document.getElementById('vTipo').value||null):null,xmlSingle:isTr,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:isTr?null:(vLancesI||null),sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
