@@ -388,6 +388,16 @@ td.pcol{white-space:nowrap;max-width:170px}.pwho{display:inline-flex;align-items
 @media (max-width:760px){.mrow2{grid-template-columns:70px 1fr auto;grid-template-areas:"d fx a" "t ven a"}.mrow2 .d{grid-area:d}.mrow2 .t{grid-area:t}.mrow2 .fx{grid-area:fx}.mrow2 .ven{grid-area:ven}.mrow2 .acts{grid-area:a}}
 /* elenco */
 .elenco{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.elenco .utabs{grid-column:1/-1;margin-left:0;justify-self:start}.elenco .vwpanel{grid-column:1/-1}.elenco.vw>section:not(.vwpanel){display:none}
+.vwgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:18px;padding:14px}
+@media (max-width:820px){.vwgrid{grid-template-columns:1fr}}
+.vwh{margin:0 0 10px;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.vwr{display:grid;grid-template-columns:minmax(110px,190px) minmax(0,1fr) 92px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);cursor:default}
+.vwr.u{cursor:pointer}.vwr.u:hover{background:var(--panel2)}.vwr .nm{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600;font-size:13px}.vwr .nm span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vwr .nm small{display:block;font-weight:400;color:var(--muted);font-size:11px}.vwr .av{width:28px;height:28px;font-size:10px;flex:none}
+.vwbar{height:12px;border-radius:6px;background:var(--panel2);overflow:hidden}.vwbar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.vwr .n{text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}.vwr .n b{font-weight:600}.vwr .n small{color:var(--muted);margin-left:4px}
+.vwdet{padding:6px 0 10px 36px;border-bottom:1px solid var(--line)}.vwdet div{display:flex;gap:8px;font-size:12.5px;padding:3px 0}.vwdet div span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vwdet small{color:var(--muted);font-family:var(--mono)}
 @media (max-width:900px){.elenco{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;min-width:0;box-shadow:var(--shadow)}
 .panel .hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -780,6 +790,18 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
 </div>
 
 <div class="elenco" id="elenco" hidden>
+  <div class="seg utabs" id="uTabs"><button type="button" class="on" data-u="cad">Cadastro</button><button type="button" data-u="vw">Visualizações</button></div>
+  <section class="panel vwpanel" id="vwPanel" hidden>
+    <div class="hd"><h2>Visualizações</h2><span class="sub" id="vwSum"></span>
+      <select id="vwPer" aria-label="Período" style="width:auto;margin-left:auto"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="0">Todo o período</option></select>
+      <select id="vwType" aria-label="Tipo de vídeo" style="width:auto"><option value="">Todos os tipos</option></select>
+      <select id="vwRole" aria-label="Nível" style="width:auto"><option value="">Todos os níveis</option><option value="Atleta">Atletas</option><option value="Comissão">Comissão</option><option value="Coordenação">Coordenação</option><option value="Convidado">Convidados</option></select>
+    </div>
+    <div class="vwgrid">
+      <div><h3 class="vwh">Por tipo de vídeo</h3><div id="vwTypes"></div></div>
+      <div><h3 class="vwh">Por usuário</h3><div id="vwUsers"><div class="emptyl">Carregando…</div></div></div>
+    </div>
+  </section>
   <section class="panel">
     <div class="hd">
       <h2>Usuários</h2><span class="sub" id="mCount"></span>
@@ -1264,6 +1286,7 @@ cList.addEventListener('click',e=>{
   if(b.dataset.cadd){openMatch(null,b.dataset.cadd);return}
 });
 function playMatch(m){
+  if(m)trackView('match',m.id,'Competição',(m.home||'')+' x '+(m.away||''));
   if(!m||!m.ytId)return;currentVideo=null;currentItem=m;athlete=null;
   const P=window.DimasPlayer;setXmlSeg(m);const set=lancesFor(m);
   document.getElementById('cbarName').textContent=`${m.home} ${m.hs!=null&&m.as!=null?m.hs+' x '+m.as:'x'} ${m.away}`;
@@ -1635,6 +1658,42 @@ document.getElementById('chForm').onsubmit=async e=>{
 };
 document.getElementById('chDel').onclick=async()=>{const b=document.getElementById('chDel');if(!chEditing)return;if(!b.dataset.confirm){b.dataset.confirm='1';b.textContent='Confirmar?';return}
   try{await db.collection('chats').doc(chEditing.id).delete();chModal.hidden=true;chatId=null;if(unsubMsgs){unsubMsgs();unsubMsgs=null}msgs=[];renderMsgs();chatEl.classList.remove('open')}catch(err){const x=document.getElementById('chErr');x.textContent='Não apagou: '+(err.code||err.message);x.hidden=false}};
+/* ---- registro de visualizações ---- */
+const _seen={};
+function trackView(kind,id,type,title){
+  if(!me||!id)return;const k=kind+':'+id;const now=Date.now();if(_seen[k]&&now-_seen[k]<10*60*1000)return;_seen[k]=now; // conta 1 por vídeo a cada 10 min
+  const d=new Date();const day=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  db.collection('views').doc(me.id.replace(/\//g,'_')+'__'+kind+'_'+id+'__'+day).set({uid:me.id,kind,vid:id,type:type||'',title:String(title||'').slice(0,140),day,count:firebase.firestore.FieldValue.increment(1),lastAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
+}
+/* ---- relatório de visualizações (aba Usuários) ---- */
+let vwData=null,vwOpen=null;
+document.getElementById('uTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#uTabs button').forEach(x=>x.classList.toggle('on',x===b));const vw=b.dataset.u==='vw';
+  document.getElementById('elenco').classList.toggle('vw',vw);document.getElementById('vwPanel').hidden=!vw;if(vw)loadViews()};
+['vwPer','vwType','vwRole'].forEach(id=>document.getElementById(id).onchange=()=>id==='vwPer'?loadViews():renderViews());
+async function loadViews(){const box=document.getElementById('vwUsers');box.innerHTML='<div class="emptyl">Carregando…</div>';
+  try{const days=+document.getElementById('vwPer').value;let q=db.collection('views');if(days){const d=new Date(Date.now()-(days-1)*864e5);q=q.where('day','>=',d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'))}
+    const sn=await q.get();vwData=sn.docs.map(x=>x.data());renderViews()}catch(e){box.innerHTML='<div class="emptyl">Não carregou: '+esc(e.code||e.message)+'</div>'}}
+function vwBar(label,n,tot,max,extra){const pct=tot?n/tot*100:0;return `<div class="vwbar" title="${esc(label)}: ${n} (${pct.toFixed(1)}%)"><i style="width:${max?(n/max*100).toFixed(1):0}%"></i></div><span class="n"><b>${n}</b><small>${pct.toFixed(pct<10?1:0)}%</small>${extra||''}</span>`}
+function renderViews(){
+  if(!vwData)return;const tSel=document.getElementById('vwType'),rSel=document.getElementById('vwRole');
+  const types=[...new Set(vwData.map(v=>v.type||'Outros'))].sort((a,b)=>a.localeCompare(b,'pt'));const cur=tSel.value;
+  tSel.innerHTML='<option value="">Todos os tipos</option>'+types.map(t=>`<option ${t===cur?'selected':''}>${esc(t)}</option>`).join('');
+  const role=id=>{const m=members.find(x=>x.id===id);return m?m.role:''};
+  const base=vwData.filter(v=>!rSel.value||role(v.uid)===rSel.value);
+  // por tipo
+  const byT={};base.forEach(v=>{const t=v.type||'Outros';byT[t]=(byT[t]||0)+(v.count||1)});const totT=Object.values(byT).reduce((a,b)=>a+b,0);const maxT=Math.max(0,...Object.values(byT));
+  document.getElementById('vwTypes').innerHTML=Object.keys(byT).length?Object.entries(byT).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<div class="vwr"><div class="nm"><span class="t">${esc(t)}</span></div>${vwBar(t,n,totT,maxT)}</div>`).join(''):'<div class="emptyl">Nenhuma visualização no período.</div>';
+  // por usuário
+  const list=base.filter(v=>!tSel.value||(v.type||'Outros')===tSel.value);const byU={};
+  list.forEach(v=>{const u=byU[v.uid]=byU[v.uid]||{n:0,items:{}};u.n+=v.count||1;const k=v.kind+':'+v.vid;const it=u.items[k]=u.items[k]||{title:v.title,type:v.type,n:0,last:''};it.n+=v.count||1;if(v.day>it.last)it.last=v.day});
+  const tot=Object.values(byU).reduce((a,u)=>a+u.n,0);const max=Math.max(0,...Object.values(byU).map(u=>u.n));
+  document.getElementById('vwSum').textContent=tot?`${tot} visualizaç${tot>1?'ões':'ão'} · ${Object.keys(byU).length} usuário${Object.keys(byU).length>1?'s':''}`:'';
+  const fd=d=>d?d.slice(6,8)+'/'+d.slice(4,6):'';
+  document.getElementById('vwUsers').innerHTML=Object.keys(byU).length?Object.entries(byU).sort((a,b)=>b[1].n-a[1].n).map(([id,u])=>{const m=members.find(x=>x.id===id);const nm=m?m.name:id;const nv=Object.keys(u.items).length;
+    const row=`<div class="vwr u" data-u="${esc(id)}"><div class="nm"><span class="av">${m&&m.photo?`<img src="${esc(m.photo)}" alt="">`:initials(nm)}</span><span class="t">${esc(nm)}<small>${esc([m?(m.role==='Atleta'?(m.pos||'Atleta'):(m.cargo||m.role)):'',nv+' vídeo'+(nv>1?'s':'')].filter(Boolean).join(' · '))}</small></span></div>${vwBar(nm,u.n,tot,max)}</div>`;
+    const det=vwOpen===id?`<div class="vwdet">${Object.values(u.items).sort((a,b)=>b.n-a.n).map(it=>`<div><span>${esc(it.title||'—')}</span><small>${esc(it.type||'')}</small><small>${it.n}× · ${fd(it.last)}</small></div>`).join('')}</div>`:'';return row+det}).join(''):'<div class="emptyl">Nenhuma visualização no período.</div>';
+}
+document.getElementById('vwUsers').addEventListener('click',e=>{const r=e.target.closest('.vwr.u');if(!r)return;vwOpen=vwOpen===r.dataset.u?null:r.dataset.u;renderViews()});
 /* ---- playlists ---- */
 function srcOf(v){return {id:v.id,kind:v.compId?'match':'video',title:v.title||`${v.home||''} x ${v.away||''}`.trim(),ytId:v.ytId||''}}
 const itemKey=(src,l)=>src.id+':'+l.id+':'+(l.raw||l.code);
@@ -1684,6 +1743,7 @@ document.getElementById('hbarBack').onclick=()=>show('home');
 document.getElementById('pbarBack').onclick=()=>{playlist=null;show('plays')};
 document.getElementById('pbarShare').onclick=()=>{if(playlist)openPlaylistEdit(playlist)};document.getElementById('pbarEdit').onclick=()=>{if(playlist)openPlaylistEdit(playlist)};
 function openPlaylist(p,keep){
+  if(p&&!keep)trackView('playlist',p.id,'Playlist',p.name);
   if(!p)return;playlist=p;athlete=null;currentItem=null;
   const items=p.items||[];const P=window.DimasPlayer;
   document.getElementById('pbarName').textContent=p.name;document.getElementById('pbarSub').textContent=items.length+' lance'+(items.length!==1?'s':'')+(p.byName?' · por '+p.byName:'');
@@ -2308,7 +2368,7 @@ function lancesFor(v){
   return set;
 }
 function playVideo(v){
-  if(!v)return;currentVideo=v.id;currentItem=v;renderVideos();
+  if(!v)return;trackView('video',v.id,vTypeOf(v),v.title);currentVideo=v.id;currentItem=v;renderVideos();
   const P=window.DimasPlayer;setXmlSeg(v);const set=lancesFor(v);
   P.setTitle(v.title,[v.caption,set?set.instances.length+' lances'+(v.lances&&v.lancesInd?' ('+(xmlKind==='lances'?'coletiva':'individual')+')':''):null,v.duration?fmtDur(v.duration):null].filter(Boolean).join(' · '));
   if(set)P.loadLances(applySync(set,v.sync),{individual:xmlKind==='lancesInd',src:srcOf(v)});else P.loadLances({instances:[],rows:[]});

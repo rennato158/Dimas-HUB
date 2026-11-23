@@ -62,6 +62,10 @@ service cloud.firestore {
         allow delete: if isAdmin() || (inParent() && resource.data.by == email());
       }
     }
+    match /views/{id} {
+      allow read: if isAdmin();
+      allow create, update: if isMember() && request.resource.data.uid == email();
+    }
     match /videos/{id} {
       allow read: if isStaff() || (isMember() && email() in resource.data.viewers);
       allow write: if isAdmin();
