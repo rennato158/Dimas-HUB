@@ -1153,7 +1153,7 @@ function setMe(m){
   if(unsubV){unsubV();unsubV=null}
   if(m){const staff=['Comissão','Coordenação'].includes(m.role)||m.func==='Administrador';
     const q=staff?db.collection('videos').orderBy('createdAt','desc'):db.collection('videos').where('viewers','array-contains',m.id);
-    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>normVideo(Object.assign({id:d.id},d.data())));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
+    unsubV=q.onSnapshot(s=>{videos=s.docs.map(d=>normVideo(Object.assign({id:d.id},d.data())));videos.sort(vSort);renderVideos();setTimeout(autoLinkAll,0);setTimeout(fillYtDates,800)},e=>{vCards.innerHTML='<div class="emptyl">Erro ao carregar: '+(e.code||e.message)+'</div>'})}
   else{videos=[];renderVideos()}
   if(unsubM){unsubM();unsubM=null}if(unsubG){unsubG();unsubG=null}
   if(m){
@@ -2216,8 +2216,17 @@ function coverHtml(v){
     return `<img src="assets/capa-jogo.jpg" alt="" loading="lazy"><span class="cover">${h&&h.logo?`<img src="${esc(h.logo)}" alt="" referrerpolicy="no-referrer">`:'<span></span>'}<span class="vs">${esc(v.home||'')}${v.home||v.away?' × ':''}${esc(v.away||'')}</span>${a&&a.logo?`<img src="${esc(a.logo)}" alt="" referrerpolicy="no-referrer">`:'<span></span>'}</span>`.replace(/<span class="vs">[^<]*<\/span>/,m=>(h&&h.logo&&a&&a.logo)?'<span class="vs">×</span>':m)}
   return `<img src="${esc(v.thumb||ytThumb(v.ytId))}" alt="" loading="lazy">`;
 }
-const ordOf=v=>v.order!=null?v.order:-(v.createdAt?.seconds||0);
-function vSort(a,b){return ordOf(a)-ordOf(b)}
+// data do vídeo: tirada do título original no YouTube (ex.: "TREINO JOGO REDUZIDO 10112026 001" → 10/11/2026)
+function parseYtDate(t){t=String(t||'');let m=t.match(/(?:^|[^\d])(\d{2})[.\/-]?(\d{2})[.\/-]?(20\d{2})(?!\d)/);let d,mo,y;
+  if(m){d=+m[1];mo=+m[2];y=+m[3]}else{m=t.match(/(?:^|[^\d])(20\d{2})[.\/-](\d{2})[.\/-](\d{2})(?!\d)/);if(!m)return null;y=+m[1];mo=+m[2];d=+m[3]}
+  if(mo<1||mo>12||d<1||d>31)return null;return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+async function ytInfo(ytId){const r=await fetch('https://www.youtube.com/oembed?format=json&url='+encodeURIComponent('https://www.youtube.com/watch?v='+ytId));if(!r.ok)throw new Error('oembed '+r.status);const j=await r.json();return {ytTitle:j.title||'',ytDate:parseYtDate(j.title)}}
+const dateKey=v=>v.ytDate||(v.createdAt&&v.createdAt.toDate?v.createdAt.toDate().toISOString().slice(0,10):'');
+function vSort(a,b){const x=dateKey(a),y=dateKey(b);if(x!==y)return x<y?1:-1;return String(a.title||'').localeCompare(String(b.title||''),'pt',{numeric:true})}
+let ytFilling=false;
+async function fillYtDates(){if(ytFilling||!me||me.func!=='Administrador')return;ytFilling=true;
+  try{for(const v of videos.filter(v=>v.ytId&&!v.ytChecked)){try{const d=await ytInfo(v.ytId);Object.assign(d,{ytChecked:true});await db.collection('videos').doc(v.id).update(d)}catch(_){}}}finally{ytFilling=false}}
+function fmtYmd(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:''}
 // arrastar cartões para reordenar (administrador)
 let dragId=null;
 vCards.addEventListener('dragstart',e=>{const c=e.target.closest('.card');if(!c||!(me&&me.func==='Administrador'))return;dragId=c.dataset.id;c.classList.add('dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragId)}catch(_){}});
@@ -2247,10 +2256,10 @@ function renderVideos(){
   if(members.length)renderAthletes();
   if(!videos.filter(canSee).length){vCards.innerHTML='<div class="emptyl">'+(admin?'Nenhum vídeo ainda. Clique em <strong>Adicionar vídeo</strong> e cole o link do YouTube.':'Nenhum vídeo compartilhado com você ainda.')+'</div>';return}
   if(!shown.length){vCards.innerHTML='<div class="emptyl">Nenhum vídeo nesse filtro.</div>';return}
-  vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0" ${admin?'draggable="true" title="Arraste para reordenar"':''}>
+  vCards.innerHTML=shown.map(v=>`<div class="card ${currentVideo===v.id?'on':''}" data-id="${esc(v.id)}" tabindex="0">
     <div class="th">${coverHtml(v)}<span class="badge tp">${esc(typeLabel(v))}</span></div>
     <div class="bd"><div class="ti">${esc(v.title)}</div>${v.comp||v.caption||v.tipologia?`<div class="cap">${esc([v.tipologia,v.comp,v.caption].filter(Boolean).join(' · '))}</div>`:''}
-      <div class="mt"><span title="Data de upload"><svg viewBox="0 0 16 16"><path d="M8 1l4 4H9v5H7V5H4zM2 12h12v3H2z"/></svg>${fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
+      <div class="mt"><span title="${v.ytDate?'Data do vídeo (título no YouTube'+(v.ytTitle?': '+esc(v.ytTitle):'')+')':'Data de cadastro'}"><svg viewBox="0 0 16 16"><path d="M3 2h1.5v1.5h7V2H13v1.5h1V14H2V3.5h1zm-.5 4V12.5h11V6z"/></svg>${fmtYmd(v.ytDate)||fmtDate(v.createdAt)||'—'}</span>${v.duration?`<span title="Duração"><svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3zm-.75 2h1.5v3.2l2.3 1.4-.75 1.3L7.25 9.2z"/></svg>${fmtDur(v.duration)}</span>`:''}
 </div>
       ${v.lances||v.lancesInd||v.driveId?`<div class="mt xmls">${v.driveId?`<span class="xml drv1" title="Vinculado ao Drive${v.driveName?': '+esc(v.driveName):''} · cortes disponíveis para download"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 13A3.5 3.5 0 0 1 4 6.03 4.5 4.5 0 0 1 12.7 6.6 3.2 3.2 0 0 1 12 13z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9.6l1.5 1.5 2.8-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`:''}${v.lances?`<span class="xml" title="XML coletiva: ${v.lances.instances.length} lances">XML (col)</span>`:''}${v.lancesInd?`<span class="xml" title="XML individual: ${v.lancesInd.instances.length} lances">XML (ind)</span>`:''}</div>`:''}</div>
     ${admin?`<div class="cact"><button type="button" data-edit="${esc(v.id)}"><svg viewBox="0 0 16 16"><path d="M11.5 1.5l3 3L5 14H2v-3zM3 12v1h1l8.5-8.5-1-1z"/></svg>Editar</button><button type="button" data-share="${esc(v.id)}" title="${esc(shareSummary(v))}"><svg viewBox="0 0 16 16"><circle cx="12.5" cy="3" r="2"/><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="13" r="2"/><path d="M5 7l6-3 .6 1.2-6 3zM5 9l6 3 .6-1.2-6-3z"/></svg>Compartilhar</button></div>`:''}
@@ -2451,6 +2460,7 @@ vForm.onsubmit=async e=>{
   const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const isTr=vt==='Treino';const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:isTr?'':document.getElementById('vHome').value.trim(),away:isTr?'':document.getElementById('vAway').value.trim(),md:isTr?(document.getElementById('vMd').value||null):null,tipologia:isTr?(document.getElementById('vTipo').value||null):null,xmlSingle:isTr,title:document.getElementById('vName').value.trim(),comp:isTr?'':document.getElementById('vComp').value.trim(),caption:isTr?'':document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:isTr?null:(vLancesI||null),sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
+    if(!vEditing||vEditing.ytId!==ytId||!vEditing.ytChecked){try{Object.assign(data,await ytInfo(ytId),{ytChecked:true})}catch(_){}}
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
     else{const ref=await db.collection('videos').add(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp(),by:me.id,shareGroups:[],shareMembers:[],viewers:[]}));
       vModal.hidden=true;linkVideoMatch(Object.assign({id:ref.id},data),true).catch(()=>{});openShare(Object.assign({id:ref.id},data,{shareGroups:[],shareMembers:[]}))}
