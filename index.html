@@ -816,8 +816,8 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px s
         <div class="f"><label for="vAway">Visitante</label><input type="text" id="vAway" list="clubList2" maxlength="40"></div>
         <datalist id="clubList2"></datalist>
       </div>
-      <div class="f"><label for="vComp">Competição</label><input type="text" id="vComp" list="compList" maxlength="60" placeholder="Ex.: Brasileiro Série B 2026"><datalist id="compList"></datalist></div>
-      <div class="f"><label for="vCap">Legenda</label><input type="text" id="vCap" maxlength="140" placeholder="Ex.: Série B · Rodada 34 · 17/10/2026"></div>
+      <div class="f" id="vCompRow"><label for="vComp">Competição</label><input type="text" id="vComp" list="compList" maxlength="60" placeholder="Ex.: Brasileiro Série B 2026"><datalist id="compList"></datalist></div>
+      <div class="f" id="vCapRow"><label for="vCap">Legenda</label><input type="text" id="vCap" maxlength="140" placeholder="Ex.: Série B · Rodada 34 · 17/10/2026"></div>
       <div class="f"><label>Capa</label>
         <div class="thprev" id="vThumb"><img id="vThumbImg" alt=""></div>
         <div class="inline"><label class="btn" for="vImg">Escolher imagem<input type="file" id="vImg" accept="image/*" style="display:none"></label><button type="button" class="btn" id="vImgDel" hidden>Usar frame do vídeo</button><span class="pwnote" id="vThumbNote">Sem imagem, usa um frame do vídeo.</span></div>
@@ -2320,7 +2320,7 @@ function openVideo(v){
   updThumb();vModal.hidden=false;document.getElementById(v?'vName':'vUrl').focus();
 }
 function vSubUpd(){const t=document.getElementById('vType').value,sb=document.getElementById('vSub').value;document.getElementById('vSubRow').hidden=t!=='Análise';document.getElementById('vAthRow').hidden=!(t==='Análise'&&sb==='Individual');
-  const tr=t==='Treino';document.getElementById('vTrRow').hidden=!tr;document.getElementById('vTeamsRow').hidden=tr;document.getElementById('vXmlIRow').hidden=tr;document.getElementById('vXmlLbl').textContent=tr?'XML do treino (coletiva e individual)':'XML coletiva';syncLabels()}
+  const tr=t==='Treino';document.getElementById('vTrRow').hidden=!tr;document.getElementById('vTeamsRow').hidden=tr;document.getElementById('vCompRow').hidden=tr;document.getElementById('vCapRow').hidden=tr;document.getElementById('vXmlIRow').hidden=tr;document.getElementById('vXmlLbl').textContent=tr?'XML do treino (coletiva e individual)':'XML coletiva';syncLabels()}
 document.getElementById('vType').onchange=vSubUpd;document.getElementById('vSub').onchange=vSubUpd;
 function updThumb(){
   const id=window.DimasPlayer.ytId(document.getElementById('vUrl').value.trim());
@@ -2448,7 +2448,7 @@ vForm.onsubmit=async e=>{
   const url=document.getElementById('vUrl').value.trim(),ytId=window.DimasPlayer.ytId(url);
   if(!ytId){vErr.textContent='Não reconheci esse link do YouTube.';vErr.hidden=false;return}
   const durTxt=document.getElementById('vDur').value.trim();const duration=durTxt?parseDur(durTxt):vDurAuto;
-  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const isTr=vt==='Treino';const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:isTr?'':document.getElementById('vHome').value.trim(),away:isTr?'':document.getElementById('vAway').value.trim(),md:isTr?(document.getElementById('vMd').value||null):null,tipologia:isTr?(document.getElementById('vTipo').value||null):null,xmlSingle:isTr,title:document.getElementById('vName').value.trim(),comp:document.getElementById('vComp').value.trim(),caption:document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:isTr?null:(vLancesI||null),sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
+  const vt=document.getElementById('vType').value,vsb=vt==='Análise'?document.getElementById('vSub').value:null;const isTr=vt==='Treino';const data={url,ytId,type:vt,sub:vsb,athleteId:vsb==='Individual'?(document.getElementById('vAth').value||null):null,home:isTr?'':document.getElementById('vHome').value.trim(),away:isTr?'':document.getElementById('vAway').value.trim(),md:isTr?(document.getElementById('vMd').value||null):null,tipologia:isTr?(document.getElementById('vTipo').value||null):null,xmlSingle:isTr,title:document.getElementById('vName').value.trim(),comp:isTr?'':document.getElementById('vComp').value.trim(),caption:isTr?'':document.getElementById('vCap').value.trim(),thumb:vThumb||null,duration:duration||null,lances:vLances||null,lancesInd:isTr?null:(vLancesI||null),sync:readSync(),driveId:driveIdOf(document.getElementById('vDrive').value)||null,driveName:(driveIdOf(document.getElementById('vDrive').value)===(vEditing&&vEditing.driveId)?(vEditing.driveName||null):(vDrivePicked&&vDrivePicked.id===driveIdOf(document.getElementById('vDrive').value)?vDrivePicked.name:null))};
   const b=document.getElementById('vSave');b.disabled=true;
   try{
     if(vEditing){await db.collection('videos').doc(vEditing.id).update(data);vModal.hidden=true;linkVideoMatch(Object.assign({},vEditing,data),true).catch(()=>{})}
